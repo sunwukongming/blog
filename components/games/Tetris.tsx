@@ -8,9 +8,23 @@ const H = 20;
 
 type Kind = "I" | "O" | "T" | "S" | "Z" | "J" | "L";
 type Cell = [number, number];
-type Piece = { kind: Kind; cells: Cell[]; x: number; y: number };
+/** id 只在出新块时变，用来判断画面上的缓动位置要不要直接跳到新块 */
+type Piece = { id: number; kind: Kind; cells: Cell[]; x: number; y: number };
 type Phase = "ready" | "running" | "paused" | "over";
-type Game = { board: (Kind | null)[]; piece: Piece; bag: Kind[]; score: number; lines: number; level: number };
+/** 消行动画：rows 是被消掉的行（消之前的行号），shift[y] 是新棋盘第 y 行往下掉了几行 */
+type ClearFx = { rows: number[]; shift: number[]; at: number };
+/** 硬降拖影 */
+type DropFx = { cells: Cell[]; x: number; fromY: number; toY: number; color: string; at: number };
+type Game = {
+  board: (Kind | null)[];
+  piece: Piece;
+  bag: Kind[];
+  score: number;
+  lines: number;
+  level: number;
+  clearFx: ClearFx | null;
+  dropFx: DropFx | null;
+};
 type Stats = { score: number; lines: number; level: number; next: Kind };
 
 const KINDS: Kind[] = ["I", "O", "T", "S", "Z", "J", "L"];
@@ -37,6 +51,12 @@ const COLORS: Record<Kind, string> = {
 // 旋转被挡住时依次尝试的偏移（简化版踢墙）
 const KICKS: Cell[] = [[0, 0], [-1, 0], [1, 0], [0, -1], [-2, 0], [2, 0]];
 const LINE_SCORE = [0, 100, 300, 500, 800];
+const CLEAR_MS = 260;
+const DROP_MS = 180;
+// 按住左右、下：先等 DAS 毫秒，之后每 ARR 毫秒移动一格（比系统按键重复的半秒停顿跟手得多）
+const DAS = 140;
+const ARR = 40;
+let pieceId = 0;
 
 const gravity = (level: number) => Math.max(70, 800 - (level - 1) * 75);
 
@@ -51,12 +71,21 @@ function refill(bag: Kind[]) {
 }
 
 function spawn(kind: Kind): Piece {
-  return { kind, cells: SHAPES[kind], x: kind === "O" ? 4 : 3, y: kind === "I" ? -1 : 0 };
+  return { id: ++pieceId, kind, cells: SHAPES[kind], x: kind === "O" ? 4 : 3, y: kind === "I" ? -1 : 0 };
 }
 
 function newGame(): Game {
   const bag = refill(refill([]));
-  return { board: Array(W * H).fill(null), piece: spawn(bag.shift()!), bag, score: 0, lines: 0, level: 1 };
+  return {
+    board: Array(W * H).fill(null),
+    piece: spawn(bag.shift()!),
+    bag,
+    score: 0,
+    lines: 0,
+    level: 1,
+    clearFx: null,
+    dropFx: null,
+  };
 }
 
 function collides(board: Game["board"], p: Piece, dx = 0, dy = 0, cells = p.cells) {
@@ -97,10 +126,13 @@ function lock(g: Game) {
   }
   const rows: (Kind | null)[][] = [];
   for (let y = 0; y < H; y++) rows.push(g.board.slice(y * W, y * W + W));
-  const kept = rows.filter((r) => r.some((c) => c === null));
-  const cleared = H - kept.length;
+  const keptRows = rows.flatMap((r, y) => (r.some((c) => c === null) ? [y] : []));
+  const cleared = H - keptRows.length;
   if (cleared) {
-    g.board = [...Array(cleared * W).fill(null), ...kept.flat()];
+    g.board = [...Array(cleared * W).fill(null), ...keptRows.flatMap((y) => rows[y])];
+    const shift = Array<number>(H).fill(0);
+    keptRows.forEach((oldY, i) => (shift[cleared + i] = cleared + i - oldY));
+    g.clearFx = { rows: rows.flatMap((r, y) => (r.every((c) => c !== null) ? [y] : [])), shift, at: performance.now() };
     g.score += LINE_SCORE[cleared] * g.level;
     g.lines += cleared;
     g.level = 1 + Math.floor(g.lines / 10);
@@ -110,9 +142,16 @@ function lock(g: Game) {
   return !collides(g.board, g.piece);
 }
 
-function draw(el: HTMLCanvasElement | null, g: Game, showPiece: boolean) {
+const easeOut = (k: number) => 1 - (1 - Math.min(1, Math.max(0, k))) ** 3;
+
+/**
+ * view 是当前方块在画面上的位置（可以是小数）：下落时连续往下滑，左右移动时缓动过去。
+ * 不传就画在逻辑位置上（暂停、结束等静止画面）
+ */
+function draw(el: HTMLCanvasElement | null, g: Game, showPiece: boolean, view?: { x: number; y: number }) {
   const ctx = el?.getContext("2d");
   if (!el || !ctx) return;
+  const now = performance.now();
   const s = el.width / W;
   ctx.clearRect(0, 0, el.width, el.height);
   ctx.strokeStyle = "rgb(255 255 255 / 0.05)";
@@ -131,7 +170,7 @@ function draw(el: HTMLCanvasElement | null, g: Game, showPiece: boolean) {
   }
 
   const block = (x: number, y: number, color: string, alpha = 1) => {
-    if (y < 0) return;
+    if (y < -0.99) return;
     ctx.globalAlpha = alpha;
     ctx.fillStyle = color;
     ctx.beginPath();
@@ -142,7 +181,38 @@ function draw(el: HTMLCanvasElement | null, g: Game, showPiece: boolean) {
     ctx.globalAlpha = 1;
   };
 
-  g.board.forEach((k, i) => k && block(i % W, Math.floor(i / W), COLORS[k]));
+  // 消行：被消的行闪一下白光，上面的行从原来的位置滑下来
+  const clear = g.clearFx && now - g.clearFx.at < CLEAR_MS ? g.clearFx : null;
+  const cp = clear ? (now - clear.at) / CLEAR_MS : 1;
+  if (clear) {
+    ctx.fillStyle = `rgba(255, 255, 255, ${0.8 * (1 - cp)})`;
+    for (const y of clear.rows) ctx.fillRect(0, y * s, el.width, s);
+  }
+  g.board.forEach((k, i) => {
+    if (!k) return;
+    const y = Math.floor(i / W);
+    block(i % W, y - (clear ? clear.shift[y] * (1 - easeOut(cp)) : 0), COLORS[k]);
+  });
+
+  // 硬降：从原位置到落点留一道渐隐的拖影
+  const drop = g.dropFx && now - g.dropFx.at < DROP_MS ? g.dropFx : null;
+  if (drop && drop.toY > drop.fromY) {
+    const q = (now - drop.at) / DROP_MS;
+    const cols = new Map<number, number>();
+    for (const [cx, cy] of drop.cells) cols.set(cx, Math.min(cols.get(cx) ?? Infinity, cy));
+    for (const [cx, cy] of cols) {
+      const top = (drop.fromY + cy) * s;
+      const bottom = (drop.toY + cy) * s;
+      const grad = ctx.createLinearGradient(0, top, 0, bottom);
+      grad.addColorStop(0, "rgba(255, 255, 255, 0)");
+      grad.addColorStop(1, drop.color);
+      ctx.globalAlpha = 0.45 * (1 - q);
+      ctx.fillStyle = grad;
+      ctx.fillRect((drop.x + cx) * s + s * 0.2, top, s * 0.6, bottom - top);
+      ctx.globalAlpha = 1;
+    }
+  }
+
   if (!showPiece) return;
   const { piece } = g;
   const ghost = dropDistance(g);
@@ -153,7 +223,9 @@ function draw(el: HTMLCanvasElement | null, g: Game, showPiece: boolean) {
     if (y >= 0) ctx.strokeRect((piece.x + cx) * s + 2.5, y * s + 2.5, s - 5, s - 5);
   }
   ctx.globalAlpha = 1;
-  for (const [cx, cy] of piece.cells) block(piece.x + cx, piece.y + cy, COLORS[piece.kind]);
+  const px = view?.x ?? piece.x;
+  const py = view?.y ?? piece.y;
+  for (const [cx, cy] of piece.cells) block(px + cx, py + cy, COLORS[piece.kind]);
 }
 
 type Action = "left" | "right" | "rotate" | "down" | "drop";
@@ -165,6 +237,23 @@ const PAD: [Action, string, string][] = [
   ["right", "→", "右移"],
 ];
 const REPEAT: Partial<Record<Action, true>> = { left: true, right: true, down: true };
+const KEY_ACTION: Record<string, Action> = {
+  ArrowLeft: "left",
+  a: "left",
+  A: "left",
+  ArrowRight: "right",
+  d: "right",
+  D: "right",
+  ArrowUp: "rotate",
+  w: "rotate",
+  W: "rotate",
+  x: "rotate",
+  X: "rotate",
+  ArrowDown: "down",
+  s: "down",
+  S: "down",
+  " ": "drop",
+};
 
 export default function Tetris() {
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -175,6 +264,9 @@ export default function Tetris() {
   const [record, setRecord] = useState(false);
   const [best, submitBest] = useRecord("tetris", (next, prev) => next > prev);
   const repeat = useRef<number | null>(null);
+  const holding = useRef<Action | null>(null);
+  // 当前方块在画面上的位置（小数），每帧缓动追向逻辑位置
+  const view = useRef({ id: -1, x: 0, y: 0 });
   // 堆到顶之后到 effect 清理之前，循环和长按连发都不能再推进游戏
   const dead = useRef(false);
 
@@ -225,13 +317,25 @@ export default function Tetris() {
     let last = performance.now();
     let acc = 0;
     const frame = (now: number) => {
+      const dt = Math.min((now - last) / 1000, 0.1);
       acc = Math.min(acc + now - last, 1000);
       last = now;
       while (acc >= gravity(game.current.level) && !dead.current) {
         acc -= gravity(game.current.level);
         tick();
       }
-      draw(canvas.current, game.current, true);
+      // 平滑下落：在逻辑位置上加上这一格已经走过的比例；落到底时不再往下滑
+      const g = game.current;
+      const canFall = !collides(g.board, g.piece, 0, 1);
+      const targetY = g.piece.y + (canFall ? acc / gravity(g.level) : 0);
+      const v = view.current;
+      if (v.id !== g.piece.id) Object.assign(v, { id: g.piece.id, x: g.piece.x, y: targetY });
+      const k = 1 - Math.exp(-dt * 30);
+      v.x += (g.piece.x - v.x) * k;
+      v.y += (targetY - v.y) * k;
+      // 缓动不能让方块看起来穿进下面的方块
+      v.y = Math.min(v.y, g.piece.y + (canFall ? 1 : 0));
+      draw(canvas.current, g, true, v);
       if (!dead.current) raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
@@ -265,13 +369,15 @@ export default function Tetris() {
       if (move(g, 0, 1)) g.score += 1;
     } else {
       const d = dropDistance(g);
+      const { cells, x, y, kind } = g.piece;
       move(g, 0, d);
+      g.dropFx = { cells, x, fromY: view.current.id === g.piece.id ? view.current.y : y, toY: y + d, color: COLORS[kind], at: performance.now() };
       g.score += d * 2;
       settle();
     }
     if (dead.current) return;
+    // 画面由动画循环每帧重画，这里只更新分数
     sync();
-    draw(canvas.current, g, true);
   };
   // 长按连发的定时器在按下时创建，通过 ref 调用最新的 act，避免用到按下那一刻的旧状态
   const actRef = useRef(act);
@@ -284,27 +390,31 @@ export default function Tetris() {
     else setPhase(phase === "running" ? "paused" : "running");
   };
 
+
+  // 键盘和触屏按钮共用：按下立即动一次，左右和下按住超过 DAS 后每 ARR 毫秒连发
+  const stopRepeat = () => {
+    if (repeat.current) clearInterval(repeat.current);
+    repeat.current = null;
+    holding.current = null;
+  };
+  const hold = (a: Action) => {
+    act(a);
+    stopRepeat();
+    if (!REPEAT[a]) return;
+    holding.current = a;
+    let ticks = 0;
+    repeat.current = window.setInterval(() => ++ticks * ARR > DAS && actRef.current(a), ARR);
+  };
+  const press = (a: Action) => (e: PointerEvent) => {
+    e.preventDefault();
+    hold(a);
+  };
+
   useKeys((key, repeat) => {
-    const map: Record<string, Action> = {
-      ArrowLeft: "left",
-      a: "left",
-      A: "left",
-      ArrowRight: "right",
-      d: "right",
-      D: "right",
-      ArrowUp: "rotate",
-      w: "rotate",
-      W: "rotate",
-      x: "rotate",
-      X: "rotate",
-      ArrowDown: "down",
-      s: "down",
-      S: "down",
-      " ": "drop",
-    };
-    if (map[key]) {
-      // 按住不放时只连续移动，不连续旋转或落底
-      if (!repeat || REPEAT[map[key]]) act(map[key]);
+    const a = KEY_ACTION[key];
+    if (a) {
+      // 系统的按键重复一律忽略：左右和下由 hold() 自己连发，旋转和落底按一次只动一次
+      if (!repeat) hold(a);
     } else if (key === "p" || key === "P" || key === "Escape") {
       if (!repeat) toggle();
     }
@@ -312,21 +422,24 @@ export default function Tetris() {
     else return false;
     return true;
   });
-
-  // 触屏按钮：按住左右和下会连续触发
-  const stopRepeat = () => {
-    if (repeat.current) clearInterval(repeat.current);
-    repeat.current = null;
-  };
-  useEffect(() => stopRepeat, []);
-  const press = (a: Action) => (e: PointerEvent) => {
-    e.preventDefault();
-    act(a);
-    stopRepeat();
-    if (!REPEAT[a]) return;
-    const started = Date.now();
-    repeat.current = window.setInterval(() => Date.now() - started > 170 && actRef.current(a), 50);
-  };
+  // 松开按住的那个键、或者窗口失焦时停止连发
+  useEffect(() => {
+    const release = () => {
+      if (repeat.current) clearInterval(repeat.current);
+      repeat.current = null;
+      holding.current = null;
+    };
+    const up = (e: KeyboardEvent) => {
+      if (KEY_ACTION[e.key] && KEY_ACTION[e.key] === holding.current) release();
+    };
+    window.addEventListener("keyup", up);
+    window.addEventListener("blur", release);
+    return () => {
+      release();
+      window.removeEventListener("keyup", up);
+      window.removeEventListener("blur", release);
+    };
+  }, []);
 
   return (
     <div className="game">

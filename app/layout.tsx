@@ -5,7 +5,7 @@ import Background from "@/components/Background";
 import SiteNav from "@/components/SiteNav";
 import WorldTheme from "@/components/WorldTheme";
 import { getAllPosts } from "@/lib/posts";
-import { SITE } from "@/lib/site";
+import { SITE, SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 // 正文统一用 Noto Sans SC，各个世界有自己的标题字体
@@ -19,6 +19,9 @@ const newsreader = Newsreader({ variable: "--font-newsreader", subsets: ["latin"
 export const metadata: Metadata = {
   title: { default: SITE.name, template: `%s · ${SITE.name}` },
   description: SITE.description,
+  metadataBase: new URL(SITE_URL ?? "http://localhost:3000"),
+  openGraph: { siteName: SITE.name, locale: "zh_CN", type: "website" },
+  alternates: { types: { "application/rss+xml": [{ url: "/feed.xml", title: SITE.name }] } },
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {

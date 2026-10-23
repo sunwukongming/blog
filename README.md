@@ -45,6 +45,13 @@ summary: 一句话摘要
 - 路由和世界的对应关系：`lib/worlds.ts`
 - 每个世界的配色和标题字体：`app/globals.css` 顶部
 - 首页的个人介绍（名字、简介、技术栈、链接）：`lib/site.ts` 里的 `PROFILE`
+- 站点正式地址：在 Vercel 项目的环境变量里设置 `NEXT_PUBLIC_SITE_URL`（例如 `https://example.com`）。不设置时会用 Vercel 提供的生产域名；两个都没有时不输出 canonical，sitemap 为空
+
+## SEO 与订阅
+
+- `/feed.xml`：RSS 订阅
+- `/sitemap.xml`、`/robots.txt`：给搜索引擎
+- 每篇文章自动生成 1200×630 的分享图（`app/blog/[slug]/opengraph-image.tsx`），中文字体在构建时从 Google Fonts 按需下载
 
 ## 结构
 

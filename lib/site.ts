@@ -1,4 +1,12 @@
 // 站点信息和首页的个人介绍
+
+// 正式环境地址：优先用 NEXT_PUBLIC_SITE_URL，其次用 Vercel 构建时提供的生产域名。
+// 都拿不到时为 null，这时不输出 canonical，sitemap 也留空，避免把错误的地址交给搜索引擎
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL && `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`);
+export const SITE_URL = siteUrl ? siteUrl.replace(/\/$/, "") : null;
+
 export const SITE = {
   name: "GM Lab",
   description: "GM 的技术笔记：Go、云平台、可观测性，以及一点前端与游戏。",
@@ -18,5 +26,6 @@ export const PROFILE = {
   links: [
     { label: "GitHub", href: "https://github.com/sunwukongming" },
     { label: "邮箱", href: "mailto:gm420642207@gmail.com" },
+    { label: "RSS", href: "/feed.xml" },
   ],
 };

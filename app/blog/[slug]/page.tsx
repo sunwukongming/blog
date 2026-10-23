@@ -2,9 +2,12 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { CodeCopy, ReadingProgress, Toc } from "@/components/ArticleTools";
 import MdxContent from "@/components/MdxContent";
 import { getCategory } from "@/lib/categories";
 import { getAllPosts, getPost } from "@/lib/posts";
+import { SITE, SITE_URL } from "@/lib/site";
+import { extractHeadings } from "@/lib/toc";
 
 export async function generateStaticParams() {
   const posts = await getAllPosts();
@@ -12,8 +15,16 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: PageProps<"/blog/[slug]">): Promise<Metadata> {
-  const post = await getPost((await params).slug);
-  return post ? { title: post.title, description: post.summary } : {};
+  const { slug } = await params;
+  const post = await getPost(slug);
+  if (!post) return {};
+  return {
+    title: post.title,
+    description: post.summary,
+    authors: [{ name: SITE.author }],
+    openGraph: { type: "article", title: post.title, description: post.summary, publishedTime: post.date },
+    alternates: SITE_URL ? { canonical: `/blog/${slug}` } : undefined,
+  };
 }
 
 // App Shell（所在世界）与 URL 无关，读取 params 的正文放进 Suspense
@@ -36,9 +47,11 @@ async function PostBody({ params }: { params: Promise<{ slug: string }> }) {
   const i = all.findIndex((p) => p.slug === slug);
   const newer = all[i - 1];
   const older = all[i + 1];
+  const headings = extractHeadings(post.body);
 
   return (
     <>
+      <ReadingProgress />
       <header className="article-head" style={{ width: "100%" }}>
         <div className="article-meta">
           {category && <Link href={`/categories/${category.slug}`}>{category.name}</Link>}
@@ -48,9 +61,11 @@ async function PostBody({ params }: { params: Promise<{ slug: string }> }) {
         <h1 className="display">{post.title}</h1>
         {post.summary && <p className="lede">{post.summary}</p>}
       </header>
+      {headings.length >= 3 && <Toc headings={headings} />}
       <article className="panel article prose" data-ui>
         <MdxContent source={post.body} />
       </article>
+      <CodeCopy />
       <nav className="post-nav" aria-label="上一篇和下一篇">
         {older ? (
           <Link href={`/blog/${older.slug}`} className="panel">

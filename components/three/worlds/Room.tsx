@@ -239,7 +239,7 @@ export default function Room({ navigate }: { navigate: Navigate }) {
         <Box args={[0.7, 0.04, 0.1]} color="#2b3340" position={[0.5, 0.02, -1.45]} />
 
         {/* 书架 → 读书笔记 */}
-        <Hotspot to="/categories/reading" label="读书笔记" labelAt={[-2.75, 3.1, -0.5]} navigate={navigate}>
+        <Hotspot to="/categories/cloud" label="云与可观测" labelAt={[-2.75, 3.1, -0.5]} navigate={navigate}>
           <Box args={[0.04, 2.8, 1.8]} color="#5e3b28" position={[-2.98, 1.4, -0.5]} />
           <Box args={[0.5, 2.8, 0.06]} color={wood} position={[-2.75, 1.4, -1.37]} />
           <Box args={[0.5, 2.8, 0.06]} color={wood} position={[-2.75, 1.4, 0.37]} />

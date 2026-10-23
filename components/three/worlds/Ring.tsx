@@ -13,10 +13,10 @@ const CJK = '"PingFang SC","Hiragino Sans GB","Noto Sans SC","Microsoft YaHei",s
 // 卡片上分类色条用的深色版本，浅底上更清楚
 const TAG_INK: Record<string, string> = {
   frontend: "#3550d6",
-  graphics: "#d0503a",
+  backend: "#d0503a",
   essays: "#2f8f6b",
   tools: "#b07d12",
-  reading: "#7b4fb0",
+  cloud: "#7b4fb0",
 };
 
 function cardTexture(post: PostMeta) {

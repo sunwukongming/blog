@@ -1,25 +1,21 @@
-// 站点信息和首页的个人介绍。下面标了“占位”的内容都需要换成你自己的
+// 站点信息和首页的个人介绍
 export const SITE = {
   name: "夜读书房",
-  description: "一个有 3D 世界的个人博客：前端、图形学、工具、读书和随笔。",
-  author: "站长",
+  description: "后端架构与工程化笔记：Go、云平台、可观测性，以及一点前端与随笔。",
+  author: "GM",
 };
 
 export const PROFILE = {
-  // 占位：你的名字
-  name: "站长",
-  // 占位：一句话身份
-  role: "前端工程师 · 图形学爱好者",
-  // 占位：两三句自我介绍
+  name: "GM",
+  role: "高级后端工程师 / 架构师 · Go · 全栈",
   bio: [
-    "白天写前端，晚上折腾 WebGL 和着色器。喜欢把界面做得有一点温度。",
+    "主攻 Go 服务端与云平台，做过技术栈迁移、基础服务 0→1，以及可观测性落地；前端也能独立交付。",
+    "习惯从系统与网络层面想问题，改造存量系统更偏好可灰度、可回滚的渐进方案。",
     "这个书房是我的个人博客，记录技术笔记、读过的书和一些随笔。",
   ],
-  // 占位：技术栈或兴趣
-  skills: ["TypeScript", "React", "Next.js", "Three.js", "GLSL"],
-  // 占位：联系方式；不需要的直接删掉
+  skills: ["Go", "TypeScript", "Vue 3", "React", "Kubernetes", "OpenTelemetry"],
   links: [
     { label: "GitHub", href: "https://github.com/sunwukongming" },
-    { label: "邮箱", href: "mailto:you@example.com" },
+    { label: "邮箱", href: "mailto:gm420642207@gmail.com" },
   ],
 };

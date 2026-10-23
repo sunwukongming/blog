@@ -11,7 +11,7 @@ import Orbit from "./worlds/Orbit";
 import Ring from "./worlds/Ring";
 import Field from "./worlds/Field";
 import Drive from "./worlds/Drive";
-import { LabelPortal } from "./utils";
+import { LabelPortal, reduceMotion, RenderOnInput } from "./utils";
 
 const FADE_MS = 260;
 
@@ -36,8 +36,9 @@ export default function SceneCanvas({ posts }: { posts: PostMeta[] }) {
     return () => io.disconnect();
   }, [world]);
 
-  // 玩游戏时背景只画一帧静态画面；书房不可见时也暂停。"demand" 模式下场景变化时 R3F 仍会自动重画
-  const still = pathname.startsWith("/games/") || (world === "room" && roomHidden);
+  // 玩游戏时背景只画一帧静态画面；书房不可见时也暂停；“减少动态效果”时只在鼠标移动、滚动后重画。
+  // "demand" 模式下场景变化时 R3F 仍会自动重画
+  const still = pathname.startsWith("/games/") || (world === "room" && roomHidden) || reduceMotion;
 
   // 换到另一个世界时：先用目标世界的底色盖住画面，再切换场景并淡出
   useEffect(() => {
@@ -61,6 +62,7 @@ export default function SceneCanvas({ posts }: { posts: PostMeta[] }) {
       >
         {/* 帧率持续偏低时把像素比降到 1 */}
         <PerformanceMonitor onDecline={() => setMaxDpr(1)} />
+        {reduceMotion && <RenderOnInput />}
         <LabelPortal value={labels}>
           {world === "room" && <Room navigate={navigate} />}
           {world === "orbit" && <Orbit posts={posts} focus={focusedCategory(pathname)} navigate={navigate} />}

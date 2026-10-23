@@ -10,7 +10,7 @@ export type Navigate = (href: string) => void;
 export const LabelPortal = createContext<RefObject<HTMLDivElement | null> | undefined>(undefined);
 export const useLabelPortal = () => useContext(LabelPortal) as RefObject<HTMLElement> | undefined;
 
-const reduceMotion = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+export const reduceMotion = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /** 每个世界自己的时间轴；系统开启“减少动态效果”时时间静止，只保留鼠标交互 */
 export function useWorldClock() {
@@ -54,6 +54,24 @@ export function useViewShift(
     cam.setViewOffset(size.width, size.height, 0, -dy, size.width, size.height);
     cam.updateProjectionMatrix();
   });
+}
+
+/**
+ * 按需渲染（frameloop="demand"）时，鼠标移动和滚动后补画一段，让跟随鼠标、滚动的缓动过渡完。
+ * 只在系统开启“减少动态效果”时挂载：那时世界时钟静止，平时不需要每帧都画
+ */
+export function RenderOnInput() {
+  const invalidate = useThree((s) => s.invalidate);
+  useLayoutEffect(() => {
+    const kick = () => invalidate(40);
+    window.addEventListener("pointermove", kick, { passive: true });
+    window.addEventListener("scroll", kick, { passive: true });
+    return () => {
+      window.removeEventListener("pointermove", kick);
+      window.removeEventListener("scroll", kick);
+    };
+  }, [invalidate]);
+  return null;
 }
 
 /** Canvas 的事件源是 body，盖在上面的链接、按钮和正文面板不应触发 3D 交互 */

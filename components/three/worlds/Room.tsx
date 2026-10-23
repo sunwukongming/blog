@@ -79,7 +79,7 @@ function Hotspot({
   );
 }
 
-/** C 夜读小屋：首页。电脑 → 文章，书架 → 读书笔记，地球仪 → 分类星系，窗户 → 关于，墙上的画 → 归档 */
+/** C 夜读小屋：首页。电脑 → 文章，书架 → 读书笔记，地球仪 → 分类星系，墙上的画 → 归档，窗户 → 随笔 */
 export default function Room({ navigate }: { navigate: Navigate }) {
   const t = useWorldClock();
   const cam = useRef<THREE.OrthographicCamera>(null);
@@ -89,7 +89,7 @@ export default function Room({ navigate }: { navigate: Navigate }) {
   const lamp = useRef<THREE.PointLight>(null);
   const size = useThree((s) => s.size);
   const zoom = Math.min(size.height / 7.8, size.width / 11.5);
-  useViewShift(cam, 0.16);
+  useViewShift(cam, 0.16, 0.3);
 
   const books = useMemo(() => {
     const r = rng(11);
@@ -165,8 +165,8 @@ export default function Room({ navigate }: { navigate: Navigate }) {
           <meshStandardMaterial color="#8e4b5a" roughness={1} flatShading />
         </mesh>
 
-        {/* 窗户 → 关于 */}
-        <Hotspot to="/about" label="关于我" labelAt={[-2.9, 3.25, 1.5]} navigate={navigate}>
+        {/* 窗户 → 随笔 */}
+        <Hotspot to="/categories/essays" label="随笔" labelAt={[-2.9, 3.25, 1.5]} navigate={navigate}>
           <Box args={[0.04, 1.5, 1.3]} color="#3a4766" position={[-2.99, 2.3, 1.5]} />
           <Box args={[0.02, 1.3, 1.1]} color="#2b4a7a" basic position={[-2.96, 2.3, 1.5]} />
           <Box args={[0.03, 1.3, 0.05]} color="#3a4766" position={[-2.94, 2.3, 1.5]} />

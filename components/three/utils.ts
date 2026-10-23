@@ -21,20 +21,26 @@ export function useWorldClock() {
   return t;
 }
 
-/** 宽屏时把画面整体右移，给左侧正文留出位置 */
+/**
+ * 宽屏时把画面整体右移，给左侧正文留出位置；
+ * 窄屏时可选地整体下移（down 是视口高度的比例），给上方正文留出位置
+ */
 export function useViewShift(
   camera: RefObject<THREE.PerspectiveCamera | THREE.OrthographicCamera | null>,
   fraction: number,
+  down = 0,
 ) {
   const size = useThree((s) => s.size);
   useLayoutEffect(() => {
     const cam = camera.current;
     if (!cam) return;
-    const dx = size.width >= 960 ? size.width * fraction : 0;
-    if (dx) cam.setViewOffset(size.width, size.height, -dx, 0, size.width, size.height);
+    const wide = size.width >= 960;
+    const dx = wide ? size.width * fraction : 0;
+    const dy = wide ? 0 : size.height * down;
+    if (dx || dy) cam.setViewOffset(size.width, size.height, -dx, -dy, size.width, size.height);
     else cam.clearViewOffset();
     cam.updateProjectionMatrix();
-  }, [camera, size, fraction]);
+  }, [camera, size, fraction, down]);
 }
 
 /** Canvas 的事件源是 body，盖在上面的链接、按钮和正文面板不应触发 3D 交互 */

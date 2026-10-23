@@ -4,12 +4,12 @@
 
 | 路由 | 世界 | 交互 |
 |---|---|---|
-| `/` | 夜读小屋（Low-poly 书房） | 点电脑 → 文章，书架 → 读书笔记，地球仪 → 分类，墙上的画 → 归档，窗户 → 关于 |
+| `/` | 夜读小屋（Low-poly 书房）+ 个人介绍 | 点电脑 → 文章，书架 → 读书笔记，地球仪 → 分类，墙上的画 → 归档，窗户 → 随笔 |
 | `/categories` | 轨道索引（星系） | 行星是分类，卫星是文章，点击行星飞过去 |
 | `/categories/[slug]` | 同上，镜头聚焦到该行星 | |
 | `/blog` | 卡片环 | 文章卡片环形排列，悬停浮起，点击阅读 |
 | `/blog/[slug]` | 信号场（点阵） | 向下滚动时点阵被压平、变暗 |
-| `/about` | 软体雕塑（噪声着色器） | |
+| `/about` | 跳转到首页 | |
 | `/archive` | 夜行（霓虹线框地形） | |
 
 ## 开发
@@ -38,11 +38,11 @@ summary: 一句话摘要
 
 ## 改成你自己的
 
-- 站点名称和作者：`lib/site.ts`
+- 站点名称：`lib/site.ts` 里的 `SITE`
 - 分类（名称、颜色、行星顺序）：`lib/categories.ts`
 - 路由和世界的对应关系：`lib/worlds.ts`
 - 每个世界的配色和标题字体：`app/globals.css` 顶部
-- 关于页文字：`app/about/page.tsx`
+- 首页的个人介绍（名字、简介、技术栈、链接）：`lib/site.ts` 里的 `PROFILE`
 
 ## 结构
 
@@ -50,7 +50,7 @@ summary: 一句话摘要
 components/three/
   SceneCanvas.tsx   常驻 Canvas，根据路由挂载世界，负责换页淡入淡出
   utils.ts          世界时钟、宽屏右移、事件穿透判断等
-  worlds/           六个世界：Room / Orbit / Ring / Field / Blob / Drive
+  worlds/           五个世界：Room / Orbit / Ring / Field / Drive
 components/WorldTheme.tsx   把当前世界写到 <html data-world>，驱动页面配色
 lib/posts.ts                读取 MDX（"use cache"，构建时预渲染）
 ```

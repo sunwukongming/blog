@@ -9,7 +9,6 @@ import Room from "./worlds/Room";
 import Orbit from "./worlds/Orbit";
 import Ring from "./worlds/Ring";
 import Field from "./worlds/Field";
-import Blob from "./worlds/Blob";
 import Drive from "./worlds/Drive";
 import { LabelPortal } from "./utils";
 
@@ -40,7 +39,6 @@ export default function SceneCanvas({ posts }: { posts: PostMeta[] }) {
           {world === "orbit" && <Orbit posts={posts} focus={focusedCategory(pathname)} navigate={navigate} />}
           {world === "ring" && <Ring posts={posts} navigate={navigate} />}
           {world === "field" && <Field />}
-          {world === "blob" && <Blob />}
           {world === "drive" && <Drive />}
         </LabelPortal>
       </Canvas>

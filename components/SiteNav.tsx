@@ -5,7 +5,6 @@ const LINKS = [
   { href: "/blog", label: "文章" },
   { href: "/categories", label: "分类" },
   { href: "/archive", label: "归档" },
-  { href: "/about", label: "关于" },
 ];
 
 export default function SiteNav() {

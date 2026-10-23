@@ -43,13 +43,6 @@ html:not([data-world]):has(main[data-world="field"]) {
   --bg: #0a0c10; --fg: #e6ebf1; --muted: #9aa4b2; --accent: #6f97ff;
   --panel: rgb(10 12 16 / 0.84); --line: rgb(230 235 241 / 0.12);
 }
-html[data-world="blob"],
-html:not([data-world]):has(main[data-world="blob"]) {
-  --bg: #e9e8f1; --fg: #2a2340; --muted: #625a7a; --accent: #7a54d8;
-  --panel: rgb(255 255 255 / 0.62); --line: rgb(42 35 64 / 0.12);
-  --display: var(--font-instrument), var(--font-body), serif; --display-weight: 400;
-  color-scheme: light;
-}
 html[data-world="drive"],
 html:not([data-world]):has(main[data-world="drive"]) {
   --bg: #14021f; --fg: #ffd6f0; --muted: #c79bb8; --accent: #ff3ea5;
@@ -117,6 +110,17 @@ main [data-ui], main a, main button { pointer-events: auto; }
 }
 .lede { color: var(--muted); margin: 0; max-width: 46ch; }
 .hero { display: grid; gap: 12px; max-width: 560px; }
+.role { margin: -4px 0 4px; font-size: 18px; font-weight: 500; color: var(--accent); }
+.tags { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.tags li { font: 400 12.5px/1 var(--font-mono), monospace; padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; color: var(--muted); }
+.profile-links { margin: 4px 0 0; display: flex; flex-wrap: wrap; gap: 8px 20px; }
+.profile-links a { color: var(--fg); text-decoration: none; border-bottom: 1px solid var(--accent); padding-bottom: 1px; }
+.profile-links a:hover { color: var(--accent); }
+.hint { margin: 8px 0 0; font-size: 13px; color: var(--muted); max-width: 46ch; }
+.room-stage { display: none; }
+@media (max-width: 959px) {
+  .room-stage { display: block; height: 300px; }
+}
 
 .panel {
   background: var(--panel); border: 1px solid var(--line); border-radius: 14px;

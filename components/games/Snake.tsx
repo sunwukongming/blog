@@ -12,6 +12,12 @@ type Game = { snake: P[]; dir: Dir; queue: Dir[]; food: P | null; score: number 
 
 const VEC: Record<Dir, P> = { up: { x: 0, y: -1 }, down: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } };
 const OPPOSITE: Record<Dir, Dir> = { up: "down", down: "up", left: "right", right: "left" };
+const PAD: [Dir, string, string][] = [
+  ["up", "↑", "向上"],
+  ["left", "←", "向左"],
+  ["down", "↓", "向下"],
+  ["right", "→", "向右"],
+];
 
 function newGame(): Game {
   const snake = [
@@ -225,6 +231,23 @@ export default function Snake() {
             )}
           </div>
         )}
+      </div>
+      {/* 触屏设备上显示方向键，按下即转向，不等抬起 */}
+      <div className="dpad">
+        {PAD.map(([dir, arrow, label]) => (
+          <button
+            key={dir}
+            type="button"
+            aria-label={label}
+            style={{ gridArea: dir }}
+            onPointerDown={(e) => {
+              e.preventDefault();
+              turn(dir);
+            }}
+          >
+            {arrow}
+          </button>
+        ))}
       </div>
     </div>
   );

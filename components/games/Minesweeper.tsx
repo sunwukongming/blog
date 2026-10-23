@@ -8,9 +8,13 @@ type Cell = { mine: boolean; adj: number; open: boolean; flag: boolean };
 type Phase = "ready" | "playing" | "won" | "lost";
 type Game = { level: Level; cells: Cell[]; phase: Phase; startedAt: number; endedAt: number; exploded: number };
 
+// 手机竖屏上 16×16 的格子太小点不准，中级换成 10×16，雷的密度不变
+const narrow = window.matchMedia("(max-width: 600px)").matches;
 const LEVELS: Level[] = [
   { key: "easy", label: "初级", w: 9, h: 9, mines: 10 },
-  { key: "medium", label: "中级", w: 16, h: 16, mines: 40 },
+  narrow
+    ? { key: "medium-tall", label: "中级", w: 10, h: 16, mines: 25 }
+    : { key: "medium", label: "中级", w: 16, h: 16, mines: 40 },
 ];
 
 const LONG_PRESS_MS = 380;

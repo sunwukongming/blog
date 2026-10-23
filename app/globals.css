@@ -202,7 +202,32 @@ main [data-ui], main a, main button { pointer-events: auto; }
 }
 
 /* ── 小游戏 ───────────────────────────────────── */
-.game-panel { width: min(520px, 100%); padding: 16px; }
+/* 棋盘尽量占满一屏：宽度取「可用宽度」和「视口高度减去标题、工具栏等」中较小的一个 */
+.page--game { padding-top: calc(64px + env(safe-area-inset-top, 0px)); padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); align-items: center; }
+.game-wrap { --chrome: 250px; width: min(100%, max(300px, calc(100svh - var(--chrome)))); display: grid; gap: 10px; }
+.game-wrap[data-game="minesweeper"] { --chrome: 320px; }
+.game-head { display: flex; align-items: baseline; gap: 14px; }
+.game-title { margin: 0; font-family: var(--display); font-weight: var(--display-weight); font-size: clamp(22px, 3.5vw, 30px); line-height: 1.2; }
+.game-panel { padding: 12px; }
+/* 滑动操作时不要触发下拉刷新和回弹 */
+html:has(.page--game) { overscroll-behavior: none; }
+
+.dpad {
+  display: none; justify-content: center; gap: 8px; touch-action: none; user-select: none; -webkit-user-select: none;
+  grid-template: "  .  up    .  " 56px "left down right" 56px / 72px 72px 72px;
+}
+.dpad button {
+  border: 1px solid var(--line); border-radius: 12px; background: rgb(255 255 255 / 0.06); color: var(--fg);
+  font-size: 22px; cursor: pointer;
+}
+.dpad button:active { background: var(--accent); color: var(--bg); }
+@media (pointer: coarse) {
+  .dpad { display: grid; }
+  .game-wrap[data-game="snake"] { --chrome: 380px; }
+}
+@media (max-width: 640px) {
+  .game-panel { padding: 8px; border-radius: 12px; }
+}
 .game { display: grid; gap: 12px; }
 .game-loading { aspect-ratio: 1; }
 .game-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; font: 400 13px var(--font-mono), monospace; color: var(--muted); }

@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: PageProps<"/games/[slug]">): 
 
 export default function GamePage({ params }: PageProps<"/games/[slug]">) {
   return (
-    <main data-world="drive" className="page">
+    <main data-world="drive" className="page page--game">
       <Suspense fallback={null}>
         <GameBody params={params} />
       </Suspense>
@@ -29,17 +29,17 @@ async function GameBody({ params }: { params: Promise<{ slug: string }> }) {
   if (!game) notFound();
 
   return (
-    <>
-      <div className="hero">
+    <div className="game-wrap" data-game={game.slug}>
+      <header className="game-head">
         <Link href="/games" className="back">
-          ← 回到游戏
+          ← 游戏
         </Link>
-        <h1 className="display">{game.title}</h1>
-        {game.controls && <p className="lede">{game.controls}</p>}
-      </div>
+        <h1 className="game-title">{game.title}</h1>
+      </header>
       <section className="panel game-panel" data-ui aria-label={game.title}>
         <GamePlayer slug={game.slug} />
       </section>
-    </>
+      {game.controls && <p className="game-hint">{game.controls}</p>}
+    </div>
   );
 }

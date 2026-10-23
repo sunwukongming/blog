@@ -114,10 +114,11 @@ export default function Game2048() {
     if (state.score > 0) submitBest(state.score);
   }, [state.score, submitBest]);
 
-  useKeys((key) => {
+  useKeys((key, repeat) => {
     const dir = KEY_DIR[key];
     if (!dir) return false;
-    dispatch({ type: "move", dir });
+    // 按住方向键不放不连续移动，避免一下滑好几步
+    if (!repeat) dispatch({ type: "move", dir });
     return true;
   });
 

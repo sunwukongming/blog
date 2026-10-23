@@ -16,7 +16,11 @@ export type PostMeta = {
 
 export type Post = PostMeta & { body: string };
 
+const SLUG = /^[a-z0-9-]+$/;
+
 async function readPost(file: string): Promise<Post> {
+  const slug = file.replace(/\.mdx$/, "");
+  if (!SLUG.test(slug)) throw new Error(`content/posts/${file}：文件名只能用小写字母、数字和 -，并以 .mdx 结尾`);
   const raw = await fs.readFile(path.join(POSTS_DIR, file), "utf8");
   const { data, content } = matter(raw);
   // frontmatter 写错时让构建直接失败，而不是在页面上显示 "undefined"
@@ -29,7 +33,7 @@ async function readPost(file: string): Promise<Post> {
   // 中文按约 400 字/分钟估算
   const chars = content.replace(/\s/g, "").length;
   return {
-    slug: file.replace(/\.mdx?$/, ""),
+    slug,
     title: String(data.title),
     date: String(data.date),
     category: String(data.category),
@@ -41,7 +45,8 @@ async function readPost(file: string): Promise<Post> {
 
 export async function getAllPosts(): Promise<PostMeta[]> {
   "use cache";
-  const files = (await fs.readdir(POSTS_DIR)).filter((f) => /\.mdx?$/.test(f));
+  // 只认 .mdx，和 getPost 读取的规则一致；文件名不合规时 readPost 会让构建失败
+  const files = (await fs.readdir(POSTS_DIR)).filter((f) => f.endsWith(".mdx"));
   const posts = await Promise.all(files.map(readPost));
   return posts
     .map((p): PostMeta => ({
@@ -57,7 +62,7 @@ export async function getAllPosts(): Promise<PostMeta[]> {
 
 export async function getPost(slug: string): Promise<Post | null> {
   "use cache";
-  if (!/^[a-z0-9-]+$/.test(slug)) return null;
+  if (!SLUG.test(slug)) return null;
   try {
     return await readPost(`${slug}.mdx`);
   } catch {

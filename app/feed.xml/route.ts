@@ -5,10 +5,9 @@ import { SITE, SITE_URL } from "@/lib/site";
 const escape = (s: string) =>
   s.replace(/[<>&'"]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", "'": "&apos;", '"': "&quot;" })[c]!);
 
-// GET 处理函数本身不能加 "use cache"，把生成 XML 的部分放进缓存函数，构建时就能预渲染
-async function buildFeed() {
+// GET 处理函数本身不能加 "use cache"，把生成 XML 的部分放进缓存函数（按 base 分别缓存）
+async function buildFeed(base: string) {
   "use cache";
-  const base = SITE_URL ?? "http://localhost:3000";
   const posts = await getAllPosts();
   const items = posts
     .map((p) => {
@@ -37,8 +36,10 @@ ${items}
 `;
 }
 
-export async function GET() {
-  return new Response(await buildFeed(), {
+// 配置了站点地址时整份预渲染；没配置时用请求本身的域名，避免链接指向 localhost
+export async function GET(request: Request) {
+  const base = SITE_URL ?? new URL(request.url).origin;
+  return new Response(await buildFeed(base), {
     headers: { "Content-Type": "application/rss+xml; charset=utf-8" },
   });
 }

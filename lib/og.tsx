@@ -9,6 +9,7 @@ export const OG_SIZE = { width: 1200, height: 630 };
  */
 async function loadFont(text: string, weight: 400 | 700) {
   "use cache";
+  if (!text) return null;
   try {
     const css = await fetch(
       `https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@${weight}&text=${encodeURIComponent(text)}`,

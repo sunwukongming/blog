@@ -134,6 +134,8 @@ export default function Minesweeper() {
   const [game, setGame] = useState(() => newGame(LEVELS[0]));
   const [flagMode, setFlagMode] = useState(false);
   const [now, setNow] = useState(Date.now);
+  // 开局时的最快纪录，赢了以后和这局用时比，判断是不是新纪录
+  const [bestAtStart, setBestAtStart] = useState<number | null>(null);
   const [best, submitBest] = useRecord(`minesweeper-${game.level.key}`, (next, prev) => next < prev);
   const press = useRef<{ timer: number; fired: boolean; touch: boolean } | null>(null);
 
@@ -158,6 +160,7 @@ export default function Minesweeper() {
   }, [phase]);
 
   const restart = (next = level) => setGame(newGame(next));
+  const record = phase === "won" && (bestAtStart === null || seconds < bestAtStart);
 
   const onClick = (e: MouseEvent) => {
     const i = cellIndex(e);
@@ -166,6 +169,7 @@ export default function Minesweeper() {
       press.current = null;
       return;
     }
+    if (phase === "ready" && !flagMode) setBestAtStart(best);
     setGame((g) => (flagMode && !g.cells[i].open ? toggleFlag(g, i) : reveal(g, i)));
   };
 
@@ -255,7 +259,7 @@ export default function Minesweeper() {
       </div>
       <p className="game-hint" aria-live="polite">
         {phase === "won"
-          ? `全部排完，用时 ${seconds} 秒${best === seconds ? "，新纪录！" : ""}`
+          ? `全部排完，用时 ${seconds} 秒${record ? "，新纪录！" : ""}`
           : phase === "lost"
             ? "踩雷了。点“重新开始”再来一局。"
             : best !== null

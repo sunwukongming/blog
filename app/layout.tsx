@@ -24,7 +24,8 @@ const newsreader = Newsreader({
 export const metadata: Metadata = {
   title: { default: SITE.name, template: `%s · ${SITE.name}` },
   description: SITE.description,
-  metadataBase: new URL(SITE_URL ?? "http://localhost:3000"),
+  // 没配置站点地址时交给 Next 推断：在 Vercel 上会用生产域名，本地用 localhost
+  metadataBase: SITE_URL ? new URL(SITE_URL) : undefined,
   openGraph: { siteName: SITE.name, locale: "zh_CN", type: "website" },
   alternates: { types: { "application/rss+xml": [{ url: "/feed.xml", title: SITE.name }] } },
 };

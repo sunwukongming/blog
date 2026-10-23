@@ -176,11 +176,12 @@ export default function Snake() {
     else setPhase(phase === "running" ? "paused" : "running");
   };
 
-  useKeys((key) => {
+  useKeys((key, repeat) => {
     const dir = KEY_DIR[key];
     if (dir) turn(dir);
-    else if (key === " " || key === "p" || key === "P") toggle();
-    else if (key === "Enter" && phase === "over") restart();
+    else if (key === " " || key === "p" || key === "P") {
+      if (!repeat) toggle();
+    } else if (key === "Enter" && phase === "over") restart();
     else return false;
     return true;
   });

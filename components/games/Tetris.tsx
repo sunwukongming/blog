@@ -175,10 +175,11 @@ export default function Tetris() {
   const [record, setRecord] = useState(false);
   const [best, submitBest] = useRecord("tetris", (next, prev) => next > prev);
   const repeat = useRef<number | null>(null);
+  // 堆到顶之后到 effect 清理之前，循环和长按连发都不能再推进游戏
+  const dead = useRef(false);
 
   const sync = () => {
     const g = game.current;
-    if (g.lines > stats.lines) buzz(25);
     setStats({ score: g.score, lines: g.lines, level: g.level, next: g.bag[0] });
   };
 
@@ -196,6 +197,7 @@ export default function Tetris() {
   }, []);
 
   const gameOver = () => {
+    dead.current = true;
     buzz([40, 40, 80]);
     const g = game.current;
     sync();
@@ -203,11 +205,17 @@ export default function Tetris() {
     setRecord(g.score > 0 && submitBest(g.score));
   };
 
-  const tick = useEffectEvent(() => {
+  /** 固定当前方块并结算；堆到顶时结束游戏 */
+  const settle = () => {
     const g = game.current;
-    if (move(g, 0, 1)) return;
+    const before = g.lines;
     if (!lock(g)) return gameOver();
+    if (g.lines > before) buzz(25);
     sync();
+  };
+
+  const tick = useEffectEvent(() => {
+    if (!dead.current && !move(game.current, 0, 1)) settle();
   });
 
   useEffect(() => {
@@ -219,12 +227,12 @@ export default function Tetris() {
     const frame = (now: number) => {
       acc = Math.min(acc + now - last, 1000);
       last = now;
-      while (acc >= gravity(game.current.level)) {
+      while (acc >= gravity(game.current.level) && !dead.current) {
         acc -= gravity(game.current.level);
         tick();
       }
       draw(canvas.current, game.current, true);
-      raf = requestAnimationFrame(frame);
+      if (!dead.current) raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
     const onHide = () => document.hidden && setPhase("paused");
@@ -236,6 +244,7 @@ export default function Tetris() {
   }, [phase]);
 
   const restart = () => {
+    dead.current = false;
     game.current = newGame();
     sync();
     setRecord(false);
@@ -243,7 +252,7 @@ export default function Tetris() {
   };
 
   const act = (a: Action) => {
-    if (phase === "over") return;
+    if (phase === "over" || dead.current) return;
     if (phase !== "running") {
       setPhase("running");
       return;
@@ -258,18 +267,24 @@ export default function Tetris() {
       const d = dropDistance(g);
       move(g, 0, d);
       g.score += d * 2;
-      if (!lock(g)) return gameOver();
+      settle();
     }
+    if (dead.current) return;
     sync();
     draw(canvas.current, g, true);
   };
+  // 长按连发的定时器在按下时创建，通过 ref 调用最新的 act，避免用到按下那一刻的旧状态
+  const actRef = useRef(act);
+  useEffect(() => {
+    actRef.current = act;
+  });
 
   const toggle = () => {
     if (phase === "over") restart();
     else setPhase(phase === "running" ? "paused" : "running");
   };
 
-  useKeys((key) => {
+  useKeys((key, repeat) => {
     const map: Record<string, Action> = {
       ArrowLeft: "left",
       a: "left",
@@ -287,8 +302,12 @@ export default function Tetris() {
       S: "down",
       " ": "drop",
     };
-    if (map[key]) act(map[key]);
-    else if (key === "p" || key === "P" || key === "Escape") toggle();
+    if (map[key]) {
+      // 按住不放时只连续移动，不连续旋转或落底
+      if (!repeat || REPEAT[map[key]]) act(map[key]);
+    } else if (key === "p" || key === "P" || key === "Escape") {
+      if (!repeat) toggle();
+    }
     else if (key === "Enter" && phase === "over") restart();
     else return false;
     return true;
@@ -306,7 +325,7 @@ export default function Tetris() {
     stopRepeat();
     if (!REPEAT[a]) return;
     const started = Date.now();
-    repeat.current = window.setInterval(() => Date.now() - started > 170 && act(a), 50);
+    repeat.current = window.setInterval(() => Date.now() - started > 170 && actRef.current(a), 50);
   };
 
   return (

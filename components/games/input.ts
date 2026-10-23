@@ -19,12 +19,15 @@ export const KEY_DIR: Record<string, Dir> = {
   D: "right",
 };
 
-/** 监听整页的按键；onKey 返回 true 表示这个键被游戏用掉了，阻止页面滚动等默认行为 */
-export function useKeys(onKey: (key: string) => boolean) {
+/**
+ * 监听整页的按键；onKey 返回 true 表示这个键被游戏用掉了，阻止页面滚动等默认行为。
+ * repeat 为 true 表示按住不放产生的重复事件，暂停、旋转、直接落下这类操作应该忽略它
+ */
+export function useKeys(onKey: (key: string, repeat: boolean) => boolean) {
   const handle = useEffectEvent((e: KeyboardEvent) => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     if ((e.target as Element | null)?.closest?.("input, textarea, select, [contenteditable]")) return;
-    if (onKey(e.key)) e.preventDefault();
+    if (onKey(e.key, e.repeat)) e.preventDefault();
   });
   useEffect(() => {
     window.addEventListener("keydown", handle);

@@ -253,13 +253,20 @@ export default function Breakout() {
     if (phase === "over") restart();
     else if (phase === "running") setPhase("paused");
     else if (phase === "paused") setPhase(game.current.ball.vy === 0 ? "aim" : "running");
+    else if (phase === "aim") setPhase("paused");
     else serve();
   };
 
-  useKeys((key) => {
-    if (key === "ArrowLeft" || key === "a" || key === "A") held.current.left = true;
-    else if (key === "ArrowRight" || key === "d" || key === "D") held.current.right = true;
-    else if (key === " ") {
+  useKeys((key, repeat) => {
+    const left = key === "ArrowLeft" || key === "a" || key === "A";
+    const right = key === "ArrowRight" || key === "d" || key === "D";
+    if (left || right) {
+      held.current[left ? "left" : "right"] = true;
+      // 改用键盘后不再追鼠标最后停留的位置
+      game.current.target = null;
+    } else if (repeat && (key === " " || key === "p" || key === "P" || key === "Escape")) {
+      // 按住不放的重复事件不反复发球或暂停
+    } else if (key === " ") {
       if (phase === "ready" || phase === "aim") serve();
       else toggle();
     } else if (key === "p" || key === "P" || key === "Escape") toggle();
@@ -274,8 +281,18 @@ export default function Breakout() {
       if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") held.current.left = false;
       if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") held.current.right = false;
     };
+    // 按住方向键时切走窗口会丢掉 keyup，回来时球拍不应该自己一直滑
+    const release = () => {
+      held.current.left = held.current.right = false;
+    };
     window.addEventListener("keyup", up);
-    return () => window.removeEventListener("keyup", up);
+    window.addEventListener("blur", release);
+    document.addEventListener("visibilitychange", release);
+    return () => {
+      window.removeEventListener("keyup", up);
+      window.removeEventListener("blur", release);
+      document.removeEventListener("visibilitychange", release);
+    };
   }, []);
 
   // 鼠标或手指在棋盘上的横向位置就是球拍的位置
@@ -304,6 +321,7 @@ export default function Breakout() {
       <div
         className="game-stage breakout"
         onPointerMove={aimAt}
+        onPointerLeave={() => (game.current.target = null)}
         onPointerDown={(e) => {
           aimAt(e);
           if (phase === "aim") serve();

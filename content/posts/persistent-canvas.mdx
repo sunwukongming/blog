@@ -1,0 +1,36 @@
+---
+title: R3F 常驻 Canvas 实践
+date: "2026-10-12"
+category: frontend
+summary: 把 React Three Fiber 的 Canvas 放进根 layout，换页时 3D 场景不销毁，镜头连续过渡。
+---
+
+这个博客的每个页面都有自己的 3D 世界，但整个站点只有**一个** WebGL 上下文。
+
+## 为什么要常驻
+
+如果每个页面各自渲染一个 `<Canvas>`，换页时会经历：销毁上下文 → 重新编译着色器 → 重新上传几何体。体感上就是白屏一闪。
+
+把 Canvas 放进根 layout 之后，路由切换只是改变场景里**挂载哪个世界**：
+
+```tsx
+// app/layout.tsx
+<body>
+  <Background />   {/* 常驻，fixed 在最底层 */}
+  <SiteNav />
+  {children}
+</body>
+```
+
+## 根据路由切换世界
+
+```tsx
+const pathname = usePathname();
+const world = worldFor(pathname); // "/" → room, "/blog" → ring ...
+```
+
+同一个世界内部的路由变化（比如从 `/categories` 到 `/categories/graphics`）不会重建场景，只会让镜头飞过去。
+
+## 事件穿透
+
+正文 DOM 盖在 Canvas 上面，所以 Canvas 的事件源设为 `document.body`，同时在点击处理里忽略来自链接和按钮的事件。

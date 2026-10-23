@@ -1,0 +1,28 @@
+---
+title: Next.js 静态生成笔记
+date: "2026-07-30"
+category: frontend
+summary: 在 Cache Components 下，让一个内容型博客完全静态。
+---
+
+这个博客的每个页面都在构建时生成，3D 部分在客户端按需加载。
+
+## 数据函数加缓存
+
+读取文章的函数标记 `"use cache"`，构建时就能被预渲染：
+
+```ts
+export async function getAllPosts() {
+  "use cache";
+  const files = await fs.readdir(POSTS_DIR);
+  // ...
+}
+```
+
+## 动态路由
+
+`generateStaticParams` 在 Cache Components 下必须返回至少一项，这样构建时就能校验路由没有误用运行时 API。
+
+## 3D 不进首屏
+
+Canvas 通过 `next/dynamic` 加 `ssr: false` 加载，HTML 先到，three.js 后到。正文永远不需要等 WebGL。

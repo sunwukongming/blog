@@ -79,7 +79,7 @@ function Hotspot({
   );
 }
 
-/** C 夜读小屋：首页。电脑 → 文章，书架 → 读书笔记，地球仪 → 分类星系，墙上的画 → 归档，窗户 → 随笔 */
+/** C 夜读小屋：首页。电脑 → 文章，桌上的手柄 → 游戏，书架 → 云与可观测，地球仪 → 分类星系，墙上的画 → 归档，窗户 → 随笔 */
 export default function Room({ navigate }: { navigate: Navigate }) {
   const t = useWorldClock();
   const cam = useRef<THREE.OrthographicCamera>(null);
@@ -211,6 +211,19 @@ export default function Room({ navigate }: { navigate: Navigate }) {
           <Box args={[0.7, 0.03, 0.22]} color="#cfd3da" position={[0.5, 1.065, -2.05]} />
         </Hotspot>
 
+        {/* 桌上的手柄 → 游戏 */}
+        <Hotspot to="/games" label="游戏" labelAt={[-0.1, 1.55, -1.95]} navigate={navigate}>
+          <group position={[-0.08, 1.09, -1.97]} rotation-y={0.35} scale={1.5}>
+            <Box args={[0.34, 0.05, 0.13]} color="#3b2b63" position={[0, 0, 0]} />
+            <Box args={[0.1, 0.05, 0.12]} color="#3b2b63" position={[-0.14, -0.005, 0.05]} rotation={[0, 0.3, 0]} />
+            <Box args={[0.1, 0.05, 0.12]} color="#3b2b63" position={[0.14, -0.005, 0.05]} rotation={[0, -0.3, 0]} />
+            <Box args={[0.07, 0.012, 0.022]} color="#d9dce3" basic position={[-0.09, 0.03, 0]} />
+            <Box args={[0.022, 0.012, 0.07]} color="#d9dce3" basic position={[-0.09, 0.03, 0]} />
+            <Box args={[0.026, 0.014, 0.026]} color="#ff3ea5" basic position={[0.08, 0.03, -0.02]} />
+            <Box args={[0.026, 0.014, 0.026]} color="#7af5ff" basic position={[0.11, 0.03, 0.015]} />
+          </group>
+        </Hotspot>
+
         <mesh position={[1.35, 1.12, -2.1]}>
           <cylinderGeometry args={[0.07, 0.07, 0.14, 10]} />
           <meshStandardMaterial color="#e07a5f" roughness={0.9} flatShading />
@@ -238,7 +251,7 @@ export default function Room({ navigate }: { navigate: Navigate }) {
         <Box args={[0.08, 0.6, 0.08]} color="#2b3340" position={[0.5, 0.3, -1.45]} />
         <Box args={[0.7, 0.04, 0.1]} color="#2b3340" position={[0.5, 0.02, -1.45]} />
 
-        {/* 书架 → 读书笔记 */}
+        {/* 书架 → 云与可观测 */}
         <Hotspot to="/categories/cloud" label="云与可观测" labelAt={[-2.75, 3.1, -0.5]} navigate={navigate}>
           <Box args={[0.04, 2.8, 1.8]} color="#5e3b28" position={[-2.98, 1.4, -0.5]} />
           <Box args={[0.5, 2.8, 0.06]} color={wood} position={[-2.75, 1.4, -1.37]} />

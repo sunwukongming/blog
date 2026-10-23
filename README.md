@@ -4,7 +4,7 @@
 
 | 路由 | 世界 | 交互 |
 |---|---|---|
-| `/` | 夜读小屋（Low-poly 书房）+ 个人介绍 | 点电脑 → 文章，书架 → 云与可观测，地球仪 → 分类，墙上的画 → 归档，窗户 → 随笔 |
+| `/` | 夜读小屋（Low-poly 书房）+ 个人介绍 | 点电脑 → 文章，手柄 → 游戏，书架 → 云与可观测，地球仪 → 分类，墙上的画 → 归档，窗户 → 随笔 |
 | `/categories` | 轨道索引（星系） | 行星是分类，卫星是文章，点击行星飞过去 |
 | `/categories/[slug]` | 同上，镜头聚焦到该行星 | |
 | `/blog` | 卡片环 | 文章卡片环形排列，悬停浮起，点击阅读 |
@@ -57,13 +57,30 @@ summary: 一句话摘要
 
 ```
 components/three/
-  SceneCanvas.tsx   常驻 Canvas，根据路由挂载世界，负责换页淡入淡出
-  utils.ts          世界时钟、宽屏右移、事件穿透判断等
+  SceneCanvas.tsx   常驻 Canvas，根据路由挂载世界，负责换页淡入淡出；游戏页和看不见书房时暂停渲染
+  utils.ts          世界时钟、宽屏右移 / 窄屏跟随占位元素、事件穿透判断等
   worlds/           五个世界：Room / Orbit / Ring / Field / Drive
-components/WorldTheme.tsx   把当前世界写到 <html data-world>，驱动页面配色
-lib/posts.ts                读取 MDX（"use cache"，构建时预渲染）
+components/games/
+  GamePlayer.tsx    按 slug 只在客户端加载对应游戏
+  input.ts          键盘、滑动、震动、本机最高分（localStorage）
+  Snake / Tetris / Game2048 / Breakout / Minesweeper
+components/ArticleTools.tsx 文章目录、阅读进度条、代码复制按钮
+components/MdxContent.tsx   编译 MDX，给 h2/h3 加锚点 id（规则和 lib/toc.ts 一致）
+components/WorldTheme.tsx   把当前世界写到 <html data-world>，驱动页面配色和地址栏颜色
+lib/posts.ts                读取 MDX 并校验 frontmatter（"use cache"，构建时预渲染）
+lib/games.ts                游戏列表和玩法说明
+lib/og.tsx                  分享图模板
 ```
+
+手机上首页的书房和分类页聚焦的行星不是固定在屏幕上，而是对准页面里的占位元素（`.room-stage`、`.orbit-stage`），跟着页面一起滚动，不会和正文叠在一起。
 
 正文 DOM 盖在 Canvas 上面。`main` 默认不接收鼠标事件，只有标了 `data-ui` 的面板和链接、按钮会接收，其余区域的鼠标事件交给 3D 场景。
 
 系统开启“减少动态效果”时，所有世界的动画会停止，只保留鼠标交互。
+
+## 加一个小游戏
+
+1. 在 `components/games/` 下写一个默认导出的客户端组件
+2. 在 `components/games/GamePlayer.tsx` 里按 slug 注册
+3. 在 `lib/games.ts` 的 `GAMES` 里加一条，`playable: true`，写好 `controls` 和 `touchControls`
+4. 想在列表卡片上显示图标和最高分，再改 `GameIcon.tsx` 和 `GameBest.tsx`

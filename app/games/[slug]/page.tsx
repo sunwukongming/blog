@@ -38,8 +38,9 @@ async function GameBody({ params }: { params: Promise<{ slug: string }> }) {
       </header>
       <section className="panel game-panel" data-ui aria-label={game.title}>
         <GamePlayer slug={game.slug} />
+        <p className="game-hint game-hint--fine">{game.controls}</p>
+        <p className="game-hint game-hint--touch">{game.touchControls}</p>
       </section>
-      {game.controls && <p className="game-hint">{game.controls}</p>}
     </div>
   );
 }

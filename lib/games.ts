@@ -7,8 +7,9 @@ export type GameItem = {
   href?: string;
   /** 可以在 /games/[slug] 里直接玩 */
   playable?: boolean;
-  /** 玩法说明，显示在游戏页标题下面 */
+  /** 玩法说明，显示在棋盘下面；touchControls 是触屏设备上的版本 */
   controls?: string;
+  touchControls?: string;
 };
 
 /** 游戏页条目：做过的项目与实验室小品 */
@@ -21,7 +22,8 @@ export const GAMES: GameItem[] = [
     stack: ["Canvas", "React"],
     href: "/games/snake",
     playable: true,
-    controls: "方向键或 WASD 控制方向，空格暂停。手机上在棋盘里滑动。",
+    controls: "方向键或 WASD 控制方向，空格暂停。",
+    touchControls: "用下面的方向键，或者在棋盘上滑动来转向。",
   },
   {
     slug: "2048",
@@ -31,7 +33,8 @@ export const GAMES: GameItem[] = [
     stack: ["React", "CSS"],
     href: "/games/2048",
     playable: true,
-    controls: "方向键或 WASD 移动所有方块，相同数字相撞会合并。手机上在棋盘里滑动。",
+    controls: "方向键或 WASD 移动所有方块，相同数字相撞会合并。",
+    touchControls: "在棋盘上滑动，所有方块一起移动，相同数字相撞会合并。",
   },
   {
     slug: "minesweeper",
@@ -41,7 +44,8 @@ export const GAMES: GameItem[] = [
     stack: ["React", "CSS Grid"],
     href: "/games/minesweeper",
     playable: true,
-    controls: "左键翻开，右键插旗。点已翻开的数字可以一次翻开周围的格子。手机上长按插旗，或者打开插旗模式。",
+    controls: "左键翻开，右键插旗。点已翻开的数字可以一次翻开周围的格子。",
+    touchControls: "点一下翻开，长按插旗（或者打开插旗模式）。点已翻开的数字可以一次翻开周围的格子。",
   },
   {
     slug: "idle-card-backends",

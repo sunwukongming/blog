@@ -104,9 +104,29 @@ function cellIndex(e: { target: EventTarget }) {
   return el ? Number(el.dataset.i) : -1;
 }
 
+// 用 SVG 画旗子和地雷，⚑ ✹ 这类符号很多字体里没有
+const FlagIcon = () => (
+  <svg viewBox="0 0 16 16" width="1em" height="1em" aria-hidden="true">
+    <path d="M4.5 14.5V2" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    <path d="M5 2.5h7.5l-2 3 2 3H5z" fill="currentColor" />
+  </svg>
+);
+
+const MineIcon = () => (
+  <svg viewBox="0 0 16 16" width="1em" height="1em" aria-hidden="true">
+    <path
+      d="M8 1.5v13M1.5 8h13M3.4 3.4l9.2 9.2M12.6 3.4l-9.2 9.2"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    />
+    <circle cx="8" cy="8" r="4.3" fill="currentColor" />
+  </svg>
+);
+
 function cellLabel(c: Cell, lost: boolean) {
-  if (c.open) return c.mine ? "✹" : c.adj || "";
-  if (c.flag) return lost && !c.mine ? "✕" : "⚑";
+  if (c.open) return c.mine ? <MineIcon /> : c.adj || "";
+  if (c.flag) return lost && !c.mine ? "×" : <FlagIcon />;
   return "";
 }
 
@@ -223,7 +243,7 @@ export default function Minesweeper() {
       </div>
       <div className="game-bar">
         <button type="button" className="game-btn" aria-pressed={flagMode} onClick={() => setFlagMode(!flagMode)}>
-          ⚑ 插旗模式
+          <FlagIcon /> 插旗模式
         </button>
         <span className="spacer" />
         <button type="button" className="game-btn" onClick={() => restart()}>

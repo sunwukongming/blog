@@ -89,7 +89,7 @@ export default function Room({ navigate }: { navigate: Navigate }) {
   const lamp = useRef<THREE.PointLight>(null);
   const size = useThree((s) => s.size);
   const zoom = Math.min(size.height / 7.8, size.width / 11.5);
-  useViewShift(cam, 0.16, 0.3);
+  useViewShift(cam, 0.16, ".room-stage");
 
   const books = useMemo(() => {
     const r = rng(11);

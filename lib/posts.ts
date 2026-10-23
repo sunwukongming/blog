@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import matter from "gray-matter";
+import { getCategory } from "./categories";
 
 const POSTS_DIR = path.join(process.cwd(), "content/posts");
 
@@ -18,6 +19,13 @@ export type Post = PostMeta & { body: string };
 async function readPost(file: string): Promise<Post> {
   const raw = await fs.readFile(path.join(POSTS_DIR, file), "utf8");
   const { data, content } = matter(raw);
+  // frontmatter 写错时让构建直接失败，而不是在页面上显示 "undefined"
+  const problems = [
+    !data.title && "缺少 title",
+    !/^\d{4}-\d{2}-\d{2}$/.test(String(data.date ?? "")) && "date 必须是 YYYY-MM-DD 格式并加引号",
+    !getCategory(String(data.category)) && `未知分类 "${data.category}"`,
+  ].filter(Boolean);
+  if (problems.length) throw new Error(`content/posts/${file}：${problems.join("；")}`);
   // 中文按约 400 字/分钟估算
   const chars = content.replace(/\s/g, "").length;
   return {

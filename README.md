@@ -4,7 +4,7 @@
 
 | 路由 | 世界 | 交互 |
 |---|---|---|
-| `/` | 夜读小屋（Low-poly 书房）+ 个人介绍 | 点电脑 → 文章，书架 → 读书笔记，地球仪 → 分类，墙上的画 → 归档，窗户 → 随笔 |
+| `/` | 夜读小屋（Low-poly 书房）+ 个人介绍 | 点电脑 → 文章，书架 → 云与可观测，地球仪 → 分类，墙上的画 → 归档，窗户 → 随笔 |
 | `/categories` | 轨道索引（星系） | 行星是分类，卫星是文章，点击行星飞过去 |
 | `/categories/[slug]` | 同上，镜头聚焦到该行星 | |
 | `/blog` | 卡片环 | 文章卡片环形排列，悬停浮起，点击阅读 |
@@ -29,14 +29,14 @@ pnpm dev
 ---
 title: 文章标题
 date: "2026-10-23"
-category: frontend   # frontend | graphics | essays | tools | reading
+category: backend    # frontend | backend | essays | tools | cloud
 summary: 一句话摘要
 ---
 
 正文，支持 MDX 和代码高亮。
 ```
 
-现有的 6 篇文章都是示例内容，可以直接删掉。
+`title`、`date`（YYYY-MM-DD）和 `category` 必填，分类必须是 `lib/categories.ts` 里有的，写错了 `pnpm build` 会直接报错，不会带着问题上线。
 
 ## 改成你自己的
 

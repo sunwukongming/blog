@@ -87,9 +87,13 @@ main [data-ui], main a, main button { pointer-events: auto; }
 .site-nav {
   position: fixed; top: 0; left: 0; right: 0; z-index: 10;
   display: flex; justify-content: space-between; align-items: center; gap: 16px;
-  padding: calc(14px + env(safe-area-inset-top, 0px)) var(--gutter-r) 14px var(--gutter);
+  padding: calc(14px + env(safe-area-inset-top, 0px)) var(--gutter-r) 22px var(--gutter);
   font-size: 14px;
+  /* 正文滚到导航下面时淡出，不和导航文字叠在一起 */
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--bg) 94%, transparent) 60%, transparent);
+  pointer-events: none;
 }
+.site-nav a { pointer-events: auto; }
 .site-nav__name { font-family: var(--display); font-weight: var(--display-weight); font-style: var(--display-style); font-size: 17px; text-decoration: none; letter-spacing: 0.01em; }
 .site-nav nav { display: flex; gap: 18px; }
 .site-nav nav a { text-decoration: none; color: var(--muted); }
@@ -119,7 +123,7 @@ main [data-ui], main a, main button { pointer-events: auto; }
 .hint { margin: 8px 0 0; font-size: 13px; color: var(--muted); max-width: 46ch; }
 .room-stage { display: none; }
 @media (max-width: 959px) {
-  .room-stage { display: block; height: 300px; }
+  .room-stage { display: block; height: 340px; }
 }
 
 .panel {
@@ -180,18 +184,7 @@ main [data-ui], main a, main button { pointer-events: auto; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  body, .scene-labels { position: absolute; inset: 0; pointer-events: none; }
-.scene-cover { transition: none; }
-}
-
-.tag-pill {
-  display: inline-block;
-  margin-right: 6px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 12px;
-  opacity: 0.85;
-  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  body, .scene-cover { transition: none; }
 }
 
 .games-item {
@@ -208,7 +201,7 @@ main [data-ui], main a, main button { pointer-events: auto; }
 .game-wrap[data-game="minesweeper"] { --chrome: 320px; }
 .game-head { display: flex; align-items: baseline; gap: 14px; }
 .game-title { margin: 0; font-family: var(--display); font-weight: var(--display-weight); font-size: clamp(22px, 3.5vw, 30px); line-height: 1.2; }
-.game-panel { padding: 12px; }
+.game-panel { padding: 12px; display: grid; gap: 10px; background: color-mix(in srgb, var(--bg) 92%, transparent); }
 /* 滑动操作时不要触发下拉刷新和回弹 */
 html:has(.page--game) { overscroll-behavior: none; }
 
@@ -236,15 +229,22 @@ html:has(.page--game) { overscroll-behavior: none; }
 .game-btn {
   font: 500 13px/1.4 var(--font-body), sans-serif; color: var(--fg); background: transparent;
   border: 1px solid var(--line); border-radius: 8px; padding: 5px 12px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
 }
 .game-btn:hover { border-color: var(--accent); }
 .game-btn[aria-pressed="true"], .game-btn--primary { background: var(--accent); border-color: var(--accent); color: var(--bg); }
 .game-btn--primary { font-weight: 700; padding: 8px 20px; }
 .game-hint { margin: 0; font-size: 13px; color: var(--muted); }
+.game-hint--touch { display: none; }
+@media (pointer: coarse) {
+  .game-hint--touch { display: block; }
+  .game-hint--fine { display: none; }
+}
+.game-btn svg, .mine-cell svg { vertical-align: -0.125em; }
 
 .game-stage {
   position: relative; aspect-ratio: 1; overflow: hidden; container-type: inline-size;
-  border: 1px solid var(--line); border-radius: 10px; background: rgb(0 0 0 / 0.3);
+  border: 1px solid var(--line); border-radius: 10px; background: color-mix(in srgb, var(--bg) 90%, black);
   touch-action: none; user-select: none; -webkit-user-select: none;
 }
 .game-stage canvas { display: block; width: 100%; height: 100%; }
@@ -273,7 +273,7 @@ html:has(.page--game) { overscroll-behavior: none; }
 /* 扫雷 */
 .mines {
   display: grid; grid-template-columns: repeat(var(--w), 1fr); gap: 2px; padding: 2px; container-type: inline-size;
-  border: 1px solid var(--line); border-radius: 10px; background: rgb(0 0 0 / 0.3);
+  border: 1px solid var(--line); border-radius: 10px; background: color-mix(in srgb, var(--bg) 90%, black);
   user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: manipulation;
 }
 .mine-cell {

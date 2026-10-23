@@ -7,13 +7,14 @@ export const SITE = {
 
 export const PROFILE = {
   name: "GM",
-  role: "精通前端的 Go 工程师",
+  role: "15 年研发老兵 · Go 架构师 · 前端同样是主场",
   bio: [
-    "我是一名 Go 语言工程师，也精通前端，服务端和浏览器两头都写。",
-    "想问题习惯从系统和网络的层面出发；改东西喜欢小步走、随时能退回去。",
-    "这里是我的个人站，放技术笔记、几个能直接玩的小游戏，还有一些随笔。",
+    "15 年一线研发，主力语言 Go。从单体到微服务、从机房到云原生，亲历过几代架构更替，知道每种方案会在什么地方出问题。",
+    "擅长高并发与复杂业务的系统设计：服务拆分、存储选型、性能调优、稳定性治理；出了问题，从系统调用一路查到 Kubernetes 集群。",
+    "前端同样精通，一个人就能把产品从服务端做到用户眼前；也乐于带团队、定规范，让一群人写出风格一致、好维护的代码。",
+    "做事求稳：先想清楚系统和网络层面会发生什么，再小步上线，每一步都能回滚。",
   ],
-  skills: ["Go", "TypeScript", "Vue 3", "React", "Kubernetes", "OpenTelemetry"],
+  skills: ["Go", "gRPC", "MySQL", "Redis", "Kubernetes", "OpenTelemetry", "Linux", "TypeScript", "Vue 3", "React"],
   links: [
     { label: "GitHub", href: "https://github.com/sunwukongming" },
     { label: "邮箱", href: "mailto:gm420642207@gmail.com" },

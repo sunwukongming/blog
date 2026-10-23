@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Canvas } from "@react-three/fiber";
+import { PerformanceMonitor } from "@react-three/drei";
 import type { PostMeta } from "@/lib/posts";
 import { WORLD_BG, focusedCategory, worldFor } from "@/lib/worlds";
 import Room from "./worlds/Room";
@@ -20,6 +21,23 @@ export default function SceneCanvas({ posts }: { posts: PostMeta[] }) {
   const target = worldFor(pathname);
   const [world, setWorld] = useState(target);
   const labels = useRef<HTMLDivElement>(null);
+  const [maxDpr, setMaxDpr] = useState(1.5);
+  const [roomHidden, setRoomHidden] = useState(false);
+
+  // 手机上书房跟着页面里的 .room-stage 滚动，滚出屏幕后就不用再渲染（宽屏时它是 display: none）
+  useEffect(() => {
+    if (world !== "room") return;
+    const el = document.querySelector(".room-stage");
+    if (!el) return;
+    const io = new IntersectionObserver(([e]) => setRoomHidden(!e.isIntersecting && e.target.clientHeight > 0), {
+      rootMargin: "80px",
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [world]);
+
+  // 玩游戏时背景只画一帧静态画面；书房不可见时也暂停。"demand" 模式下场景变化时 R3F 仍会自动重画
+  const still = pathname.startsWith("/games/") || (world === "room" && roomHidden);
 
   // 换到另一个世界时：先用目标世界的底色盖住画面，再切换场景并淡出
   useEffect(() => {
@@ -33,7 +51,16 @@ export default function SceneCanvas({ posts }: { posts: PostMeta[] }) {
 
   return (
     <div className="scene-root" aria-hidden="true">
-      <Canvas flat dpr={[1, 1.5]} eventSource={document.body} eventPrefix="client" fallback={null}>
+      <Canvas
+        flat
+        dpr={[1, maxDpr]}
+        frameloop={still ? "demand" : "always"}
+        eventSource={document.body}
+        eventPrefix="client"
+        fallback={null}
+      >
+        {/* 帧率持续偏低时把像素比降到 1 */}
+        <PerformanceMonitor onDecline={() => setMaxDpr(1)} />
         <LabelPortal value={labels}>
           {world === "room" && <Room navigate={navigate} />}
           {world === "orbit" && <Orbit posts={posts} focus={focusedCategory(pathname)} navigate={navigate} />}

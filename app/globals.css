@@ -5,6 +5,7 @@
  * 首屏靠 html:has(...) 取到配色；客户端接管后由 WorldTheme 写入 html[data-world]。
  */
 :root {
+  --font-body: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", "Noto Sans CJK SC", "Source Han Sans SC", system-ui, sans-serif;
   --bg: #0a0c10;
   --fg: #e6ebf1;
   --muted: #9aa4b2;
@@ -54,7 +55,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--fg);
-  font-family: var(--font-body), "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 16px;
   line-height: 1.75;
   transition: background-color 0.3s, color 0.3s;
@@ -114,7 +115,7 @@ main [data-ui], main a, main button { pointer-events: auto; }
 }
 .lede { color: var(--muted); margin: 0; max-width: 46ch; }
 .hero { display: grid; gap: 12px; max-width: 560px; }
-.role { margin: -4px 0 4px; font-size: 18px; font-weight: 500; color: var(--accent); }
+.role { margin: -4px 0 4px; font-size: 18px; font-weight: 600; color: var(--accent); }
 .tags { list-style: none; margin: 4px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
 .tags li { font: 400 12.5px/1 var(--font-mono), monospace; padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; color: var(--muted); }
 .profile-links { margin: 4px 0 0; display: flex; flex-wrap: wrap; gap: 8px 20px; }
@@ -136,7 +137,7 @@ main [data-ui], main a, main button { pointer-events: auto; }
 .post-list li + li { border-top: 1px solid var(--line); }
 .post-list a { display: grid; grid-template-columns: 1fr auto; gap: 2px 16px; padding: 12px 0; text-decoration: none; }
 .post-list a:hover .post-list__title { color: var(--accent); }
-.post-list__title { font-weight: 500; min-width: 0; transition: color 0.15s; }
+.post-list__title { font-weight: 600; min-width: 0; transition: color 0.15s; }
 .post-list__meta { font: 400 12.5px var(--font-mono), monospace; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .post-list__summary { grid-column: 1 / -1; color: var(--muted); font-size: 14px; }
 

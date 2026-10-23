@@ -183,3 +183,92 @@ main [data-ui], main a, main button { pointer-events: auto; }
   body, .scene-labels { position: absolute; inset: 0; pointer-events: none; }
 .scene-cover { transition: none; }
 }
+
+.tag-pill {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  opacity: 0.85;
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+}
+
+.games-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 16px;
+  padding: 12px 0;
+}
+
+/* ── 小游戏 ───────────────────────────────────── */
+.game-panel { width: min(520px, 100%); padding: 16px; }
+.game { display: grid; gap: 12px; }
+.game-loading { aspect-ratio: 1; }
+.game-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; font: 400 13px var(--font-mono), monospace; color: var(--muted); }
+.game-bar b { color: var(--fg); font-weight: 600; font-variant-numeric: tabular-nums; margin-left: 6px; }
+.game-bar .spacer { flex: 1; }
+.game-btn {
+  font: 500 13px/1.4 var(--font-body), sans-serif; color: var(--fg); background: transparent;
+  border: 1px solid var(--line); border-radius: 8px; padding: 5px 12px; cursor: pointer;
+}
+.game-btn:hover { border-color: var(--accent); }
+.game-btn[aria-pressed="true"], .game-btn--primary { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.game-btn--primary { font-weight: 700; padding: 8px 20px; }
+.game-hint { margin: 0; font-size: 13px; color: var(--muted); }
+
+.game-stage {
+  position: relative; aspect-ratio: 1; overflow: hidden; container-type: inline-size;
+  border: 1px solid var(--line); border-radius: 10px; background: rgb(0 0 0 / 0.3);
+  touch-action: none; user-select: none; -webkit-user-select: none;
+}
+.game-stage canvas { display: block; width: 100%; height: 100%; }
+.game-overlay {
+  position: absolute; inset: 0; z-index: 2; display: grid; place-content: center; justify-items: center; gap: 10px;
+  padding: 16px; text-align: center; background: color-mix(in srgb, var(--bg) 78%, transparent);
+}
+.game-overlay strong { font-family: var(--display); font-weight: var(--display-weight); font-size: clamp(22px, 7cqi, 32px); line-height: 1.2; }
+.game-overlay p { margin: 0; color: var(--muted); font-size: 14px; }
+
+/* 2048：方块用绝对定位，left/top 过渡出滑动效果 */
+.t2048-cell, .t2048-tile {
+  position: absolute; width: 21.25%; height: 21.25%; border-radius: 8px;
+  left: calc(3% + var(--c) * 24.25%); top: calc(3% + var(--r) * 24.25%);
+}
+.t2048-cell { background: rgb(255 255 255 / 0.05); }
+.t2048-tile {
+  display: grid; place-items: center; font-family: var(--font-orbitron), var(--font-mono), sans-serif; font-weight: 900;
+  line-height: 1; transition: left 0.1s ease, top 0.1s ease;
+}
+.t2048-tile[data-fresh] { animation: t2048-in 0.16s ease 0.1s backwards; }
+.t2048-tile[data-merged] { animation: t2048-pop 0.18s ease 0.08s; }
+@keyframes t2048-in { from { transform: scale(0); } }
+@keyframes t2048-pop { 50% { transform: scale(1.12); } }
+
+/* 扫雷 */
+.mines {
+  display: grid; grid-template-columns: repeat(var(--w), 1fr); gap: 2px; padding: 2px; container-type: inline-size;
+  border: 1px solid var(--line); border-radius: 10px; background: rgb(0 0 0 / 0.3);
+  user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: manipulation;
+}
+.mine-cell {
+  display: grid; place-items: center; aspect-ratio: 1; padding: 0; border: 0; border-radius: 3px; cursor: pointer;
+  background: rgb(255 255 255 / 0.12); color: var(--fg);
+  font: 700 calc(55cqi / var(--w)) / 1 var(--font-mono), monospace;
+}
+.mine-cell:hover { background: rgb(255 255 255 / 0.2); }
+.mine-cell[data-open] { background: rgb(255 255 255 / 0.03); cursor: default; }
+.mine-cell[data-flag] { color: var(--accent); }
+.mine-cell[data-boom] { background: #ff3b5c; color: #fff; }
+.mine-cell[data-n="1"] { color: #7ab8ff; }
+.mine-cell[data-n="2"] { color: #7af5c0; }
+.mine-cell[data-n="3"] { color: #ff7a9c; }
+.mine-cell[data-n="4"] { color: #c49bff; }
+.mine-cell[data-n="5"] { color: #ffb86b; }
+.mine-cell[data-n="6"] { color: #7af5ff; }
+.mine-cell[data-n="7"] { color: #ffd6f0; }
+.mine-cell[data-n="8"] { color: #9aa4b2; }
+
+@media (prefers-reduced-motion: reduce) {
+  .t2048-tile { transition: none; animation: none !important; }
+}

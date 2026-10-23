@@ -14,6 +14,7 @@ export function worldFor(pathname: string): World {
   if (pathname.startsWith("/categories")) return "orbit";
   if (pathname === "/blog") return "ring";
   if (pathname.startsWith("/blog/")) return "field";
+  if (pathname.startsWith("/games")) return "drive";
   if (pathname.startsWith("/archive")) return "drive";
   return "field";
 }

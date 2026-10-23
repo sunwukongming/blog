@@ -32,16 +32,24 @@ function cardTexture(post: PostMeta) {
   x.fillText(getCategory(post.category)?.name ?? post.category, 46, 51);
   x.fillStyle = "#1b2a44";
   x.font = `700 36px ${CJK}`;
+  // 按词换行：英文单词、数字和路径不拆开，中文逐字；最多 4 行，超出用省略号
+  const tokens = post.title.match(/[A-Za-z0-9][\w./+#-]*|\s+|./gu) ?? [];
+  const lines: string[] = [];
   let line = "";
-  let y = 120;
-  for (const ch of post.title) {
-    if (x.measureText(line + ch).width > 300) {
-      x.fillText(line, 28, y);
-      line = ch;
-      y += 48;
-    } else line += ch;
+  for (const tok of tokens) {
+    if (line && x.measureText(line + tok).width > 300) {
+      lines.push(line.trimEnd());
+      line = tok.trimStart();
+    } else line += tok;
   }
-  x.fillText(line, 28, y);
+  lines.push(line);
+  if (lines.length > 4) {
+    lines.length = 4;
+    while (x.measureText(lines[3] + "…").width > 300) lines[3] = lines[3].slice(0, -1);
+    lines[3] += "…";
+  }
+  lines.forEach((l, i) => x.fillText(l, 28, 120 + i * 48));
+  const y = 120 + (lines.length - 1) * 48;
   x.fillStyle = "#d5dbe4";
   for (let i = 0; i < 5; i++) x.fillRect(28, y + 50 + i * 26, i === 4 ? 160 : 300, 10);
   x.fillStyle = "#7a8597";

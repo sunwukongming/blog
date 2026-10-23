@@ -123,9 +123,15 @@ main [data-ui], main a, main button { pointer-events: auto; }
 .profile-links a { color: var(--fg); text-decoration: none; border-bottom: 1px solid var(--accent); padding-bottom: 1px; }
 .profile-links a:hover { color: var(--accent); }
 .hint { margin: 8px 0 0; font-size: 13px; color: var(--muted); max-width: 46ch; }
-.room-stage { display: none; }
+.room-stage, .orbit-stage { display: none; }
 @media (max-width: 959px) {
   .room-stage { display: block; height: 340px; }
+  .orbit-stage { display: block; height: 34svh; flex-shrink: 0; }
+}
+.when-touch { display: none; }
+@media (pointer: coarse) {
+  .when-touch { display: inline; }
+  .when-mouse { display: none; }
 }
 
 .panel {

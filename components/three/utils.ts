@@ -44,7 +44,8 @@ export function useViewShift(
   }, [camera, size, fraction, wide]);
   useFrame(() => {
     const cam = camera.current;
-    const el = !wide && anchor ? document.querySelector(anchor) : null;
+    // Next 会把上一个路由隐藏着留在 DOM 里，只认当前可见的那个
+    const el = !wide && anchor ? [...document.querySelectorAll(anchor)].find((n) => n.getClientRects().length > 0) : null;
     if (!cam || !el) return;
     const r = el.getBoundingClientRect();
     const dy = Math.round(r.top + r.height / 2 - size.height / 2);

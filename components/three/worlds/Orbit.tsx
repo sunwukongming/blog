@@ -30,7 +30,8 @@ export default function Orbit({ posts, focus, navigate }: Props) {
   const planetRefs = useRef<(THREE.Group | null)[]>([]);
   const look = useRef(OVERVIEW_LOOK.clone());
   const focusIndex = CATEGORIES.findIndex((c) => c.slug === focus);
-  useViewShift(cam, focusIndex >= 0 ? 0.2 : 0);
+  // 手机上聚焦行星时，行星对准正文面板上方留出的 .orbit-stage
+  useViewShift(cam, focusIndex >= 0 ? 0.2 : 0, focusIndex >= 0 ? ".orbit-stage" : undefined);
   // 竖屏时把总览镜头拉远，让最外圈轨道也能完整显示
   const aspect = useThree((s) => s.size.width / s.size.height);
   const overview = useMemo(

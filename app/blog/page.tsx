@@ -11,7 +11,11 @@ export default async function BlogIndex() {
       <div className="hero">
         <p className="eyebrow">{posts.length} 篇文章</p>
         <h1 className="display">每一篇都是一张卡片</h1>
-        <p className="lede">左右移动鼠标旋转卡片环，点击卡片开始阅读。下面是完整列表。</p>
+        <p className="lede">
+          <span className="when-mouse">左右移动鼠标旋转卡片环，点击卡片开始阅读。</span>
+          <span className="when-touch">卡片环会自己慢慢转，点一下卡片开始阅读。</span>
+          下面是完整列表。
+        </p>
       </div>
       <div style={{ height: "52svh" }} />
       <section className="panel" data-ui aria-labelledby="all-posts" style={{ maxWidth: 760 }}>

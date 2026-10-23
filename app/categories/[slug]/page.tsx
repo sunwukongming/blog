@@ -18,6 +18,8 @@ export async function generateMetadata({ params }: PageProps<"/categories/[slug]
 export default function CategoryPage({ params }: PageProps<"/categories/[slug]">) {
   return (
     <main data-world="orbit" className="page">
+      {/* 窄屏时聚焦的行星画在这块空白里 */}
+      <div className="orbit-stage" aria-hidden="true" />
       <Suspense fallback={null}>
         <CategoryPanel params={params} />
       </Suspense>

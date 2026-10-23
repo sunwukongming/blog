@@ -54,6 +54,13 @@ export function useSwipe(onSwipe: (dir: Dir) => void) {
   };
 }
 
+/** 手机上轻震一下；不支持的设备（包括 iOS Safari）直接忽略 */
+export function buzz(ms: number | number[]) {
+  try {
+    navigator.vibrate?.(ms);
+  } catch {}
+}
+
 // 最高分 / 最快用时存在 localStorage 里，只对当前浏览器有效
 const PREFIX = "gm-lab:games:";
 const listeners = new Set<() => void>();

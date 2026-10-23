@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useEffectEvent, useRef, useState } from "react";
-import { KEY_DIR, useKeys, useRecord, useSwipe, type Dir } from "./input";
+import { buzz, KEY_DIR, useKeys, useRecord, useSwipe, type Dir } from "./input";
 
 const N = 20;
 const FOOD = "#7af5ff";
@@ -115,6 +115,7 @@ export default function Snake() {
   }, []);
 
   const gameOver = useEffectEvent((final: number) => {
+    buzz([40, 40, 80]);
     setPhase("over");
     setRecord(final > 0 && submitBest(final));
   });
@@ -138,7 +139,10 @@ export default function Snake() {
           gameOver(g.score);
           return;
         }
-        if (g.score !== before) setScore(g.score);
+        if (g.score !== before) {
+          buzz(12);
+          setScore(g.score);
+        }
       }
       draw(canvas.current, g);
       raf = requestAnimationFrame(frame);

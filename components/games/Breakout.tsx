@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useEffectEvent, useRef, useState, type PointerEvent } from "react";
-import { useKeys, useRecord } from "./input";
+import { buzz, useKeys, useRecord } from "./input";
 
 // 逻辑坐标，画的时候按画布宽度缩放
 const W = 480;
@@ -197,6 +197,7 @@ export default function Breakout() {
       sync();
       setPhase("aim");
     } else if (r === "miss") {
+      buzz(70);
       g.lives--;
       sync();
       if (g.lives <= 0) {

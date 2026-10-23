@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { gamesByStatus, type GameItem } from "@/lib/games";
+import GameBest from "@/components/games/GameBest";
+import GameIcon from "@/components/games/GameIcon";
+import { GAMES, gamesByStatus, type GameItem } from "@/lib/games";
 
 export const metadata: Metadata = { title: "游戏" };
 
@@ -11,7 +13,8 @@ const STATUS_LABEL: Record<GameItem["status"], string> = {
 };
 
 export default function GamesPage() {
-  const groups = gamesByStatus();
+  const playable = GAMES.filter((g) => g.playable);
+  const groups = gamesByStatus().map(({ status, items }) => ({ status, items: items.filter((g) => !g.playable) }));
   return (
     <main data-world="drive" className="page">
       <div className="hero">
@@ -21,8 +24,25 @@ export default function GamesPage() {
           几个能直接在浏览器里玩的小游戏，以及做过的游戏相关项目。能点的条目可以点进去。
         </p>
       </div>
+      <section aria-labelledby="g-play">
+        <h2 id="g-play" className="sr-only">
+          能直接玩
+        </h2>
+        <ul className="game-cards">
+          {playable.map((g) => (
+            <li key={g.slug}>
+              <Link href={g.href!} className="panel game-card">
+                <GameIcon slug={g.slug} />
+                <span className="game-card__title">{g.title}</span>
+                <span className="game-card__summary">{g.summary}</span>
+                <GameBest slug={g.slug} />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
       <div className="side" style={{ display: "grid", gap: 16 }}>
-        {groups.map(({ status, items }) => (
+        {groups.filter((g) => g.items.length).map(({ status, items }) => (
           <section key={status} className="panel" data-ui aria-labelledby={`g-${status}`}>
             <h2 id={`g-${status}`}>{STATUS_LABEL[status]}</h2>
             <ul className="post-list">

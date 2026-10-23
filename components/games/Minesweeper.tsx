@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useEffectEvent, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent } from "react";
-import { useRecord } from "./input";
+import { buzz, useRecord } from "./input";
 
 type Level = { key: string; label: string; w: number; h: number; mines: number };
 type Cell = { mine: boolean; adj: number; open: boolean; flag: boolean };
@@ -149,9 +149,12 @@ export default function Minesweeper() {
     return () => clearInterval(id);
   }, [phase]);
 
-  const onWin = useEffectEvent(() => submitBest(seconds));
+  const onEnd = useEffectEvent(() => {
+    if (phase === "won") submitBest(seconds);
+    if (phase === "lost") buzz([60, 40, 120]);
+  });
   useEffect(() => {
-    if (phase === "won") onWin();
+    onEnd();
   }, [phase]);
 
   const restart = (next = level) => setGame(newGame(next));
@@ -181,7 +184,7 @@ export default function Minesweeper() {
     const timer = window.setTimeout(() => {
       if (!press.current) return;
       press.current.fired = true;
-      navigator.vibrate?.(15);
+      buzz(15);
       setGame((g) => toggleFlag(g, i));
     }, LONG_PRESS_MS);
     press.current = { timer, fired: false, touch: true };

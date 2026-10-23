@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useEffectEvent, useRef, useState, type PointerEvent } from "react";
-import { useKeys, useRecord } from "./input";
+import { buzz, useKeys, useRecord } from "./input";
 
 const W = 10;
 const H = 20;
@@ -178,6 +178,7 @@ export default function Tetris() {
 
   const sync = () => {
     const g = game.current;
+    if (g.lines > stats.lines) buzz(25);
     setStats({ score: g.score, lines: g.lines, level: g.level, next: g.bag[0] });
   };
 
@@ -195,6 +196,7 @@ export default function Tetris() {
   }, []);
 
   const gameOver = () => {
+    buzz([40, 40, 80]);
     const g = game.current;
     sync();
     setPhase("over");

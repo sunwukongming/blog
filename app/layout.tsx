@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { JetBrains_Mono, Newsreader, Nunito, Orbitron, Syne } from "next/font/google";
 import Background from "@/components/Background";
@@ -28,6 +28,8 @@ export const metadata: Metadata = {
   openGraph: { siteName: SITE.name, locale: "zh_CN", type: "website" },
   alternates: { types: { "application/rss+xml": [{ url: "/feed.xml", title: SITE.name }] } },
 };
+
+export const viewport: Viewport = { themeColor: "#0a0c10" };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const posts = await getAllPosts();

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="sun" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd95e"/>
+      <stop offset="1" stop-color="#ff3ea5"/>
+    </linearGradient>
+    <clipPath id="disc"><circle cx="32" cy="30" r="17"/></clipPath>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="#14021f"/>
+  <g clip-path="url(#disc)">
+    <rect x="15" y="13" width="34" height="34" fill="url(#sun)"/>
+    <rect x="15" y="33" width="34" height="2.2" fill="#14021f"/>
+    <rect x="15" y="38" width="34" height="2.6" fill="#14021f"/>
+    <rect x="15" y="43" width="34" height="3" fill="#14021f"/>
+  </g>
+  <path d="M8 47h48" stroke="#ff3ea5" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M15 53h34" stroke="#ff3ea5" stroke-width="1.6" stroke-linecap="round" opacity=".55"/>
+</svg>

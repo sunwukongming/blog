@@ -84,3 +84,12 @@ lib/og.tsx                  分享图模板
 2. 在 `components/games/GamePlayer.tsx` 里按 slug 注册
 3. 在 `lib/games.ts` 的 `GAMES` 里加一条，`playable: true`，写好 `controls` 和 `touchControls`
 4. 想在列表卡片上显示图标和最高分，再改 `GameIcon.tsx` 和 `GameBest.tsx`
+
+## 加关卡
+
+贪吃蛇和打砖块的关卡都是字符画，改完刷新就能玩：
+
+- `components/games/snakeLevels.ts`：20×20 地图，`#` 墙，`S` 蛇头（左边两格要空着，开局向右走）；`goal` 吃够多少过关，`speed` 开局速度，`wrap` 能否穿墙，`bonus` 是否刷金色食物
+- `components/games/breakoutLevels.ts`：每行 10 格，`1` 普通砖，`2` / `3` 硬砖，`#` 金属块（打不碎），`W` / `S` / `L` 带道具的砖
+
+注意别让地图里有蛇到不了的空地，也别把砖块整个用金属块围死，否则会打不完。

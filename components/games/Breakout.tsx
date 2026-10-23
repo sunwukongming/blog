@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useEffectEvent, useRef, useState, type PointerEvent } from "react";
-import { buzz, useKeys, useRecord } from "./input";
+import { BREAKOUT_LEVELS } from "./breakoutLevels";
+import { buzz, higher, saveRecord, useKeys, useRecord } from "./input";
+import LevelSelect from "./LevelSelect";
 
 // 逻辑坐标，画的时候按画布宽度缩放
 const W = 480;
@@ -15,72 +17,130 @@ const BRICK_GAP = 5;
 const BRICK_TOP = 64;
 const BRICK_W = (W - 24 - (COLS - 1) * BRICK_GAP) / COLS;
 const ROW_COLORS = ["#ff5c8a", "#ff3ea5", "#c49bff", "#6fa8ff", "#7af5ff", "#7af5c0", "#ffe066", "#ffb86b", "#ff9ed2"];
+const HP_COLORS = ["", "", "#cfd3e6", "#ffd95e"];
+const ITEM_FALL = 150;
+const WIDE_TIME = 12;
+const SLOW_TIME = 10;
+const MAX_LIVES = 5;
 
-type Brick = { x: number; y: number; color: string; alive: boolean };
-type Phase = "ready" | "aim" | "running" | "paused" | "over";
+type Item = "W" | "S" | "L";
+const ITEM_LOOK: Record<Item, { label: string; color: string }> = {
+  W: { label: "宽", color: "#7af5c0" },
+  S: { label: "慢", color: "#6fa8ff" },
+  L: { label: "命", color: "#ff5c8a" },
+};
+
+type Brick = { x: number; y: number; hp: number; maxHp: number; metal: boolean; item?: Item; color: string };
+type Drop = { x: number; y: number; kind: Item };
+type Phase = "select" | "aim" | "running" | "paused" | "over" | "clear" | "done";
 type Game = {
+  level: number;
   bricks: Brick[];
+  drops: Drop[];
   paddle: number;
-  paddleW: number;
   target: number | null;
   ball: { x: number; y: number; vx: number; vy: number };
   score: number;
   lives: number;
-  level: number;
+  time: number;
+  wideUntil: number;
+  slowUntil: number;
 };
-type Stats = Pick<Game, "score" | "lives" | "level">;
+type Hud = { score: number; lives: number; level: number; wide: boolean; slow: boolean };
 
-const speed = (level: number) => 330 + level * 35;
+const baseSpeed = (level: number) => 320 + level * 25;
+const ballSpeed = (g: Game) => baseSpeed(g.level) * (g.time < g.slowUntil ? 0.7 : 1);
+const paddleW = (g: Game) => Math.max(64, 88 - g.level * 3) * (g.time < g.wideUntil ? 1.5 : 1);
 
 function layBricks(level: number): Brick[] {
-  const rows = Math.min(4 + level, ROW_COLORS.length);
   const out: Brick[] = [];
-  for (let r = 0; r < rows; r++)
-    for (let c = 0; c < COLS; c++)
-      out.push({ x: 12 + c * (BRICK_W + BRICK_GAP), y: BRICK_TOP + r * (BRICK_H + BRICK_GAP), color: ROW_COLORS[r], alive: true });
+  BREAKOUT_LEVELS[level].rows.forEach((row, r) =>
+    [...row].forEach((ch, c) => {
+      if (ch === ".") return;
+      const hp = ch === "2" ? 2 : ch === "3" ? 3 : 1;
+      out.push({
+        x: 12 + c * (BRICK_W + BRICK_GAP),
+        y: BRICK_TOP + r * (BRICK_H + BRICK_GAP),
+        hp,
+        maxHp: hp,
+        metal: ch === "#",
+        item: ch === "W" || ch === "S" || ch === "L" ? ch : undefined,
+        color: ROW_COLORS[r % ROW_COLORS.length],
+      });
+    }),
+  );
   return out;
 }
 
-function newGame(): Game {
+function newGame(level: number, carry?: Pick<Game, "score" | "lives">): Game {
   return {
-    bricks: layBricks(1),
+    level,
+    bricks: layBricks(level),
+    drops: [],
     paddle: W / 2,
-    paddleW: 88,
     target: null,
     ball: { x: W / 2, y: PADDLE_Y - BALL_R, vx: 0, vy: 0 },
-    score: 0,
-    lives: 3,
-    level: 1,
+    score: carry?.score ?? 0,
+    lives: carry?.lives ?? 3,
+    time: 0,
+    wideUntil: 0,
+    slowUntil: 0,
   };
-}
-
-/** 球回到球拍上等待发球 */
-function rest(g: Game) {
-  g.ball = { x: g.paddle, y: PADDLE_Y - BALL_R, vx: 0, vy: 0 };
 }
 
 function launch(g: Game) {
   const a = (Math.random() - 0.5) * 0.6;
-  const v = speed(g.level);
+  const v = ballSpeed(g);
   g.ball.vx = v * Math.sin(a);
   g.ball.vy = -v * Math.cos(a);
 }
 
-type StepResult = "ok" | "miss" | "clear" | "hit";
+/** 保持方向，把球速调整到当前应有的速度（变慢道具开始或结束时用） */
+function rescale(g: Game) {
+  const b = g.ball;
+  const v = Math.hypot(b.vx, b.vy);
+  if (!v) return;
+  const k = ballSpeed(g) / v;
+  b.vx *= k;
+  b.vy *= k;
+}
 
-/** 推进 dt 秒；拆成小步，保证每步位移小于球半径，不会穿过砖块 */
+type StepResult = "ok" | "miss" | "clear" | "hit" | "item";
+
+/** 推进 dt 秒；球的移动拆成小步，保证每步位移小于球半径，不会穿过砖块 */
 function step(g: Game, dt: number, held: number): StepResult {
-  const half = g.paddleW / 2;
+  const wasSlow = g.time < g.slowUntil;
+  g.time += dt;
+  if (wasSlow !== g.time < g.slowUntil) rescale(g);
+
+  const half = paddleW(g) / 2;
   if (g.target !== null) g.paddle += (g.target - g.paddle) * Math.min(1, dt * 18);
   g.paddle += held * 560 * dt;
   g.paddle = Math.max(half, Math.min(W - half, g.paddle));
+
+  // 掉落的道具：碰到球拍就生效，掉出底部就消失
+  let result: StepResult = "ok";
+  g.drops = g.drops.filter((d) => {
+    d.y += ITEM_FALL * dt;
+    if (d.y + 10 >= PADDLE_Y && d.y - 10 <= PADDLE_Y + PADDLE_H && Math.abs(d.x - g.paddle) <= half + 14) {
+      if (d.kind === "W") g.wideUntil = g.time + WIDE_TIME;
+      if (d.kind === "S") {
+        g.slowUntil = g.time + SLOW_TIME;
+        rescale(g);
+      }
+      if (d.kind === "L") g.lives = Math.min(MAX_LIVES, g.lives + 1);
+      result = "item";
+      return false;
+    }
+    return d.y < H + 20;
+  });
+
   const b = g.ball;
   if (b.vx === 0 && b.vy === 0) {
     b.x = g.paddle;
-    return "ok";
+    return result;
   }
 
-  let result: StepResult = "ok";
   const n = Math.ceil((Math.hypot(b.vx, b.vy) * dt) / (BALL_R * 0.8));
   for (let i = 0; i < n; i++) {
     const px = b.x;
@@ -101,28 +161,49 @@ function step(g: Game, dt: number, held: number): StepResult {
     // 球拍：按击中位置决定反弹角度，越靠边越斜
     if (b.vy > 0 && b.y + BALL_R >= PADDLE_Y && py + BALL_R <= PADDLE_Y + 4 && Math.abs(b.x - g.paddle) <= half + BALL_R) {
       const k = Math.max(-1, Math.min(1, (b.x - g.paddle) / half));
-      const v = speed(g.level);
+      const v = ballSpeed(g);
       b.vx = v * Math.sin(k * 1.05);
       b.vy = -v * Math.cos(k * 1.05);
       b.y = PADDLE_Y - BALL_R;
     }
 
     for (const br of g.bricks) {
-      if (!br.alive) continue;
+      if (br.hp <= 0) continue;
       const cx = Math.max(br.x, Math.min(b.x, br.x + BRICK_W));
       const cy = Math.max(br.y, Math.min(b.y, br.y + BRICK_H));
-      if ((b.x - cx) ** 2 + (b.y - cy) ** 2 > BALL_R * BALL_R) continue;
-      br.alive = false;
-      g.score += 10 * g.level;
-      result = "hit";
-      // 上一步球在砖块左右两侧就反转横向速度，否则反转纵向
-      const wasSide = px < br.x || px > br.x + BRICK_W;
-      const wasAboveBelow = py < br.y || py > br.y + BRICK_H;
-      if (wasSide && !wasAboveBelow) b.vx = -b.vx;
+      const dx = b.x - cx;
+      const dy = b.y - cy;
+      const d2 = dx * dx + dy * dy;
+      if (d2 > BALL_R * BALL_R) continue;
+      // 碰撞法线：从砖块最近点指向球心；球心已经进到砖块里时，按上一步的位置判断从哪边进来的
+      let nx = 0;
+      let ny = 0;
+      if (d2 > 1e-6) {
+        const d = Math.sqrt(d2);
+        nx = dx / d;
+        ny = dy / d;
+      } else if (px < br.x || px > br.x + BRICK_W) nx = px < br.x ? -1 : 1;
+      else ny = py < br.y ? -1 : 1;
+      // 把球沿法线推到砖块外面。不能简单退回上一步：上一步可能贴着另一块砖，会来回反弹卡在原地
+      if (d2 > 1e-6) {
+        b.x = cx + nx * (BALL_R + 0.5);
+        b.y = cy + ny * (BALL_R + 0.5);
+      } else if (nx) b.x = nx < 0 ? br.x - BALL_R - 0.5 : br.x + BRICK_W + BALL_R + 0.5;
+      else b.y = ny < 0 ? br.y - BALL_R - 0.5 : br.y + BRICK_H + BALL_R + 0.5;
+      // 只有朝着砖块运动时才反弹、才算打中；已经在分离的球只推出去
+      if (b.vx * nx + b.vy * ny >= 0) break;
+      if (Math.abs(nx) > Math.abs(ny)) b.vx = -b.vx;
       else b.vy = -b.vy;
+      if (!br.metal) {
+        br.hp--;
+        const per = 10 * (g.level + 1);
+        g.score += br.hp > 0 ? per / 2 : per * br.maxHp;
+        if (br.hp === 0 && br.item) g.drops.push({ x: br.x + BRICK_W / 2, y: br.y + BRICK_H / 2, kind: br.item });
+        if (result === "ok") result = "hit";
+      }
       break;
     }
-    if (result === "hit" && g.bricks.every((br) => !br.alive)) return "clear";
+    if (result === "hit" && g.bricks.every((br) => br.metal || br.hp <= 0)) return "clear";
   }
   return result;
 }
@@ -135,24 +216,60 @@ function draw(el: HTMLCanvasElement | null, g: Game) {
   ctx.clearRect(0, 0, W, H);
 
   for (const br of g.bricks) {
-    if (!br.alive) continue;
-    ctx.fillStyle = br.color;
+    if (br.hp <= 0) continue;
     ctx.beginPath();
     ctx.roundRect(br.x, br.y, BRICK_W, BRICK_H, 4);
+    if (br.metal) {
+      ctx.fillStyle = "#4a4360";
+      ctx.fill();
+      ctx.strokeStyle = "#8a83a3";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.strokeStyle = "rgb(255 255 255 / 0.18)";
+      ctx.beginPath();
+      ctx.moveTo(br.x + 8, br.y + BRICK_H - 4);
+      ctx.lineTo(br.x + 18, br.y + 4);
+      ctx.stroke();
+      continue;
+    }
+    ctx.fillStyle = br.maxHp > 1 ? HP_COLORS[br.maxHp] : br.color;
+    // 打过一下的硬砖变暗
+    ctx.globalAlpha = br.maxHp > 1 ? 0.45 + 0.55 * (br.hp / br.maxHp) : 1;
     ctx.fill();
+    ctx.globalAlpha = 1;
     ctx.fillStyle = "rgb(255 255 255 / 0.22)";
     ctx.fillRect(br.x + 4, br.y + 3, BRICK_W - 8, 3);
+    if (br.item) {
+      ctx.fillStyle = "rgb(20 2 31 / 0.75)";
+      ctx.beginPath();
+      ctx.arc(br.x + BRICK_W / 2, br.y + BRICK_H / 2 + 1, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  ctx.font = "bold 13px system-ui, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  for (const d of g.drops) {
+    const look = ITEM_LOOK[d.kind];
+    ctx.fillStyle = look.color;
+    ctx.beginPath();
+    ctx.roundRect(d.x - 16, d.y - 10, 32, 20, 10);
+    ctx.fill();
+    ctx.fillStyle = "#14021f";
+    ctx.fillText(look.label, d.x, d.y + 1);
   }
 
   const accent = getComputedStyle(el).getPropertyValue("--accent").trim() || "#ff3ea5";
+  const pw = paddleW(g);
   ctx.shadowColor = accent;
   ctx.shadowBlur = 16;
-  ctx.fillStyle = accent;
+  ctx.fillStyle = g.time < g.wideUntil ? "#7af5c0" : accent;
   ctx.beginPath();
-  ctx.roundRect(g.paddle - g.paddleW / 2, PADDLE_Y, g.paddleW, PADDLE_H, PADDLE_H / 2);
+  ctx.roundRect(g.paddle - pw / 2, PADDLE_Y, pw, PADDLE_H, PADDLE_H / 2);
   ctx.fill();
   ctx.shadowColor = "#fff";
-  ctx.fillStyle = "#fff";
+  ctx.fillStyle = g.time < g.slowUntil ? "#a8c8ff" : "#fff";
   ctx.beginPath();
   ctx.arc(g.ball.x, g.ball.y, BALL_R, 0, Math.PI * 2);
   ctx.fill();
@@ -161,16 +278,18 @@ function draw(el: HTMLCanvasElement | null, g: Game) {
 
 export default function Breakout() {
   const canvas = useRef<HTMLCanvasElement>(null);
-  const game = useRef<Game>(newGame());
+  const [initial] = useState(() => newGame(0));
+  const game = useRef<Game>(initial);
   const held = useRef({ left: false, right: false });
-  const [phase, setPhase] = useState<Phase>("ready");
-  const [stats, setStats] = useState<Stats>({ score: 0, lives: 3, level: 1 });
+  const [phase, setPhase] = useState<Phase>("select");
+  const [hud, setHud] = useState<Hud>({ score: 0, lives: 3, level: 0, wide: false, slow: false });
   const [record, setRecord] = useState(false);
-  const [best, submitBest] = useRecord("breakout", (next, prev) => next > prev);
+  const [best] = useRecord("breakout", higher);
+  const [unlocked] = useRecord("breakout-unlocked", higher);
 
   const sync = () => {
-    const { score, lives, level } = game.current;
-    setStats({ score, lives, level });
+    const g = game.current;
+    setHud({ score: g.score, lives: g.lives, level: g.level, wide: g.time < g.wideUntil, slow: g.time < g.slowUntil });
   };
 
   useEffect(() => {
@@ -186,25 +305,31 @@ export default function Breakout() {
     return () => ro.disconnect();
   }, []);
 
+  const endRun = (phaseAfter: "over" | "done") => {
+    const g = game.current;
+    setRecord(g.score > 0 && saveRecord("breakout", g.score, higher));
+    setPhase(phaseAfter);
+  };
+
   const onResult = useEffectEvent((r: StepResult) => {
     const g = game.current;
-    if (r === "hit") sync();
-    else if (r === "clear") {
-      g.level++;
-      g.bricks = layBricks(g.level);
-      g.paddleW = Math.max(60, 88 - (g.level - 1) * 4);
-      rest(g);
+    if (r === "hit" || r === "item") {
+      if (r === "item") buzz(20);
       sync();
-      setPhase("aim");
+    } else if (r === "clear") {
+      buzz([20, 30, 20, 30, 60]);
+      saveRecord("breakout-unlocked", Math.min(g.level + 2, BREAKOUT_LEVELS.length), higher);
+      sync();
+      if (g.level + 1 < BREAKOUT_LEVELS.length) setPhase("clear");
+      else endRun("done");
     } else if (r === "miss") {
       buzz(70);
       g.lives--;
+      g.drops = [];
       sync();
-      if (g.lives <= 0) {
-        setPhase("over");
-        setRecord(g.score > 0 && submitBest(g.score));
-      } else {
-        rest(g);
+      if (g.lives <= 0) endRun("over");
+      else {
+        g.ball = { x: g.paddle, y: PADDLE_Y - BALL_R, vx: 0, vy: 0 };
         setPhase("aim");
       }
     }
@@ -216,14 +341,22 @@ export default function Breakout() {
     if (phase !== "running" && phase !== "aim") return;
     let raf = 0;
     let last = performance.now();
+    let shown = "";
     const frame = (now: number) => {
       const dt = Math.min((now - last) / 1000, 1 / 30);
       last = now;
       const h = held.current;
-      const r = step(game.current, dt, Number(h.right) - Number(h.left));
-      draw(canvas.current, game.current);
+      const g = game.current;
+      const r = step(g, dt, Number(h.right) - Number(h.left));
+      draw(canvas.current, g);
+      // 道具到期时刷新状态栏
+      const effects = `${g.time < g.wideUntil}${g.time < g.slowUntil}`;
+      if (effects !== shown) {
+        shown = effects;
+        sync();
+      }
       if (r !== "ok") onResult(r);
-      if (r === "ok" || r === "hit") raf = requestAnimationFrame(frame);
+      if (r === "ok" || r === "hit" || r === "item") raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
     const onHide = () => document.hidden && setPhase("paused");
@@ -234,27 +367,26 @@ export default function Breakout() {
     };
   }, [phase]);
 
-  const restart = () => {
-    game.current = newGame();
+  const start = (level: number, carry?: Pick<Game, "score" | "lives">) => {
+    game.current = newGame(level, carry);
     sync();
     setRecord(false);
     setPhase("aim");
   };
+  const nextLevel = () => {
+    const g = game.current;
+    start(g.level + 1, { score: g.score, lives: g.lives });
+  };
 
   const serve = () => {
-    if (phase === "ready") setPhase("aim");
-    else if (phase === "aim") {
-      launch(game.current);
-      setPhase("running");
-    }
+    if (phase !== "aim") return;
+    launch(game.current);
+    setPhase("running");
   };
 
   const toggle = () => {
-    if (phase === "over") restart();
-    else if (phase === "running") setPhase("paused");
+    if (phase === "running" || phase === "aim") setPhase("paused");
     else if (phase === "paused") setPhase(game.current.ball.vy === 0 ? "aim" : "running");
-    else if (phase === "aim") setPhase("paused");
-    else serve();
   };
 
   useKeys((key, repeat) => {
@@ -264,15 +396,14 @@ export default function Breakout() {
       held.current[left ? "left" : "right"] = true;
       // 改用键盘后不再追鼠标最后停留的位置
       game.current.target = null;
-    } else if (repeat && (key === " " || key === "p" || key === "P" || key === "Escape")) {
+    } else if (key === " " || key === "p" || key === "P" || key === "Escape" || key === "Enter") {
       // 按住不放的重复事件不反复发球或暂停
-    } else if (key === " ") {
-      if (phase === "ready" || phase === "aim") serve();
-      else toggle();
-    } else if (key === "p" || key === "P" || key === "Escape") toggle();
-    else if (key === "Enter" && phase === "over") restart();
-    else return false;
-    if (phase === "ready" && key !== " ") setPhase("aim");
+      if (repeat) return true;
+      if (key === " " && phase === "aim") serve();
+      else if (key === "Enter" && phase === "clear") nextLevel();
+      else if (key === "Enter" && (phase === "over" || phase === "done")) setPhase("select");
+      else if (key !== "Enter") toggle();
+    } else return false;
     return true;
   });
 
@@ -301,22 +432,40 @@ export default function Breakout() {
     game.current.target = ((e.clientX - r.left) / r.width) * W;
   };
 
+  const level = BREAKOUT_LEVELS[hud.level];
+
   return (
     <div className="game">
       <div className="game-bar">
-        <span>
-          分数<b>{stats.score}</b>
-        </span>
-        <span>
-          关卡<b>{stats.level}</b>
-        </span>
-        <span>
-          生命<b>{"♥".repeat(Math.max(0, stats.lives)) || "0"}</b>
-        </span>
+        {phase === "select" ? (
+          <span>
+            选择关卡<b>{unlocked ?? 1}/{BREAKOUT_LEVELS.length}</b>
+          </span>
+        ) : (
+          <>
+            <span>
+              第 {hud.level + 1} 关<b>{level.name}</b>
+            </span>
+            <span>
+              分数<b>{hud.score}</b>
+            </span>
+            <span>
+              生命<b>{"♥".repeat(Math.max(0, hud.lives)) || "0"}</b>
+            </span>
+          </>
+        )}
+        {(hud.wide || hud.slow) && (
+          <span>
+            {hud.wide && <b style={{ color: ITEM_LOOK.W.color }}>宽</b>}
+            {hud.slow && <b style={{ color: ITEM_LOOK.S.color }}>慢</b>}
+          </span>
+        )}
         <span className="spacer" />
-        <span>
-          最高<b>{best ?? 0}</b>
-        </span>
+        {(phase === "running" || phase === "aim" || phase === "paused") && (
+          <button type="button" className="game-btn" onClick={toggle}>
+            {phase === "paused" ? "继续" : "暂停"}
+          </button>
+        )}
       </div>
       <div
         className="game-stage breakout"
@@ -327,36 +476,62 @@ export default function Breakout() {
           if (phase === "aim") serve();
         }}
       >
-        <canvas ref={canvas} aria-label={`打砖块，第 ${stats.level} 关，${stats.score} 分`} />
+        <canvas ref={canvas} aria-label={`打砖块，第 ${hud.level + 1} 关，${hud.score} 分`} />
         {phase === "aim" && <p className="breakout-hint">点击棋盘或按空格发球</p>}
-        {(phase === "ready" || phase === "paused" || phase === "over") && (
+        {phase !== "aim" && phase !== "running" && (
           <div className="game-overlay">
-            {phase === "ready" && (
-              <>
-                <strong>打砖块</strong>
-                <p>移动球拍接住球，打掉所有砖块进入下一关</p>
-                <button type="button" className="game-btn game-btn--primary" onClick={() => setPhase("aim")}>
-                  开始
-                </button>
-              </>
+            {phase === "select" && (
+              <LevelSelect
+                title="选择关卡"
+                levels={BREAKOUT_LEVELS.map((l) => ({ name: l.name }))}
+                unlocked={unlocked ?? 1}
+                onPick={(i) => start(i)}
+              >
+                <p>
+                  从选中的关卡一路打下去，3 条命。<span style={{ color: ITEM_LOOK.W.color }}>宽</span>{" "}
+                  <span style={{ color: ITEM_LOOK.S.color }}>慢</span> <span style={{ color: ITEM_LOOK.L.color }}>命</span>{" "}
+                  是道具，用球拍接住{best ? ` · 最高 ${best} 分` : ""}
+                </p>
+              </LevelSelect>
             )}
             {phase === "paused" && (
               <>
                 <strong>暂停中</strong>
-                <button type="button" className="game-btn game-btn--primary" onClick={toggle}>
-                  继续
+                <span style={{ display: "flex", gap: 8 }}>
+                  <button type="button" className="game-btn game-btn--primary" onClick={toggle}>
+                    继续
+                  </button>
+                  <button type="button" className="game-btn" onClick={() => setPhase("select")}>
+                    选关
+                  </button>
+                </span>
+              </>
+            )}
+            {phase === "clear" && (
+              <>
+                <strong>第 {hud.level + 1} 关通过！</strong>
+                <p>
+                  下一关：{BREAKOUT_LEVELS[hud.level + 1]?.name} · 目前 {hud.score} 分
+                </p>
+                <button type="button" className="game-btn game-btn--primary" onClick={nextLevel}>
+                  下一关
                 </button>
               </>
             )}
-            {phase === "over" && (
+            {(phase === "over" || phase === "done") && (
               <>
-                <strong>{record ? "新纪录！" : "球没接住"}</strong>
+                <strong>{phase === "done" ? "全部通关！" : record ? "新纪录！" : "球没接住"}</strong>
                 <p>
-                  {stats.score} 分 · 打到第 {stats.level} 关
+                  {hud.score} 分 · 打到第 {hud.level + 1} 关{phase === "done" && record ? " · 新纪录" : ""}
                 </p>
-                <button type="button" className="game-btn game-btn--primary" onClick={restart}>
-                  再来一局
-                </button>
+                <span style={{ display: "flex", gap: 8 }}>
+                  <button type="button" className="game-btn game-btn--primary" onClick={() => start(phase === "done" ? 0 : hud.level)}>
+                    {phase === "done" ? "再打一遍" : "重打这关"}
+                  </button>
+                  <button type="button" className="game-btn" onClick={() => setPhase("select")}>
+                    选关
+                  </button>
+                </span>
               </>
             )}
           </div>

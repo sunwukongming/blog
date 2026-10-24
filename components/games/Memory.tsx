@@ -295,6 +295,22 @@ export default function Memory() {
                 <b className={moves > shownBest ? "game-tip--alert" : undefined}>{moves - shownBest}</b>
               </small>
             ) : null}
+            {shownBest != null && moves > 0 && moves <= shownBest ? (
+              <span
+                className="memory-record-headroom"
+                data-lead={shownBest - moves >= 3 || undefined}
+                title={`破纪录余量 ${shownBest - moves} 步（当前 ${moves} / 最少 ${shownBest}）`}
+                aria-label={`破纪录余量 ${shownBest - moves} 步`}
+              >
+                <small style={{ marginLeft: 4, opacity: 0.75 }}>余{shownBest - moves}</small>
+                <i
+                  className="memory-record-headroom__fill"
+                  style={{
+                    width: `${Math.min(100, Math.round(((shownBest - moves) / Math.max(1, shownBest)) * 100))}%`,
+                  }}
+                />
+              </span>
+            ) : null}
             <span
               className={
                 shownBest != null && moves > 0 && moves - shownBest > 2

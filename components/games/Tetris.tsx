@@ -721,7 +721,20 @@ export default function Tetris() {
               {stats.next[0] ?? "—"}
             </b>
             <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
-            幽灵<b>{stats.ghost}</b>
+            <span
+              className="tetris-ghost-tier"
+              data-tier={stats.ghost <= 2 ? "land" : stats.ghost <= 6 ? "low" : stats.ghost <= 12 ? "mid" : "high"}
+              data-land={stats.ghost <= 2 || undefined}
+              title={`幽灵落距 ${stats.ghost} 格（land≤2 / low≤6 / mid≤12 / high>12）`}
+            >
+              幽灵<b className={stats.ghost <= 2 ? "game-tip--alert" : undefined}>{stats.ghost}</b>
+              <small className="tetris-ghost-tier__label" style={{ marginLeft: 4, opacity: 0.75 }}>
+                {stats.ghost <= 2 ? "land" : stats.ghost <= 6 ? "low" : stats.ghost <= 12 ? "mid" : "high"}
+              </small>
+              <span className="tetris-ghost-bar" aria-hidden="true">
+                <i style={{ width: `${Math.min(100, Math.round((stats.ghost / 20) * 100))}%` }} />
+              </span>
+            </span>
             <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
             <span
               className="tetris-level-eta tetris-level-eta--tier"

@@ -30,7 +30,13 @@ export async function generateMetadata({ params }: PageProps<"/categories/[slug]
       locale: "zh_CN",
       images: SITE_URL ? [{ url: `${SITE_URL}/icon.svg`, alt: title }] : undefined,
     },
-    twitter: { card: "summary", title, description },
+    twitter: {
+      card: "summary",
+      title,
+      description,
+      // batch43: 与 openGraph.images 对齐
+      images: SITE_URL ? [`${SITE_URL}/icon.svg`] : undefined,
+    },
   };
 }
 

@@ -446,7 +446,7 @@ export default function Minesweeper() {
           </span>
         </span>
         <span
-          className="mine-timer"
+          className="mine-timer mine-timer-best-host"
           data-seg={
             seconds < 30 ? "early" : seconds < 60 ? "mid" : seconds < 120 ? "late" : "over"
           }
@@ -467,6 +467,18 @@ export default function Minesweeper() {
               <small title="相对本档最快">
                 {seconds <= best ? "未破线" : "已慢于最快"}
               </small>
+              <span
+                className="mine-timer-best-bar"
+                data-over={seconds > best || undefined}
+                data-near={seconds > best * 0.8 && seconds <= best || undefined}
+                title={`用时 ${seconds}s / 最快 ${best}s（${Math.min(999, Math.round((seconds / best) * 100))}%）`}
+                aria-label={`用时相对最快 ${Math.min(999, Math.round((seconds / best) * 100))} percent`}
+              >
+                <i
+                  className="mine-timer-best-bar__fill"
+                  style={{ width: `${Math.min(100, Math.round((seconds / best) * 100))}%` }}
+                />
+              </span>
             </>
           ) : null}
         </span>

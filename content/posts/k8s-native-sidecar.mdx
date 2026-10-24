@@ -1,0 +1,47 @@
+---
+title: Kubernetes 原生 Sidecar：restartPolicy=Always 的 init 容器
+date: "2026-10-25"
+category: devops
+summary: 1.28+ 把 sidecar 建成带 Always 的 initContainer，先于主容器就绪、后于主容器退出。对比旧 shareProcessNamespace 土法与独立容器顺序问题。
+---
+
+老写法把 envoy/log agent 和主业务并列为普通 container，**启动/终止顺序**靠运气；或塞进 init 却不能常驻。原生 **sidecar 容器**（KEP-753）：`initContainers` 里设 `restartPolicy: Always`，由 kubelet 按 sidecar 语义管理。
+
+## 形态
+
+```yaml
+spec:
+  initContainers:
+    - name: proxy
+      image: proxy:stable
+      restartPolicy: Always   # sidecar
+      # ports / readiness …
+  containers:
+    - name: app
+      image: app:1.2.3
+```
+
+- **启动**：sidecar 先跑到就绪，再起主容器（与普通 init 链一致，但 sidecar 不退出）。
+- **终止**：主容器结束后 sidecar 再停，便于刮完最后一截遥测。
+
+具体门控以集群小版本与文档为准（特性门、启用版本）。
+
+## 对比
+
+| 做法 | 问题 |
+| --- | --- |
+| 并列 containers | 主容器先挂、代理后挂；或反过来抢死锁 |
+| 普通 init | 必须退出才能进下一阶段 |
+| 原生 sidecar | 顺序明确，仍共 Pod 网络/卷 |
+
+## 落地注意
+
+- 确认 API / 特性门在目标集群已开；旧集群继续用并列 + preStop 权宜。
+- sidecar 的 probes 与资源请求单独设，避免拖垮调度。
+- Job/完成型工作负载更吃「主结束再停 sidecar」——正好对症。
+
+## 小结
+
+- 原生 sidecar = Always initContainer + kubelet 生命周期。
+- 代理、日志、遥测注入优先迁到这个模型。
+- 升级前核对接小版本与 RuntimeClass/CNI 有无额外约束。

@@ -1,0 +1,59 @@
+---
+title: Vue 3 effectScope：把一篮子 effect 一次停干净
+date: "2026-10-25"
+category: frontend
+summary: effectScope 收纳 watch/computed/effect，scope.stop() 统一释放。讲清与 onScopeDispose、组合式库内部清理、和组件卸载钩子的分工。
+---
+
+组合式函数里随手 `watch` / `effect`，调用方若不停用，容易泄漏。**`effectScope`** 把一串响应式副作用收进作用域，`stop()` 一次停掉。
+
+## 最小用法
+
+```ts
+import { effectScope, watch, ref } from "vue";
+
+export function useTracker(id: Ref<string>) {
+  const scope = effectScope();
+  const hits = ref(0);
+
+  scope.run(() => {
+    watch(id, () => { hits.value++; }, { immediate: true });
+    // 更多 computed / watchEffect …
+  });
+
+  function dispose() {
+    scope.stop();
+  }
+
+  return { hits, dispose };
+}
+```
+
+在组件里：`onUnmounted(dispose)`，或把 scope 建在 setup 默认作用域内，随组件卸载自动停（嵌套关系以文档为准）。
+
+## onScopeDispose
+
+```ts
+scope.run(() => {
+  const id = window.setInterval(() => {}, 1000);
+  onScopeDispose(() => clearInterval(id));
+});
+```
+
+定时器、DOM 监听、第三方订阅放进 `onScopeDispose`，与 Vue effect 同生命周期。
+
+## 和组件钩子分工
+
+| 手段 | 适合 |
+| --- | --- |
+| 组件 `onUnmounted` | 页面级、单一订阅 |
+| `effectScope` | 库 / 可多次创建的 composable |
+| 单独 `watch` 返回 stop | 一两个 effect |
+
+可停用、可多实例的 composable 优先自带 `dispose` + scope。
+
+## 小结
+
+- 一篮子 effect → `effectScope` + `stop`。
+- 非 Vue 资源用 `onScopeDispose`。
+- 别假设「只用了 watch 就没事」——长生命周期 store 更要显式停。

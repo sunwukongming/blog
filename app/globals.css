@@ -1459,3 +1459,85 @@ html:has(.page--game) { overscroll-behavior: none; }
 .pk-pot-spr[data-commit] {
   color: #f87171;
 }
+
+/* batch43: memory-record-headroom */
+.memory-record-headroom {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  gap: 4px;
+}
+.memory-record-headroom__fill {
+  display: inline-block;
+  width: 36px;
+  height: 5px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #34d399, #6ee7b7);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, #34d399 30%, transparent);
+  /* width set inline as fill fraction via style.width on i — use i */
+}
+.memory-record-headroom i.memory-record-headroom__fill,
+.memory-record-headroom__fill {
+  max-width: 40px;
+  min-width: 0;
+  height: 5px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #34d399, #6ee7b7);
+  transition: width 120ms ease-out;
+}
+.memory-record-headroom[data-lead] .memory-record-headroom__fill {
+  background: linear-gradient(90deg, #22d3ee, #34d399);
+}
+
+/* batch43: mines timer vs best */
+.mine-timer-best-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 44px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.mine-timer-best-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #34d399, #60a5fa);
+  transition: width 120ms linear;
+}
+.mine-timer-best-bar[data-near] .mine-timer-best-bar__fill {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+.mine-timer-best-bar[data-over] .mine-timer-best-bar__fill {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+}
+
+/* batch43: tetris ghost tier */
+.tetris-ghost-tier {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.tetris-ghost-tier[data-tier="land"] { color: #f87171; }
+.tetris-ghost-tier[data-tier="low"] { color: #fbbf24; }
+.tetris-ghost-bar {
+  display: inline-block;
+  margin-left: 4px;
+  width: 36px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.tetris-ghost-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #a78bfa, #38bdf8);
+  transition: width 100ms ease-out;
+}
+.tetris-ghost-tier[data-land] .tetris-ghost-bar > i {
+  background: linear-gradient(90deg, #fbbf24, #ef4444);
+}

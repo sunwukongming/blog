@@ -3761,3 +3761,76 @@ html:has(.page--game) { overscroll-behavior: none; }
 .tetris-lines-density-bar[data-low] .tetris-lines-density-bar__fill {
   background: linear-gradient(90deg, #f87171, #ef4444);
 }
+
+/* batch74: snake-eat-pace-bar / breakout-left-ratio-bar / pk-invested-bar */
+.snake-eat-pace-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.snake-eat-pace-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #86efac, #22c55e);
+  transition: width 100ms ease-out;
+}
+.snake-eat-pace-bar[data-hot] > i {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+.snake-eat-pace-bar[data-slow] > i {
+  background: linear-gradient(90deg, #93c5fd, #3b82f6);
+}
+
+.breakout-left-ratio-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.breakout-left-ratio-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+  transition: width 100ms ease-out;
+}
+.breakout-left-ratio-bar[data-low] > i {
+  background: linear-gradient(90deg, #86efac, #22c55e);
+}
+.breakout-left-ratio-bar[data-high] > i {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+}
+
+.pk-invested-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.pk-invested-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #a5b4fc, #6366f1);
+  transition: width 100ms ease-out;
+}
+.pk-invested-bar[data-hot] > i {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+.pk-invested-bar[data-cold] > i {
+  background: linear-gradient(90deg, #93c5fd, #3b82f6);
+}

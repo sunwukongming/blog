@@ -403,6 +403,36 @@ export default function Poker() {
               }}
             />
           </span>
+          <span
+            className="pk-invested-bar"
+            data-hot={
+              table.players.filter((p) => !p.out && p.bet > 0).length >=
+                Math.max(2, Math.ceil(table.players.filter((p) => !p.out).length * 0.7)) || undefined
+            }
+            data-cold={
+              table.players.filter((p) => !p.out).length > 0 &&
+              table.players.filter((p) => !p.out && p.bet > 0).length === 0 || undefined
+            }
+            title={`本街已下注 ${table.players.filter((p) => !p.out && p.bet > 0).length}/${table.players.filter((p) => !p.out).length || 0}（仍在局）`}
+            aria-label={`仍在局中已下注 ${table.players.filter((p) => !p.out && p.bet > 0).length} 人`}
+          >
+            <i
+              style={{
+                width: `${
+                  table.players.filter((p) => !p.out).length
+                    ? Math.min(
+                        100,
+                        Math.round(
+                          (table.players.filter((p) => !p.out && p.bet > 0).length /
+                            table.players.filter((p) => !p.out).length) *
+                            100,
+                        ),
+                      )
+                    : 0
+                }%`,
+              }}
+            />
+          </span>
         </span>
         <span
           className={

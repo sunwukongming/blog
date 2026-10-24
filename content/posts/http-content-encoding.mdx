@@ -1,0 +1,41 @@
+---
+title: HTTP Content-Encoding：响应侧怎么声明压缩
+date: "2026-10-25"
+category: frontend
+summary: 站内 Accept-Encoding 已讲请求协商。这篇只钉响应头 Content-Encoding：gzip/br/zstd 语义、Content-Length 含义，以及代理解压却不改头的翻车。
+---
+
+请求侧用 **Accept-Encoding** 声明能力（见专文）。**`Content-Encoding`** 是响应侧：「正文已经按该编码变换过，请先解码再当媒体类型用」。本文不复述 q 值与算法优选全文。
+
+## 响应形态
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/javascript
+Content-Encoding: br
+Content-Length: 12040
+Vary: Accept-Encoding
+```
+
+| 点 | 含义 |
+|---|---|
+| `Content-Encoding: gzip` / `br` / `zstd` | 实体已压缩；客户端先解再解析 |
+| 本条 **`Content-Length`** | **编码后**字节数（不是解压后大小） |
+| 多值（少见） | 按应用顺序叠码，解码时逆序 |
+
+`identity` 表示未编码；多数实现直接省略该头。
+
+## 中间人与改写风险
+
+- 反代若**解压**后再传给浏览器，却仍回 `Content-Encoding: br`，客户端会解码失败或乱码。  
+- 若重新压缩成另一种算法，必须改头，并保证 **`Vary`** 仍能区分变体。  
+- 对已是压缩容器的对象（JPEG、MP4、多数 `.zip`）再声明内容编码，往往白白耗 CPU，还可能变大。  
+- 安全扫描/杀毒代理「拆包再封装」时，是 Content-Encoding 与长度不一致的高发区——用抓包对一下状态行、头、实长。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| Content-Encoding（响应） | 本文 |
+| Accept-Encoding（请求） | http-accept-encoding |
+| Vary | http-vary |

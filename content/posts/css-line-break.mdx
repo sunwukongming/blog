@@ -1,0 +1,43 @@
+---
+title: CSS line-break：东亚换行规则
+date: "2026-10-25"
+category: frontend
+summary: 中日韩标点与禁则影响何处可断行。这篇写 line-break: auto / loose / normal / strict / anywhere，以及和 word-break、hyphens 的分工。
+---
+
+西文多按空格与连字符断行；**东亚文本**还要管「哪些标点不能出现在行首/行尾」。**`line-break`** 调节这套禁则松紧。
+
+## 写法
+
+```css
+.article-zh {
+  line-break: strict;
+}
+
+.ui-compact {
+  line-break: anywhere; /* 允许更激进的断点，慎用于正文 */
+}
+```
+
+| 值 | 倾向 |
+|---|---|
+| `auto` | 由引擎/语言决定 |
+| `loose` | 较松，短行（如报纸栏）更常见 |
+| `normal` | 常见正文 |
+| `strict` | 更严的禁则 |
+| `anywhere` | 可在任意字符间断（含 CJK），易「切断」观感 |
+
+## 边界
+
+- 真正效果依赖 **`lang`** 与字体；同值在不同引擎上仍可能有差。  
+- 与 **`word-break: break-all`** 同时开时，anywhere/break-all 会抢断点——UI 截断条和文章正文应分开设。  
+- **`hyphens`** 主要服务拉丁词；CJK 正文优先调 `line-break` / 标点，而不是指望连字符。  
+- 标题与 `text-wrap: balance` 组合时，先看标题语言再选 strict/loose。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| line-break | 本文 |
+| hyphens | css-hyphens |
+| text-wrap | css-text-wrap-pretty / balance |

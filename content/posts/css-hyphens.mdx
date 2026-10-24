@@ -1,0 +1,45 @@
+---
+title: CSS hyphens：自动断词与连字符
+date: "2026-10-25"
+category: frontend
+summary: 窄栏西文常需断词。这篇写 hyphens: none / manual / auto、lang 与字典依赖，以及和 text-wrap、word-break 的边界。
+---
+
+窄栏里一长串西文单词会撑破版心或留下难看空白。**`hyphens`** 控制是否（以及如何）插入断词连字符。
+
+## 写法
+
+```css
+article {
+  lang: en; /* 实际用 HTML lang；此处示意依赖语言 */
+}
+article p {
+  hyphens: auto;
+  overflow-wrap: break-word; /* 极端长 token 的兜底，与连字符分工 */
+}
+```
+
+| 值 | 行为 |
+|---|---|
+| `none` | 不自动断词 |
+| `manual` | 只在 `&shy;` / `<wbr>` 等显式机会处断 |
+| `auto` | 按语言资源自动断（需正确 `lang`） |
+
+```html
+<p lang="en">… incomprehensibilities …</p>
+```
+
+## 边界
+
+- **`hyphens: auto` 强依赖 `lang`**；语言不对或缺失时，效果可能接近没有。  
+- 中文排版主战场通常不是拉丁连字符；先考虑标点挤压与 `line-break`，再谈 `hyphens`。  
+- 与 **`text-wrap: pretty/balance`**、**`word-break`** 叠用时先定语言策略，避免多重断词抢戏。  
+- 印刷体与屏幕字体对连字符位置敏感——改字号后应再扫窄断点。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| hyphens | 本文 |
+| line-break | css-line-break |
+| text-wrap pretty | css-text-wrap-pretty |

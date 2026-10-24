@@ -30,12 +30,14 @@ export default async function Archive() {
   const current = String(new Date().getFullYear());
   const yearCount = years.size;
   // batch44: ItemList 与 eyebrow 篇数对齐；只暴露最近 50 条避免巨大 JSON-LD
+  // batch51: 再核 numberOfItems=posts.length + slice(0,50) + inLanguage；与 blog ItemList 同源 getAllPosts
   const itemListLd = {
     "@context": "https://schema.org",
     "@type": "ItemList",
     name: `${SITE.name} 文章归档`,
     description: `按年份归档的 GM Lab 笔记（Go / 前端 / 云原生 / 可观测）；${yearCount} 个年份`,
     numberOfItems: posts.length,
+    inLanguage: "zh-CN",
     itemListOrder: "https://schema.org/ItemListOrderDescending",
     itemListElement: posts.slice(0, 50).map((p, i) => ({
       "@type": "ListItem",

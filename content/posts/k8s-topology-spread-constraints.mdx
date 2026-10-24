@@ -1,0 +1,47 @@
+---
+title: TopologySpreadConstraints 字段：maxSkew 与 whenUnsatisfiable
+date: "2026-10-25"
+category: cloud
+summary: 站内 Topology Spread 文讲为何摊匀。这篇抠约束字段：maxSkew、topologyKey、labelSelector、whenUnsatisfiable=DoNotSchedule/ScheduleAnyway 的选型。
+---
+
+`topologySpreadConstraints` 条目里真正决定行为的是 **倾斜上限** 与 **不满足时怎么办**。总览见站内 Topology Spread；本文只对字段。
+
+## 字段对照
+
+| 字段 | 作用 |
+|---|---|
+| `maxSkew` | 各拓扑域副本数最大差 |
+| `topologyKey` | 域标签，如 `kubernetes.io/hostname`、`topology.kubernetes.io/zone` |
+| `labelSelector` | 和哪些 Pod 一起算「自己人」 |
+| `whenUnsatisfiable` | `DoNotSchedule` 硬挡 / `ScheduleAnyway` 尽量摊 |
+| `nodeAffinityPolicy` / `nodeTaintsPolicy`（视版本） | 算倾斜时是否计入亲和/污点影响的节点 |
+
+```yaml
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: DoNotSchedule
+    labelSelector:
+      matchLabels:
+        app: api
+  - maxSkew: 1
+    topologyKey: kubernetes.io/hostname
+    whenUnsatisfiable: ScheduleAnyway
+    labelSelector:
+      matchLabels:
+        app: api
+```
+
+常见组合：zone 级 **硬**（`DoNotSchedule`），node 级 **软**（`ScheduleAnyway`），避免小集群上节点约束把 Pod 卡在 Pending。
+
+## 选型信号
+
+1. **合规多 AZ**：zone + `DoNotSchedule` + `maxSkew: 1`。  
+2. **节点数 < 副本数**：hostname 硬约束会 Pending——改软或加大 skew。  
+3. **selector 漏标**：算进无关 Pod 或漏算自己，倾斜数字是错的。  
+4. **与 PDB/HPA**：摊匀不保证中断预算；drain 仍看 PDB（见站内 PDB 文）。
+
+## 一句话
+
+**AZ 硬、节点软** 是默认好用的组合；Pending 先查 `whenUnsatisfiable` 与节点数，再怪调度器。

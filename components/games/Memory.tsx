@@ -390,6 +390,18 @@ export default function Memory() {
         </span>
         <span>
           时间<b>{seconds}</b>
+          <span
+            className="memory-time-bar"
+            data-long={seconds >= 60 || undefined}
+            data-over={seconds >= 90 || undefined}
+            title={`用时 ${seconds}s（满刻度 90s）`}
+            aria-label={`用时 ${seconds} 秒`}
+          >
+            <i
+              className="memory-time-bar__fill"
+              style={{ width: `${Math.min(100, Math.round((seconds / 90) * 100))}%` }}
+            />
+          </span>
         </span>
       </div>
       <p className={endgame || streak >= 2 ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">

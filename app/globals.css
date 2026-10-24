@@ -2090,3 +2090,78 @@ html:has(.page--game) { overscroll-behavior: none; }
   background: linear-gradient(90deg, #f87171, #ef4444);
 }
 
+/* batch51: memory-time-bar / mine-safe-left-bar / tetris-score-bar */
+.memory-time-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.memory-time-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #67e8f9, #22d3ee);
+  transition: width 120ms ease-out;
+}
+.memory-time-bar[data-long] .memory-time-bar__fill {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+.memory-time-bar[data-over] .memory-time-bar__fill {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+}
+.mine-safe-left-bar {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  margin-left: 6px;
+  gap: 4px;
+}
+.mine-safe-left-bar__track {
+  display: inline-block;
+  width: 36px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.mine-safe-left-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #a3e635, #84cc16);
+  transition: width 100ms ease-out;
+}
+.mine-safe-left-bar[data-urgent] .mine-safe-left-bar__fill {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+.mine-safe-left-bar[data-late] .mine-safe-left-bar__fill {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+}
+.tetris-score-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.tetris-score-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #c084fc, #a78bfa);
+  transition: width 100ms ease-out;
+}
+.tetris-score-bar[data-hot] > i {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+.tetris-score-bar[data-huge] > i {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+}

@@ -684,6 +684,15 @@ export default function Tetris() {
       <div className="game-bar">
         <span>
           分数<b>{stats.score}</b>
+          <span
+            className="tetris-score-bar"
+            data-hot={stats.score >= 5000 || undefined}
+            data-huge={stats.score >= 10000 || undefined}
+            title={`本局分数 ${stats.score}（满刻度 10000）`}
+            aria-label={`分数 ${stats.score}`}
+          >
+            <i style={{ width: `${Math.min(100, Math.round((stats.score / 10000) * 100))}%` }} />
+          </span>
         </span>
         <span>
           行<b>{stats.lines}</b>

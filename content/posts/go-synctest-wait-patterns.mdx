@@ -1,0 +1,50 @@
+---
+title: Go synctest 等待模式：Wait、时钟推进与卡死排查
+date: "2026-10-25"
+category: backend
+summary: 站内 synctest 文讲泡泡与虚拟时钟。这篇只谈等待/调度：何时 Wait、何时推进 time、如何避免「永远等不到安静」与假绿。
+---
+
+`synctest.Run` 里最容易写歪的是 **什么时候该等、什么时候该拨钟**。机制总览见站内 synctest 文；这里只列等待模式。
+
+## 三种节奏
+
+| 模式 | 做法 | 适用 |
+|---|---|---|
+| 等到安静 | `synctest.Wait()` | goroutine 都阻塞在定时器/channel，无 Runnable |
+| 拨钟再等 | `time` 相关到期 → 再 `Wait` | 测超时、退避、ticker |
+| 注入事件 | 向 channel 发送 / 取消 context | 测「外部输入唤醒」而非纯时钟 |
+
+```go
+synctest.Run(func() {
+    ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+    defer cancel()
+    done := make(chan struct{})
+    go func() {
+        <-ctx.Done()
+        close(done)
+    }()
+    synctest.Wait() // 让到定时器上的阻塞可见
+    // 视实现：推进到超时点后再 Wait，或依赖泡泡自动推进策略
+    <-done
+})
+```
+
+（具体 API 随 `testing/synctest` / 实验包版本略有差异；以当前 Go 文档为准。）
+
+## 卡死常见原因
+
+1. **忙轮询**：goroutine 在 `for { select default }` 空转 → 永远不「安静」，`Wait` 挂死。  
+2. **真实 sleep**：泡泡外 `time.Sleep` 或未接管的时钟。  
+3. **漏取消**：等待一条永远没人关的 channel。  
+4. **假绿**：没 `Wait` 就断言，后台还没跑到超时分支。
+
+## 检查清单
+
+- 每个「应在超时后发生」的断言前，确认已走到定时器阻塞并完成推进。  
+- 用「必失败」用例证明 Wait 真的在等（例如少推进 1ns）。  
+- 不要在泡泡里起真实网络监听当同步点。
+
+## 一句话
+
+**先让代码阻塞在可调度点，再 Wait/拨钟**；忙等与假绿是 synctest 两大坑。

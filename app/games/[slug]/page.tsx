@@ -6,6 +6,7 @@ import GamePlayer from "@/components/games/GamePlayer";
 import { GAMES, getPlayable } from "@/lib/games";
 import { SITE, SITE_URL } from "@/lib/site";
 
+// batch51: 单游戏 Twitter card=summary + images 与 OG 同源 icon.svg；WebApplication JSON-LD 见下方
 export function generateStaticParams() {
   return GAMES.filter((g) => g.playable).map((g) => ({ slug: g.slug }));
 }

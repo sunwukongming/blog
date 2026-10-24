@@ -466,7 +466,24 @@ export default function Minesweeper() {
           </b>
           {flagDense ? <small style={{ marginLeft: 4, opacity: 0.85 }}>密</small> : null}
           <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
-          <span className="mine-chord" data-ready={chordReady > 0 || undefined} data-openable={chordOpenable > 0 || undefined}>
+          <span
+            className="mine-safe-left-bar"
+            data-late={lateClear || undefined}
+            data-urgent={safeLeft > 0 && safeLeft <= 8 || undefined}
+            title={`剩余安全格 ${safeLeft} / ${safeTotal}`}
+            aria-label={`剩余安全格 ${safeLeft}`}
+          >
+            <small style={{ opacity: 0.75 }}>剩安<b>{safeLeft}</b></small>
+            <span className="mine-safe-left-bar__track">
+              <i
+                className="mine-safe-left-bar__fill"
+                style={{
+                  width: `${Math.min(100, Math.round((safeLeft / Math.max(1, safeTotal)) * 100))}%`,
+                }}
+              />
+            </span>
+          </span>
+                    <span className="mine-chord" data-ready={chordReady > 0 || undefined} data-openable={chordOpenable > 0 || undefined}>
             Chord<b className={chordReady > 0 ? "game-tip--alert" : undefined}>{chordReady}</b>
             {chordOpenable > 0 || peakOpenable > 0 ? (
               <small style={{ marginLeft: 4, opacity: 0.85 }} data-late-open={lateClear || undefined} data-peak={peakOpenable > 0 || undefined}>

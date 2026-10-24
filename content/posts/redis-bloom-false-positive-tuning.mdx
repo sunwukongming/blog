@@ -1,0 +1,44 @@
+---
+title: RedisBloom 误判率调参：error rate 与 capacity
+date: "2026-10-25"
+category: backend
+summary: 站内 RedisBloom 文讲场景与 BF.ADD。这篇只谈 error_rate、capacity 怎么选、扩容后误判怎么漂，以及和内存的换算直觉。
+---
+
+`BF.RESERVE key error_rate capacity` 里两个旋钮决定 **位图大小与哈希次数**。用法见站内布隆文；这里只调参。
+
+## 两个参数
+
+| 参数 | 含义 | 调大时 |
+|---|---|---|
+| `error_rate` | 目标假阳性（如 0.01 = 1%） | 更省内存，误判更多 |
+| `capacity` | 预期插入量 | 同 error_rate 下内存↑；超了误判↑ |
+
+```bash
+# 约 1% 误判、预估 100 万条
+BF.RESERVE user:bf 0.01 1000000
+
+# 更狠：0.1% 误判，内存明显更高
+BF.RESERVE user:bf-strict 0.001 1000000
+```
+
+经验：穿透防护常见 `0.01`；广告去重等可放到 `0.001` 量级，先算内存再拍板。
+
+## 超容量之后
+
+布隆 **不会**在超容量时拒绝写入，只是假阳性往上飘。监控 `BF.INFO` 的已插入量；接近 capacity 就：
+
+1. 换更大 capacity 的新过滤器并双写/迁移；或  
+2. 接受更高误判并在下游再查一次权威存储（布隆本就只做初筛）。
+
+## 和内存
+
+粗算：error_rate 降一个数量级、capacity 不变，位数与哈希成本明显上升。别为了「看起来更准」盲目 `0.0001`——多出来的误判本该由 DB/缓存二级挡住。
+
+## 和站内 Bloom 文
+
+场景、与 HLL/Set 取舍见原文；**本文只谈 error_rate/capacity 与超容量**。
+
+## 一句话
+
+按 **预估量设 capacity、按可接受穿透设 error_rate**；超了重建，别幻想原地变准。

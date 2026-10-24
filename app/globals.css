@@ -1320,3 +1320,78 @@ html:has(.page--game) { overscroll-behavior: none; }
   flex-wrap: wrap;
   gap: 2px 0;
 }
+
+/* batch41: memory-streak-peak */
+.memory-streak-peak-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 44px;
+  height: 6px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.memory-streak-peak-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #34d399, #60a5fa);
+  transition: width 120ms ease-out;
+}
+.memory-streak-peak-bar[data-hot] .memory-streak-peak-bar__fill {
+  background: linear-gradient(90deg, #fbbf24, #f87171);
+}
+.memory-streak-peak-bar[data-peak] .memory-streak-peak-bar__fill {
+  box-shadow: 0 0 6px color-mix(in oklab, #34d399 55%, transparent);
+}
+
+/* batch41: mines chord peak bar */
+.mine-chord-peak-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 44px;
+  height: 6px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.mine-chord-peak-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #a78bfa, #38bdf8);
+  transition: width 120ms ease-out;
+}
+.mine-chord-peak-bar[data-peak] .mine-chord-peak-bar__fill {
+  box-shadow: 0 0 6px color-mix(in oklab, #a78bfa 55%, transparent);
+}
+.mine-chord-peak-bar[data-late] .mine-chord-peak-bar__fill {
+  background: linear-gradient(90deg, #f59e0b, #ef4444);
+}
+
+/* batch41: tetris level fill */
+.tetris-level-fill {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 48px;
+  height: 6px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.tetris-level-fill__bar {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #22d3ee, #818cf8);
+  transition: width 140ms ease-out;
+}
+.tetris-level-fill[data-tier="near"] .tetris-level-fill__bar {
+  background: linear-gradient(90deg, #fbbf24, #f87171);
+}
+.tetris-level-fill[data-tier="mid"] .tetris-level-fill__bar {
+  background: linear-gradient(90deg, #34d399, #60a5fa);
+}

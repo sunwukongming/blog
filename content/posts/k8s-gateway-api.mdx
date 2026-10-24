@@ -1,0 +1,51 @@
+---
+title: Kubernetes Gateway API：从 Ingress 走向角色分离的流量入口
+date: "2026-10-25"
+category: devops
+summary: Gateway / GatewayClass / HTTPRoute 如何拆分集群运维与应用路由。对比 Ingress 注解丛林，讲清 listener、跨命名空间引用与落地注意点。
+---
+
+Ingress 把「入口怎么建」和「路径怎么指」揉在一种资源里，厂商能力靠注解扩散。**Gateway API** 用角色分离：平台提供 Gateway，应用声明 HTTPRoute。
+
+## 核心对象
+
+| 资源 | 谁管 | 作用 |
+| --- | --- | --- |
+| `GatewayClass` | 平台 / 实现方 | 选定控制器（如 Envoy、Cilium） |
+| `Gateway` | 集群运维 | 监听端口、证书、地址 |
+| `HTTPRoute`（及 TCPRoute 等） | 应用 | host/path → Service |
+
+```yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: web
+spec:
+  parentRefs:
+    - name: shared-gw
+  hostnames: ["app.example.com"]
+  rules:
+    - matches:
+        - path: { type: PathPrefix, value: / }
+      backendRefs:
+        - name: web
+          port: 80
+```
+
+## 相对 Ingress 的收益
+
+- **可移植策略**：超时、重试、头改写逐步标准化，少写私有注解。
+- **跨命名空间**：Route 挂到共享 Gateway（需 ReferenceGrant 放行）。
+- **多协议**：同一套模型扩展 TCP/UDP/gRPC（实现覆盖度需核对）。
+
+## 落地注意
+
+- 先确认集群安装的 GatewayClass 与 CRD 版本（v1 / v1beta1）。
+- Ingress 与 Gateway 可并存迁移；按域名切流，避免双入口抢证书。
+- 观察 `Accepted` / `ResolvedRefs` 条件，比只看 Pod Ready 更能定位挂载失败。
+
+## 小结
+
+- Gateway API = 平台入口 + 应用路由解耦。
+- 迁移以 HTTPRoute 对齐现有 Ingress 规则为起点，再收注解能力。
+- 选实现时看多租户、TLS、观测是否满足，而不是只看「支持 Gateway」广告。

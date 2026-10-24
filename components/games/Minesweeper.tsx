@@ -374,7 +374,7 @@ export default function Minesweeper() {
           ) : null}
         </span>
         <span
-          className="mine-progress mine-open-flag mine-chord-open mine-chord-openable mine-late-openable"
+          className="mine-progress mine-open-flag mine-chord-open mine-chord-openable mine-late-openable mine-chord-peak-host"
           data-late={lateClear || undefined}
           data-dense={flagDense || undefined}
           data-ready={chordReady > 0 || undefined}
@@ -424,6 +424,22 @@ export default function Minesweeper() {
                   <small className="mine-chord-peak" style={{ marginLeft: 4, opacity: 0.75 }} title={`本局 Chord 可翻峰值 ${peakOpenable}`}>
                     峰<b>{peakOpenable}</b>
                   </small>
+                ) : null}
+                {peakOpenable > 0 ? (
+                  <span
+                    className="mine-chord-peak-bar"
+                    data-peak={chordOpenable >= peakOpenable && chordOpenable > 0 || undefined}
+                    data-late={lateClear || undefined}
+                    title={`可翻相对峰值 ${chordOpenable}/${peakOpenable}`}
+                    aria-label={`可翻相对峰值 ${chordOpenable}/${peakOpenable}`}
+                  >
+                    <i
+                      className="mine-chord-peak-bar__fill"
+                      style={{
+                        width: `${Math.min(100, Math.round((chordOpenable / Math.max(1, peakOpenable)) * 100))}%`,
+                      }}
+                    />
+                  </span>
                 ) : null}
               </small>
             ) : null}

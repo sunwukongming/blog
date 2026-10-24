@@ -15,8 +15,15 @@ export const metadata: Metadata = {
     siteName: SITE.name,
     locale: "zh_CN",
     url: SITE_URL ?? undefined,
+    images: SITE_URL ? [{ url: `${SITE_URL}/icon.svg`, alt: SITE.name }] : undefined,
   },
-  twitter: { card: "summary", title: SITE.name, description: SITE.description },
+  twitter: {
+    card: "summary",
+    title: SITE.name,
+    description: SITE.description,
+    // batch41: 与 openGraph.images 对齐，首页分享不落无图
+    images: SITE_URL ? [`${SITE_URL}/icon.svg`] : undefined,
+  },
   alternates: SITE_URL
     ? { canonical: "/", types: { "application/rss+xml": `${SITE_URL}/feed.xml` } }
     : undefined,

@@ -214,8 +214,8 @@ export default function Memory() {
         <span
           className={
             endgame || streak >= 2
-              ? "memory-end-combo memory-endgame memory-combo memory-moves-delta-host game-tip--alert"
-              : "memory-end-combo memory-endgame memory-combo memory-moves-delta-host"
+              ? "memory-end-combo memory-endgame memory-combo memory-moves-delta-host memory-streak-peak-host game-tip--alert"
+              : "memory-end-combo memory-endgame memory-combo memory-moves-delta-host memory-streak-peak-host"
           }
           data-endgame={endgame || undefined}
           data-combo={streak >= 2 || undefined}
@@ -244,6 +244,20 @@ export default function Memory() {
           <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
           连击<b>{streak}</b>
           {bestStreak > 1 ? <small style={{ marginLeft: 4, opacity: 0.7 }}>峰{bestStreak}</small> : null}
+          {bestStreak > 1 ? (
+            <span
+              className="memory-streak-peak-bar"
+              data-peak={streak >= bestStreak && streak > 0 || undefined}
+              data-hot={streak >= 5 || undefined}
+              title={`连击相对峰值 ${streak}/${bestStreak}`}
+              aria-label={`连击相对峰值 ${streak}/${bestStreak}`}
+            >
+              <i
+                className="memory-streak-peak-bar__fill"
+                style={{ width: `${Math.min(100, Math.round((streak / Math.max(1, bestStreak)) * 100))}%` }}
+              />
+            </span>
+          ) : null}
           {endgame && streak >= 2 ? <small className="memory-end-combo__both" style={{ marginLeft: 6 }}>双高</small> : null}
           <span
             className="memory-combo__bar"

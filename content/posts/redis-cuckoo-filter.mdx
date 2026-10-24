@@ -1,0 +1,42 @@
+---
+title: Redis Cuckoo Filter：可删除的近似成员检测
+date: "2026-10-25"
+category: backend
+summary: 与 Bloom 对比：Cuckoo 支持删除、指纹搬迁，仍有误判。讲 CF.ADD / CF.DEL、容量与踢出失败，以及何时仍该用 Bloom。
+---
+
+标准布隆过滤器**不能可靠删除**。需要「加过又能删」的近似集合时，RedisBloom 的 **Cuckoo Filter**（`CF.*`）更合适——用桶+指纹，踢出冲突项腾位。
+
+## 和 Bloom 的差别
+
+| | Bloom (`BF.*`) | Cuckoo (`CF.*`) |
+| --- | --- | --- |
+| 删除 | 基本不支持 | `CF.DEL` |
+| 误判 | 可估，只假阳性 | 假阳性；极端踢出失败 |
+| 空间 | 通常更省 | 略贵，看负载因子 |
+| 典型 | 只增集合、挡穿透 | 会话/黑名单可撤销 |
+
+```bash
+CF.RESERVE user:cf 1000000
+CF.ADD user:cf 42
+CF.EXISTS user:cf 42
+CF.DEL user:cf 42
+```
+
+## 何时仍用 Bloom
+
+- 集合只增不删，且极度在意内存。
+- 删除可用「重建 + 切换」批量完成（日报表、日切索引）。
+- 已有 BF 运维路径，删改极少。
+
+## 运维要点
+
+- `CF.RESERVE` 预估容量；填太满会踢出失败，ADD 返回错误——监控失败率。
+- 与业务键同前缀/同 slot 策略与 Bloom 类似。
+- 不要把 Cuckoo 当精确 Set：仍要在「EXISTS=1」时回源确认关键路径。
+
+## 小结
+
+- 要删 → 优先 Cuckoo；只增挡穿透 → Bloom 仍香。
+- 两者都是近似结构：不存在可信任，存在需再验证。
+- 容量与踢出是 Cuckoo 的运维主矛盾。

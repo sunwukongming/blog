@@ -1,0 +1,47 @@
+---
+title: TypeScript satisfies vs as：何时该断言、何时该校验
+date: "2026-10-25"
+category: frontend
+summary: 对比 satisfies 与 as：前者保留字面量并检查可赋值，后者强制改类型。讲清配置对象、事件 map、JSON 解析后的安全边界，并与已有 satisfies 专文互补。
+---
+
+`satisfies` 解决的是「我想对照某个类型做检查，但别把推断收窄丢了」；`as` 是「我比编译器更懂，按我说的类型算」。二者看起来都能「对齐类型」，失败模式完全不同。
+
+## 一眼对比
+
+```ts
+type Theme = { primary: string; radius: number };
+
+// satisfies：值必须可赋给 Theme，推断仍是字面量
+const ok = { primary: "#111", radius: 8 } satisfies Theme;
+ok.primary; // "#111"
+
+// as：直接改成 Theme，错误字段也可能蒙混过关
+const bad = { primary: "#111", radius: "8" } as Theme; // 编译过，运行埋雷
+```
+
+| | `satisfies T` | `as T` |
+| --- | --- | --- |
+| 检查可赋值 | 是 | 否（强制） |
+| 保留窄推断 | 是 | 否（变成 T） |
+| 典型用途 | 配置、路由表、satisfies 专文场景 | DOM / 第三方 / 已校验数据 |
+
+## 该用 as 的场景
+
+- **已运行时校验**：`zod.parse` / type guard 之后，把 `unknown` 收成具体类型。
+- **DOM / lib 缺口**：`el as HTMLInputElement`（仍建议先 `instanceof`）。
+- **名义类型品牌**：`as UserId` 在构造边界打一次即可。
+
+不该：用 `as` 堵配置拼写错误，或把 `any` 链式断言到终点。
+
+## 和 satisfies 专文怎么分工
+
+- 专文侧重 **`satisfies` 语法与保留字面量**。
+- 本文侧重 **`as` 何时合理、何时在骗过编译器**。
+- 实务：配置与常量映射优先 `satisfies`；跨边界数据先校验再 `as`（或直接用校验库的输出类型）。
+
+## 小结
+
+- 要检查 + 保留推断 → `satisfies`。
+- 要覆盖编译器且你有证据 → 谨慎 `as`。
+- 没有证据的 `as` 等于关掉保险丝。

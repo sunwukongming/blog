@@ -27,6 +27,7 @@ async function buildFeed(base: string) {
       <description><![CDATA[${summary}]]></description>
       <enclosure url="${base}/icon.svg" length="0" type="image/svg+xml" />
       <media:content url="${base}/icon.svg" medium="image" type="image/svg+xml" />
+      <!-- batch41: thumbnail 与 enclosure/media:content/channel.image 同源 -->
       <media:thumbnail url="${base}/icon.svg" />
     </item>`;
     })

@@ -735,6 +735,20 @@ export default function Tetris() {
               <small className="tetris-level-eta__tier" style={{ marginLeft: 4, opacity: 0.75 }}>
                 {stats.linesToLevel <= 2 ? "near" : stats.linesToLevel <= 5 ? "mid" : "far"}
               </small>
+              <span
+                className="tetris-level-fill"
+                data-near={stats.linesToLevel <= 2 || undefined}
+                data-tier={stats.linesToLevel <= 2 ? "near" : stats.linesToLevel <= 5 ? "mid" : "far"}
+                title={`升级进度 ${(10 - stats.linesToLevel) % 10}/10（还差 ${stats.linesToLevel}）`}
+                aria-label={`升级进度 ${10 - stats.linesToLevel}/10`}
+              >
+                <i
+                  className="tetris-level-fill__bar"
+                  style={{
+                    width: `${Math.min(100, Math.round(((10 - stats.linesToLevel) / 10) * 100))}%`,
+                  }}
+                />
+              </span>
             </span>
           </span>
         ) : (

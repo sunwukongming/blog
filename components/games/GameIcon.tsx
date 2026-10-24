@@ -77,6 +77,28 @@ const ICONS: Record<string, React.ReactNode> = {
   ),
 };
 
+// 德州扑克：两张叠在一起的牌
+ICONS.poker = (
+  <>
+    <rect x={8} y={9} width={20} height={28} rx={3} fill="#f5f0ff" transform="rotate(-12 18 23)" />
+    <path d="M14.5 17l3 4-3 4-3-4z" fill="#ff4d6d" transform="rotate(-12 18 23)" />
+    <rect x={20} y={11} width={20} height={28} rx={3} fill="#ffffff" stroke="#14021f" strokeWidth={1} transform="rotate(10 30 25)" />
+    <text x={30} y={29} textAnchor="middle" fontSize={11} fontWeight={800} fill="#1b1530" fontFamily="sans-serif" transform="rotate(10 30 25)">
+      A
+    </text>
+  </>
+);
+
+
+ICONS.memory = (
+  <>
+    <rect x={6} y={10} width={16} height={22} rx={3} fill="#ff3ea5" />
+    <text x={14} y={26} textAnchor="middle" fontSize={12} fontWeight={800} fill="#fff" fontFamily="sans-serif">?</text>
+    <rect x={26} y={14} width={16} height={22} rx={3} fill="#fbf8ff" stroke="#ffd95e" strokeWidth={1.5} />
+    <text x={34} y={30} textAnchor="middle" fontSize={14} fontWeight={800} fill="#1b1530" fontFamily="sans-serif">*</text>
+  </>
+);
+
 export default function GameIcon({ slug }: { slug: string }) {
   return (
     <svg viewBox="0 0 48 48" width={48} height={48} aria-hidden="true">

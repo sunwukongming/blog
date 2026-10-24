@@ -10,6 +10,8 @@ const PLAYERS: Record<string, React.ComponentType> = {
   "2048": dynamic(() => import("./Game2048"), { ssr: false, loading }),
   breakout: dynamic(() => import("./Breakout"), { ssr: false, loading }),
   minesweeper: dynamic(() => import("./Minesweeper"), { ssr: false, loading }),
+  poker: dynamic(() => import("./Poker"), { ssr: false, loading }),
+  memory: dynamic(() => import("./Memory"), { ssr: false, loading }),
 };
 
 export default function GamePlayer({ slug }: { slug: string }) {

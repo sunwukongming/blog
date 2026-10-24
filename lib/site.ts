@@ -9,7 +9,7 @@ export const SITE_URL = siteUrl ? siteUrl.replace(/\/$/, "") : null;
 
 export const SITE = {
   name: "GM Lab",
-  description: "GM 的技术笔记：Go、云平台、可观测性，以及一点前端与游戏。",
+  description: "GM Lab：Go、云平台、可观测性与前端笔记，外加几个能在浏览器里玩的小游戏。",
   author: "GM",
 };
 

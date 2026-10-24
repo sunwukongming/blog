@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { JetBrains_Mono, Newsreader, Nunito, Orbitron, Syne } from "next/font/google";
 import Background from "@/components/Background";
+import MascotSlot from "@/components/mascot/MascotSlot";
 import SiteNav from "@/components/SiteNav";
 import WorldTheme from "@/components/WorldTheme";
 import { getAllPosts } from "@/lib/posts";
@@ -44,6 +45,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <Background posts={posts} />
         <SiteNav />
         {children}
+        <MascotSlot />
       </body>
     </html>
   );

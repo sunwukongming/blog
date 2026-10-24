@@ -79,7 +79,7 @@ function Hotspot({
   );
 }
 
-/** C 夜读小屋：首页。电脑 → 文章，桌上的手柄 → 游戏，书架 → 云与可观测，地球仪 → 分类星系，墙上的画 → 归档，窗户 → 随笔 */
+/** C 书房（GM Lab 首页）。电脑 → 文章，桌上的手柄 → 游戏，书架 → 云与可观测，地球仪 → 分类星系，墙上的画 → 归档，窗户 → 随笔 */
 export default function Room({ navigate }: { navigate: Navigate }) {
   const t = useWorldClock();
   const cam = useRef<THREE.OrthographicCamera>(null);

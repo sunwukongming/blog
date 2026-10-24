@@ -9,6 +9,8 @@ const RECORD: Record<string, { key: string; label: (v: number) => string }> = {
   "2048": { key: "2048", label: (v) => `最高 ${v} 分` },
   breakout: { key: "breakout-unlocked", label: (v) => `闯到第 ${v} 关` },
   minesweeper: { key: "minesweeper-easy", label: (v) => `初级最快 ${v} 秒` },
+  poker: { key: "poker", label: (v) => `最多 ${v} 筹码` },
+  memory: { key: "memory", label: (v) => `最少 ${v} 步` },
 };
 
 const never = () => false;

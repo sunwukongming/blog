@@ -1,0 +1,303 @@
+"use client";
+
+import { useEffect, useEffectEvent, useState } from "react";
+import { mascotSay, pick, POKER_ALLIN, POKER_BIG_WIN, POKER_BUST } from "@/lib/mascot";
+import { buzz, higher, useKeys, useRecord } from "./input";
+import {
+  act,
+  botAction,
+  handName,
+  bestHand,
+  humanOut,
+  humanWonTable,
+  legal,
+  newTable,
+  potSize,
+  runoutStep,
+  startHand,
+  type Action,
+  type Card,
+  STARTING_CHIPS,
+  type Table,
+} from "./pokerLogic";
+
+const BOT_DELAY = 750;
+const RUNOUT_DELAY = 900;
+const RANK_TEXT: Record<number, string> = { 11: "J", 12: "Q", 13: "K", 14: "A" };
+const SUIT_NAME = ["黑桃", "红心", "方块", "梅花"];
+
+// 花色用 SVG 画，♠♥♦♣ 在一些字体里会显示成方框
+function Suit({ s }: { s: number }) {
+  const fill = s === 1 || s === 2 ? "#ff4d6d" : "#1b1530";
+  return (
+    <svg viewBox="0 0 16 16" width="1em" height="1em" aria-hidden="true">
+      {s === 0 && <path fill={fill} d="M8 1C6.5 4 2 6 2 9.4a3 3 0 0 0 5.2 2L6.3 15h3.4l-.9-3.6a3 3 0 0 0 5.2-2C14 6 9.5 4 8 1z" />}
+      {s === 1 && <path fill={fill} d="M8 14.5S1.5 10 1.5 5.6A3.4 3.4 0 0 1 8 4a3.4 3.4 0 0 1 6.5 1.6C14.5 10 8 14.5 8 14.5z" />}
+      {s === 2 && <path fill={fill} d="M8 1l5.2 7L8 15 2.8 8z" />}
+      {s === 3 && (
+        <g fill={fill}>
+          <circle cx="8" cy="4.6" r="3" />
+          <circle cx="4.6" cy="9.2" r="3" />
+          <circle cx="11.4" cy="9.2" r="3" />
+          <path d="M7 9.5h2l1.1 5.5H5.9z" />
+        </g>
+      )}
+    </svg>
+  );
+}
+
+function PlayingCard({ card, hidden, glow, dim }: { card?: Card; hidden?: boolean; glow?: boolean; dim?: boolean }) {
+  if (!card) return <span className="pk-card pk-card--empty" />;
+  if (hidden) return <span className="pk-card pk-card--back" aria-label="背面朝上的牌" />;
+  return (
+    <span
+      className="pk-card"
+      data-red={card.s === 1 || card.s === 2 || undefined}
+      data-glow={glow || undefined}
+      data-dim={dim || undefined}
+      aria-label={`${SUIT_NAME[card.s]} ${RANK_TEXT[card.r] ?? card.r}`}
+    >
+      <b>{RANK_TEXT[card.r] ?? card.r}</b>
+      <Suit s={card.s} />
+    </span>
+  );
+}
+
+const same = (a: Card, b: Card) => a.r === b.r && a.s === b.s;
+const SEAT_AREA = ["me", "left", "top", "right"];
+
+export default function Poker() {
+  const [table, setTable] = useState<Table>(() => newTable());
+  const [raiseTo, setRaiseTo] = useState(0);
+  const [best, submitBest] = useRecord("poker", higher);
+  const me = table.players[0];
+  const myTurn = table.toAct === 0 && table.street !== "done";
+  const rules = myTurn ? legal(table) : null;
+  const done = table.street === "done";
+  const started = table.hand > 0;
+  const gameOver = started && humanOut(table);
+  const victory = started && !gameOver && humanWonTable(table);
+  const pot = potSize(table);
+
+  const update = (fn: (t: Table) => void) => {
+    const next = structuredClone(table);
+    fn(next);
+    setTable(next);
+  };
+
+  // 电脑行动、自动发牌都用定时器推进，节奏像真人在打
+  useEffect(() => {
+    if (table.street === "done") return;
+    const step = table.runout ? runoutStep : table.toAct > 0 ? (t: Table) => act(t, botAction(t)) : null;
+    if (!step) return;
+    const id = setTimeout(
+      () =>
+        setTable((cur) => {
+          const next = structuredClone(cur);
+          step(next);
+          return next;
+        }),
+      table.runout ? RUNOUT_DELAY : BOT_DELAY,
+    );
+    return () => clearTimeout(id);
+  }, [table]);
+
+  // 每手牌结束时：记录最高筹码，赢了轻震一下
+  const onHandOver = useEffectEvent(() => {
+    submitBest(table.players[0].chips);
+    const won = table.result?.pots.filter((p) => p.winners.includes(0)).reduce((s, p) => s + p.amount, 0) ?? 0;
+    if (won > 0) buzz([20, 40, 20]);
+    // 看板娘的反应：赢下大底池会兴奋，输光了会安慰
+    if (humanOut(table)) mascotSay(pick(POKER_BUST));
+    else if (won >= table.bb * 15) mascotSay(pick(POKER_BIG_WIN));
+  });
+  useEffect(() => {
+    if (done && started) onHandOver();
+  }, [done, started, table.hand]);
+
+  const deal = () => {
+    // 纪录从起始筹码算起，第一手输一点也不会出现低于 1000 的“最高”
+    submitBest(STARTING_CHIPS);
+    update((t) => {
+      if (humanOut(t) || humanWonTable(t)) Object.assign(t, newTable());
+      startHand(t);
+    });
+  };
+
+  const play = (a: Action) => {
+    if (!myTurn) return;
+    if (a.type === "allin") mascotSay(pick(POKER_ALLIN));
+    update((t) => act(t, a));
+  };
+
+  const minTo = rules?.minTo ?? 0;
+  const maxTo = rules?.maxTo ?? 0;
+  const raiseValue = Math.min(Math.max(raiseTo, minTo), maxTo);
+  const presets = rules
+    ? [
+        { label: "½ 池", to: table.currentBet + Math.round(pot / 2) },
+        { label: "1 池", to: table.currentBet + pot },
+      ].filter((p) => p.to > minTo && p.to < maxTo)
+    : [];
+
+  useKeys((key, repeat) => {
+    if (repeat) return false;
+    const k = key.toLowerCase();
+    if (myTurn && rules) {
+      if (k === "f") play({ type: "fold" });
+      else if (k === "c" || key === " ") play(rules.canCheck ? { type: "check" } : { type: "call" });
+      else if (k === "r" && rules.canRaise) play({ type: "raise", to: raiseValue });
+      else if (k === "a") play({ type: "allin" });
+      else return false;
+      return true;
+    }
+    if (done && (key === "Enter" || key === " ")) {
+      deal();
+      return true;
+    }
+    return false;
+  });
+
+  // 我的当前牌型（翻牌后才有）
+  const myHand = !me.folded && table.board.length >= 3 ? handName(bestHand([...me.hand, ...table.board]).score) : "";
+  const result = table.result;
+  const winBest = result?.showdown ? result.best : {};
+  const winners = new Set(result?.pots.flatMap((p) => p.winners));
+  const glowCards = result?.showdown ? [...winners].flatMap((w) => winBest[w] ?? []) : [];
+  const isGlow = (c: Card) => glowCards.some((g) => same(g, c));
+
+  const message = (() => {
+    if (!started) return "点「发牌」开始。你和三个电脑对局，每人 1000 筹码。";
+    if (gameOver) return "筹码输光了。";
+    if (victory) return "三个电脑都出局了，你赢下了整张桌子！";
+    if (result) {
+      return result.pots
+        .map((p, i) => {
+          const names = p.winners.map((w) => table.players[w].name).join("、");
+          const label = result.pots.length > 1 ? (i === 0 ? "主池" : `边池 ${i}`) : "底池";
+          return `${names}${p.handName ? `以${p.handName}` : ""}赢得${label} ${p.amount}`;
+        })
+        .join("；");
+    }
+    if (table.runout) return "全下了，发完剩下的公共牌……";
+    if (myTurn) return rules!.canCheck ? "轮到你了" : `轮到你了，跟注需要 ${rules!.toCall}`;
+    return `${table.players[table.toAct]?.name ?? ""}思考中……`;
+  })();
+
+  return (
+    <div className="game poker">
+      <div className="game-bar">
+        <span>
+          第<b>{table.hand}</b>手
+        </span>
+        <span>
+          盲注<b>
+            {table.sb}/{table.bb}
+          </b>
+        </span>
+        <span className="spacer" />
+        <span>
+          最多<b>{best ?? 0}</b>
+        </span>
+      </div>
+
+      <div className="pk-table">
+        {table.players.map((p, i) => {
+          const reveal = i === 0 || (result?.showdown && !p.folded);
+          return (
+            <div
+              key={p.name}
+              className="pk-seat"
+              style={{ gridArea: SEAT_AREA[i] }}
+              data-seat={SEAT_AREA[i]}
+              data-turn={table.toAct === i || undefined}
+              data-out={p.out || undefined}
+              data-folded={p.folded || undefined}
+              data-win={(done && winners.has(i)) || undefined}
+            >
+              <div className="pk-seat__head">
+                <span className="pk-seat__name">
+                  {p.name}
+                  {table.dealer === i && started && <i className="pk-dealer">D</i>}
+                </span>
+                <span className="pk-seat__chips">{p.out ? "出局" : p.chips}</span>
+              </div>
+              <div className="pk-hand">
+                {started && !p.out
+                  ? p.hand.map((c, k) => <PlayingCard key={k} card={c} hidden={!reveal} glow={isGlow(c)} dim={p.folded} />)
+                  : null}
+              </div>
+              <div className="pk-seat__status">
+                {p.bet > 0 && !done && <span className="pk-bet">{p.bet}</span>}
+                {p.last && <span className="pk-last">{p.last}</span>}
+              </div>
+            </div>
+          );
+        })}
+
+        <div className="pk-center" style={{ gridArea: "center" }}>
+          <div className="pk-board">
+            {Array.from({ length: 5 }, (_, i) => (
+              <PlayingCard key={i} card={table.board[i]} glow={table.board[i] && isGlow(table.board[i])} />
+            ))}
+          </div>
+          <p className="pk-pot">底池 {pot}</p>
+          <p className="pk-msg" aria-live="polite">
+            {message}
+          </p>
+        </div>
+      </div>
+
+      {myTurn && rules ? (
+        <div className="pk-actions">
+          <div className="pk-actions__row">
+            <button type="button" className="game-btn" onClick={() => play({ type: "fold" })}>
+              弃牌
+            </button>
+            <button
+              type="button"
+              className="game-btn game-btn--primary"
+              onClick={() => play(rules.canCheck ? { type: "check" } : { type: "call" })}
+            >
+              {rules.canCheck ? "过牌" : `跟注 ${rules.toCall}`}
+            </button>
+            <button type="button" className="game-btn" onClick={() => play({ type: "allin" })}>
+              全下 {me.chips}
+            </button>
+          </div>
+          {rules.canRaise && rules.minTo < rules.maxTo && (
+            <div className="pk-actions__row">
+              <input
+                type="range"
+                min={minTo}
+                max={maxTo}
+                step={table.bb}
+                value={raiseValue}
+                onChange={(e) => setRaiseTo(Number(e.target.value))}
+                aria-label="加注到"
+              />
+              {presets.map((p) => (
+                <button key={p.label} type="button" className="game-btn" onClick={() => setRaiseTo(p.to)}>
+                  {p.label}
+                </button>
+              ))}
+              <button type="button" className="game-btn" onClick={() => play({ type: "raise", to: raiseValue })}>
+                加注到 {raiseValue}
+              </button>
+            </div>
+          )}
+          {myHand && <p className="game-hint">你现在是：{myHand}</p>}
+        </div>
+      ) : (
+        <div className="pk-actions">
+          {(done || !started) && (
+            <button type="button" className="game-btn game-btn--primary" onClick={deal}>
+              {!started ? "发牌" : gameOver || victory ? "重新开始" : "下一手"}
+            </button>
+          )}
+          {!done && myHand && <p className="game-hint">你现在是：{myHand}</p>}
+        </div>
+      )}
+    </div>
+  );
+}

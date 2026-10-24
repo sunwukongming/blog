@@ -4,14 +4,14 @@
 
 | 路由 | 世界 | 交互 |
 |---|---|---|
-| `/` | 夜读小屋（Low-poly 书房）+ 个人介绍 | 点电脑 → 文章，手柄 → 游戏，书架 → 云与可观测，地球仪 → 分类，墙上的画 → 归档，窗户 → 随笔 |
+| `/` | Low-poly 书房（GM Lab）+ 个人介绍 | 点电脑 → 文章，手柄 → 游戏，书架 → 云与可观测，地球仪 → 分类，墙上的画 → 归档，窗户 → 随笔 |
 | `/categories` | 轨道索引（星系） | 行星是分类，卫星是文章，点击行星飞过去 |
 | `/categories/[slug]` | 同上，镜头聚焦到该行星 | |
 | `/blog` | 卡片环 | 文章卡片环形排列，悬停浮起，点击阅读 |
 | `/blog/[slug]` | 信号场（点阵） | 向下滚动时点阵被压平、变暗 |
 | `/about` | 跳转到首页 | |
 | `/games` | 夜行（霓虹线框地形） | 游戏相关条目 |
-| `/games/[slug]` | 同上（背景静止，省电） | 能直接玩的小游戏：贪吃蛇、俄罗斯方块、2048、打砖块、扫雷 |
+| `/games/[slug]` | 同上（背景静止，省电） | 能直接玩的小游戏：贪吃蛇、俄罗斯方块、2048、打砖块、扫雷、德州扑克、记忆翻牌 |
 | `/archive` | 夜行（霓虹线框地形） | |
 
 ## 开发
@@ -45,6 +45,7 @@ summary: 一句话摘要
 - 路由和世界的对应关系：`lib/worlds.ts`
 - 每个世界的配色和标题字体：`app/globals.css` 顶部
 - 首页的个人介绍（名字、简介、技术栈、链接）：`lib/site.ts` 里的 `PROFILE`
+- 看板娘“梦子”（《狂赌之渊》蛇喰梦子的同人形象）的台词（按页面、按时间、被戳时）：`lib/mascot.ts`；形象和交互在 `components/mascot/Mascot.tsx`
 - 站点正式地址：在 Vercel 项目的环境变量里设置 `NEXT_PUBLIC_SITE_URL`（例如 `https://example.com`）。不设置时会用 Vercel 提供的生产域名；两个都没有时不输出 canonical，sitemap 为空
 
 ## SEO 与订阅
@@ -63,7 +64,7 @@ components/three/
 components/games/
   GamePlayer.tsx    按 slug 只在客户端加载对应游戏
   input.ts          键盘、滑动、震动、本机最高分（localStorage）
-  Snake / Tetris / Game2048 / Breakout / Minesweeper
+  Snake / Tetris / Game2048 / Breakout / Minesweeper / Poker / Memory
 components/ArticleTools.tsx 文章目录、阅读进度条、代码复制按钮
 components/MdxContent.tsx   编译 MDX，给 h2/h3 加锚点 id（规则和 lib/toc.ts 一致）
 components/WorldTheme.tsx   把当前世界写到 <html data-world>，驱动页面配色和地址栏颜色

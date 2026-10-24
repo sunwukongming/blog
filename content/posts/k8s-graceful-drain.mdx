@@ -1,0 +1,38 @@
+---
+title: K8s 优雅下线：preStop、连接排空与探针别打架
+date: "2026-10-22"
+category: cloud
+summary: 滚动发布掉流量的那几秒，往往比业务代码本身更容易写成事故。
+---
+
+滚动更新「看起来成功」却短暂 5xx，十有八九死在**摘流量顺序**，而不是新镜像本身。
+
+## 先搞清楚谁在摘你
+
+一次 Pod 终止大致是：
+
+1. Endpoint / EndpointSlice 开始把你摘出 Service
+2. `preStop` hook 跑完（或超时）
+3. 发 `SIGTERM`，再等 `terminationGracePeriodSeconds`
+4. 超时后 `SIGKILL`
+
+问题在于：kube-proxy / IPVS / 云负载均衡**感知 Endpoint 变化需要时间**。如果你一收到 SIGTERM 就立刻关掉监听，上游还在把请求打过来，就会有一批连接直接失败。
+
+## 我常用的落地顺序
+
+- **readiness 先变红**：滚动时先让探针失败，从负载均衡摘掉，再进入真正退出
+- **preStop 里 sleep 一小段**（常见 5–15s）：给 Endpoint 传播留窗口，而不是「优雅地立刻自杀」
+- **应用处理 SIGTERM**：停止接新连接，排空进行中的请求，再关 DB / 消息消费者
+- **grace period 要比业务最长请求更长**：长上传、大报表、gRPC stream 都要算进去
+
+探针这边容易踩的坑是：liveness 太激进。排空期间若线程池打满、健康检查超时，会被当成死锁杀掉，优雅下线直接中断。
+
+## 和业务代码的分界
+
+框架层最好提供统一的 `Shutdown`：HTTP server 的 `Shutdown(ctx)`、gRPC 的 `GracefulStop`、消费者取消订阅。业务只需要挂上「进行中的任务计数」或 context，而不是每个服务自己发明一套信号量。
+
+## 怎么验收
+
+不要只看 Deployment Available。用压测或真实流量盯着滚动窗口的错误率、P99，再对照 Pod 事件和负载均衡后端健康状态。能稳定「滚动时错误率接近 0」，这套收尾才算做完。
+
+一句话：**先摘流量，再停进程；先排空，再杀连接。**

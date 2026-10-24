@@ -50,6 +50,8 @@ export default function Memory() {
   const [announce, setAnnounce] = useState("");
   const [streak, setStreak] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
+  /** 难度切换时保留各档最高连击（步数纪录仍走 useRecord） */
+  const bestStreakByDiff = useRef<Record<string, number>>({});
   const [best, submitBest] = useRecord(recordKey(diff), lower);
   // 兼容第一批只写过 memory 键的普通难度纪录
   const [legacy] = useRecord("memory", lower);
@@ -110,7 +112,11 @@ export default function Memory() {
     if (pairA === pairB) {
       const nextStreak = streak + 1;
       setStreak(nextStreak);
-      setBestStreak((b) => Math.max(b, nextStreak));
+      setBestStreak((b) => {
+        const n = Math.max(b, nextStreak);
+        bestStreakByDiff.current[diff.key] = Math.max(bestStreakByDiff.current[diff.key] ?? 0, n);
+        return n;
+      });
       buzz(nextStreak >= 3 ? [18, 40, 18] : 18);
       setAnnounce(
         nextStreak >= 2
@@ -135,6 +141,7 @@ export default function Memory() {
   };
 
   const restart = (next = diff) => {
+    bestStreakByDiff.current[diff.key] = Math.max(bestStreakByDiff.current[diff.key] ?? 0, bestStreak);
     reported.current = false;
     setDiff(next);
     setCards(deal((next.cols * next.rows) / 2));
@@ -145,7 +152,7 @@ export default function Memory() {
     setRunning(false);
     setFocus(0);
     setStreak(0);
-    setBestStreak(0);
+    setBestStreak(bestStreakByDiff.current[next.key] ?? 0);
     setAnnounce("");
   };
 
@@ -228,7 +235,7 @@ export default function Memory() {
       )}
       <p className="game-tip" aria-live="polite">
         本局连击 <b className={streak >= 2 ? "game-tip--alert" : undefined}>{streak}</b>
-        {bestStreak > 1 ? `（最高 ${bestStreak}）` : ""}
+        {bestStreak > 1 ? `（本档最高 ${bestStreak}，切换难度会保留）` : "（切换难度保留各档连击最高）"}
         {" · "}
         本难度最少 <b>{shownBest ?? "—"}</b> 步
         {" · "}

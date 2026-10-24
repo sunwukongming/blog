@@ -33,6 +33,18 @@ function neighbors(i: number, { w, h }: Level) {
   return out;
 }
 
+/** chord-ready: open number, flags match, has closed unflagged neighbor */
+function chordReadyIndices(cells: Cell[], level: Level): number[] {
+  const ready: number[] = [];
+  cells.forEach((c, i) => {
+    if (!c.open || !c.adj) return;
+    const around = neighbors(i, level);
+    if (around.filter((j) => cells[j].flag).length !== c.adj) return;
+    if (around.some((j) => !cells[j].open && !cells[j].flag)) ready.push(i);
+  });
+  return ready;
+}
+
 function newGame(level: Level): Game {
   const cells = Array.from({ length: level.w * level.h }, () => ({ mine: false, adj: 0, open: false, flag: false }));
   return { level, cells, phase: "ready", startedAt: 0, endedAt: 0, exploded: -1 };
@@ -150,6 +162,7 @@ export default function Minesweeper() {
   const safeProgress = safeTotal === 0 ? 100 : Math.round((safeOpen / safeTotal) * 100);
   const safeLeft = safeTotal - safeOpen;
   const lateClear = phase === "playing" && safeLeft > 0 && safeLeft <= Math.max(5, Math.ceil(safeTotal * 0.12));
+  const chordReady = phase === "playing" ? chordReadyIndices(cells, level).length : 0;
   const seconds = Math.floor(
     phase === "playing" ? Math.max(0, now - game.startedAt) / 1000 : phase === "ready" ? 0 : (game.endedAt - game.startedAt) / 1000,
   );
@@ -339,6 +352,14 @@ export default function Minesweeper() {
             {safeOpen}/{safeTotal}
           </small>
         </span>
+        <span
+          className="mine-chord"
+          data-ready={chordReady > 0 || undefined}
+          title="旗数对齐且还有未开邻格的已翻数字；中键/双击/点击可 chord"
+        >
+          Chord<b className={chordReady > 0 ? "game-tip--alert" : undefined}>{chordReady}</b>
+          {chordReady > 0 ? <small style={{ marginLeft: 4, opacity: 0.85 }}>可点</small> : null}
+        </span>
         <span>
           时间<b>{seconds}</b>
         </span>
@@ -385,16 +406,18 @@ export default function Minesweeper() {
         ))}
       </div>
       {(phase === "ready" || phase === "playing") && (
-        <p className={lateClear || (phase === "playing" && level.mines - flags <= 3 && level.mines - flags > 0) ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">
+        <p className={chordReady > 0 || lateClear || (phase === "playing" && level.mines - flags <= 3 && level.mines - flags > 0) ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">
           {phase === "ready"
             ? "首击安全区：第一下落点及其周围不会埋雷，可放心开图。"
-            : lateClear
-              ? `收官：还剩 ${safeLeft} 格安全区未开 · 开图 ${safeProgress}% · 剩余雷标记 ${level.mines - flags}`
-              : phase === "playing" && level.mines - flags <= 3 && level.mines - flags > 0
-                ? `剩余雷仅 ${level.mines - flags} · 开图 ${safeProgress}%（安全格 ${safeOpen}/${safeTotal}）· 旗位对齐后再 chord`
-                : safeOpen === 0
-                  ? `首击安全区已生效 · 开图 0%（安全格 0/${safeTotal}）· 旗 ${flags}/${level.mines}`
-                  : `开图 ${safeProgress}%（安全格 ${safeOpen}/${safeTotal}）· 旗 ${flags}/${level.mines}`}
+            : chordReady > 0
+              ? `Chord 可用×${chordReady}：旗数已对齐，中键/双击/点已翻数字可一次翻周围 · 开图 ${safeProgress}%`
+              : lateClear
+                ? `收官：还剩 ${safeLeft} 格 · 开图 ${safeProgress}% · 旗位对齐后 chord`
+                : phase === "playing" && level.mines - flags <= 3 && level.mines - flags > 0
+                  ? `剩余雷仅 ${level.mines - flags} · 开图 ${safeProgress}% · 旗位对齐后再 chord`
+                  : safeOpen === 0
+                    ? `首击安全区已生效 · 开图 0% · 旗 ${flags}/${level.mines}`
+                    : `开图 ${safeProgress}%（${safeOpen}/${safeTotal}）· 旗 ${flags}/${level.mines} · 旗数=数字时可 chord`}
         </p>
       )}
       <div className="game-bar">

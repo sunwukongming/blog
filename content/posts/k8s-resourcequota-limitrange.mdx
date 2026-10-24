@@ -1,0 +1,27 @@
+---
+title: K8s ResourceQuota 与 LimitRange：名额和默认值
+date: "2026-10-24"
+category: cloud
+summary: LimitRange 管单对象默认/上下限，ResourceQuota 管命名空间总和；先定默认值再收配额，避免 Pod 因无 request 被拒或被默默打满。
+---
+
+多租户或共享集群里，只靠「约定别写太大」不够。两个原生对象分工不同。
+
+## LimitRange
+
+- 为 Pod/Container 设 **default / defaultRequest / min / max**。  
+- 没写 request/limit 的容器会被填默认，避免进不到有 QoS 要求的调度。  
+- 过大的 limit 直接拒绝，保护节点。
+
+## ResourceQuota
+
+- 限制命名空间内 **CPU/内存/存储/对象数量** 的总和。  
+- 只算已声明的 request（以及部分等价规则）；没 request 的 Pod 可能占不到额度却占节点——所以常与 LimitRange 一起开。
+
+## 落地顺序
+
+1. 按团队定 LimitRange 默认（如 request 小、limit 合理倍数）。  
+2. 再设 ResourceQuota，按「峰值 × 副本」留余量。  
+3. 变更用干跑：`kubectl apply --dry-run=server`，并看 `kubectl describe quota`。
+
+与 PDB、HPA 稳定窗连读：配额是容量天花板，PDB/HPA 是可用性与弹性。

@@ -1,0 +1,35 @@
+---
+title: React useTransition：搜索框别把输入卡死
+date: "2026-10-24"
+category: frontend
+summary: 输入要急、过滤列表可以慢；用 useTransition 把重渲染标成非紧急，配合 startTransition 与 isPending 反馈。
+---
+
+搜索框一敲就卡，常见原因是 **每次按键都同步过滤大列表**。React 18+ 的 `useTransition` 把更新分成紧急与可中断。
+
+## 模式
+
+```tsx
+const [query, setQuery] = useState("");
+const [list, setList] = useState(items);
+const [pending, startTransition] = useTransition();
+
+function onChange(e: React.ChangeEvent<HTMLInputElement>) {
+  const q = e.target.value;
+  setQuery(q); // 紧急：输入框立刻跟上
+  startTransition(() => {
+    setList(filterHuge(items, q)); // 非紧急：可被下一次输入打断
+  });
+}
+```
+
+- `isPending`：给结果区加淡出 / 「更新中」，别挡住输入。  
+- 与 `useDeferredValue(query)` 二选一或组合：deferred 适合「一个值派生多个慢视图」。
+
+## 注意
+
+1. 不能替代 Web Worker：主线程仍要算，只是可中断、不堵输入。  
+2. 受控输入的 value 必须走紧急更新，否则会「吞字」。  
+3. 列表虚拟化（windowing）往往比 transition 更治本。
+
+和 `useDeferredValue`、`useEffectEvent` 连读：先减少工作量，再谈调度优先级。

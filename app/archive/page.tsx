@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import PostList from "@/components/PostList";
 import { getAllPosts } from "@/lib/posts";
+import { SITE, SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "归档",
@@ -22,8 +23,25 @@ export default async function Archive() {
   const years = Map.groupBy(posts, (p) => p.date.slice(0, 4));
   const current = String(new Date().getFullYear());
   const yearCount = years.size;
+  const itemListLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: `${SITE.name} 文章归档`,
+    description: "按年份归档的 GM Lab 笔记",
+    numberOfItems: posts.length,
+    itemListElement: posts.slice(0, 50).map((p, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      url: SITE_URL ? `${SITE_URL}/blog/${p.slug}` : `/blog/${p.slug}`,
+      name: p.title,
+    })),
+  };
   return (
     <main data-world="drive" className="page">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }}
+      />
       <div className="hero">
         <p className="eyebrow">Archive · {posts.length} entries</p>
         <h1 className="display">一路开过来的</h1>

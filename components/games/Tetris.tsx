@@ -51,6 +51,8 @@ type Stats = {
   clearTip: string | null;
   combo: number;
   b2b: boolean;
+  /** ghost soft-drop distance in cells */
+  ghost: number;
 };
 
 const KINDS: Kind[] = ["I", "O", "T", "S", "Z", "J", "L"];
@@ -396,6 +398,7 @@ export default function Tetris() {
     clearTip: null,
     combo: 0,
     b2b: false,
+    ghost: 0,
   });
   const [record, setRecord] = useState(false);
   const [best, submitBest] = useRecord("tetris", (next, prev) => next > prev);
@@ -418,6 +421,7 @@ export default function Tetris() {
       clearTip: g.clearTip,
       combo: g.combo,
       b2b: g.b2bArmed,
+      ghost: dropDistance(g),
     });
   };
 
@@ -708,10 +712,12 @@ export default function Tetris() {
         </p>
       )}
       {phase === "running" && !stats.clearTip && (
-        <p className="game-tip" aria-live="polite">
-          预览 {stats.next.join("→")}
-          {stats.hold ? ` · 暂存 ${stats.hold}` : " · 暂存空"}
+        <p className={stats.canHold ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">
+          幽灵落点 {stats.ghost} 格
           {stats.canHold === false ? " · Hold 已用（落地后恢复）" : " · Hold 可用"}
+          {stats.hold ? ` · 暂存 ${stats.hold}` : " · 暂存空"}
+          {" · 预览 "}
+          {stats.next.join("→")}
           {stats.b2b ? " · B2B 就绪" : ""}
           {stats.combo > 1 ? ` · 连消×${stats.combo}` : ""}
         </p>

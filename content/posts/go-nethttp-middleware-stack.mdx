@@ -1,0 +1,31 @@
+---
+title: Go net/http：中间件栈怎么叠才不疼
+date: "2026-10-24"
+category: backend
+summary: 用标准库 Handler 套娃即可；顺序要固定（recover → request id → log → auth → business），上下文只传请求级值。
+---
+
+`net/http` 没有「官方中间件框架」，但 `http.Handler` 组合足够用。痛点通常是 **顺序混乱** 和 **Context 塞了不该存活的东西**。
+
+## 推荐顺序（由外到内）
+
+1. **recover**：防 panic 打崩进程，统一 500。  
+2. **request id / trace**：尽早注入，后续日志能关联。  
+3. **access log / metrics**：包住业务耗时。  
+4. **timeout**：`http.TimeoutHandler` 或自定义。  
+5. **authz**：失败直接写响应，别进业务。  
+6. 业务 `ServeMux` / 路由。
+
+```go
+h := auth(log(recoverMiddleware(mux)))
+```
+
+写的时候从内往外嵌，读的时候从外往里执行。
+
+## 约定
+
+- 中间件只依赖 `context.Context` 与窄接口，避免全局可变单例。  
+- 响应写过一次就不要再写；用 `http.ResponseController`（Go 1.20+）谨慎 flush。  
+- 测试：用 `httptest` 对栈做表驱动，断言状态码与 header。
+
+框架（chi、echo）本质也是同一套套娃；团队小就标准库，路由表变复杂再引入路由器。

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import GamePlayer from "@/components/games/GamePlayer";
 import { GAMES, getPlayable } from "@/lib/games";
+import { SITE, SITE_URL } from "@/lib/site";
 
 export function generateStaticParams() {
   return GAMES.filter((g) => g.playable).map((g) => ({ slug: g.slug }));
@@ -12,12 +13,13 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: PageProps<"/games/[slug]">): Promise<Metadata> {
   const game = getPlayable((await params).slug);
   if (!game) return {};
-  const title = `${game.title} · GM Lab`;
+  const title = `${game.title} · ${SITE.name}`;
   const description = game.summary;
+  const url = SITE_URL ? `${SITE_URL}/games/${game.slug}` : undefined;
   return {
     title: game.title,
     description,
-    openGraph: { title, description, type: "website" },
+    openGraph: { title, description, type: "website", siteName: SITE.name, url },
     twitter: { card: "summary", title, description },
   };
 }

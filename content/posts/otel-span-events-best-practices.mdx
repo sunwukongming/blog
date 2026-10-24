@@ -1,0 +1,38 @@
+---
+title: OpenTelemetry Span Event：实践清单
+date: "2026-10-25"
+category: cloud
+summary: 站内 Event vs Attribute 讲分工。这篇给可执行清单：何时打 Event、命名与属性、基数与采样，以及别把日志整段塞进 Event。
+---
+
+Attribute 描述 span「是什么」，Event 记录「期间发生了什么」。分工见站内 vs-attrs；本文是 **落地清单**。
+
+## 该用 Event 的时候
+
+1. **少见拐点**：重试一次、降级、熔断打开、缓存击穿后回源成功。  
+2. **有时间点的子步骤**：`checkout.validated`、`payment.authorized`（仍挂在同一业务 span 下）。  
+3. **错误上下文**：在记录异常 Attribute 之外，补一条 `exception.recovered` 之类说明恢复路径。
+
+## 不该用 Event
+
+- 每个循环迭代、每条日志行 → 用日志或 metric。  
+- 稳定维度（`http.route`、`user.id` 哈希策略）→ Attribute。  
+- 高频心跳 → metric / 采样后的日志。
+
+## 命名与内容
+
+```text
+name: 短、稳定、过去分词或名词短语（retry / cache.miss）
+attributes: 少量低基数键；避免整段 stack 当字符串属性反复变长
+```
+
+一条 Event 的属性仍遵守高基数纪律；需要全文排障走日志关联 `trace_id`。
+
+## 采样与成本
+
+- 后端采样丢 span 时 Event 一起没；关键路径考虑 **头采样** 或独立审计日志。  
+- Event 过多会撑爆导出与存储；先限制「每 span 条数」再谈美化。
+
+## 一句话
+
+**Event = 稀疏时间点，不是第二套日志**；清单先过「稀不稀、能不能当属性」，再决定打点。

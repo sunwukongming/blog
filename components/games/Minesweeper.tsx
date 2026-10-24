@@ -465,6 +465,20 @@ export default function Minesweeper() {
             {flags}/{level.mines}
           </b>
           {flagDense ? <small style={{ marginLeft: 4, opacity: 0.85 }}>密</small> : null}
+          <span
+            className="mine-density-bar"
+            data-dense={flagDense || undefined}
+            data-over={flags > level.mines || undefined}
+            title={`插旗密度 ${flags}/${level.mines}`}
+            aria-label={`插旗 ${flags} 之 ${level.mines}`}
+          >
+            <i
+              className="mine-density-bar__fill"
+              style={{
+                width: `${Math.min(100, Math.round((flags / Math.max(1, level.mines)) * 100))}%`,
+              }}
+            />
+          </span>
           <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
           <span
             className="mine-safe-left-bar"

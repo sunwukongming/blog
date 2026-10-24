@@ -1,0 +1,45 @@
+---
+title: Go slog：LevelVar 动态调整级别
+date: "2026-10-25"
+category: backend
+summary: 站内 Handler 流水线、中间件与 Attr 助手讲组合与横切。这篇只谈 LevelVar：运行时抬/降级别，而不重建 Handler 树。
+---
+
+`slog.HandlerOptions.Level` 可以是 **`*slog.LevelVar`**：原子地改阈值，已挂上的 JSON/Text Handler 立刻按新级别过滤。流水线 / 中间件 / Attr 见站内文；本文只谈 **动态级别**。
+
+## 最小用法
+
+```go
+var level slog.LevelVar
+level.Set(slog.LevelInfo)
+
+h := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: &level})
+log := slog.New(h)
+
+// 排障时
+level.Set(slog.LevelDebug)
+// 恢复
+level.Set(slog.LevelInfo)
+```
+
+管理接口（受限的 admin HTTP、信号、配置热更）里改 `LevelVar`，比重启进程换 `LOG_LEVEL` 轻。
+
+## 和换 Handler 的差别
+
+| | `LevelVar` | 重建 `slog.New(...)` |
+|---|---|---|
+| 已创建的子 logger | 共享同一 Level 源则一起变 | 旧引用仍用旧 Handler |
+| With 出来的 logger | 通常仍指向同一 Handler | 易漏替换 |
+| 适用 | 级别旋钮 | 换格式/输出目标 |
+
+中间件里做采样仍可看 `Enabled`；**全局档位**交给 LevelVar，别在业务里人手 `if debug`.
+
+## 注意
+
+1. 多 Handler fan-out 时，每个底层 Handler 可共用一个 LevelVar，或各管各的。  
+2. Debug 全开前确认高基数字段已脱敏（见中间件文）。  
+3. 测试里用 LevelVar 可避免改全局默认。
+
+## 一句话
+
+**运行时调级别用 LevelVar**；换输出/格式再换 Handler，二者别搅在一起。

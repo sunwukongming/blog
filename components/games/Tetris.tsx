@@ -769,6 +769,15 @@ export default function Tetris() {
             </b>
             {stats.hold ? <small style={{ marginLeft: 4, opacity: 0.75 }}>{stats.hold}</small> : <small style={{ marginLeft: 4, opacity: 0.55 }}>空</small>}
             <span
+              className="tetris-hold-bar"
+              data-cool={stats.canHold === false || undefined}
+              data-ready={stats.canHold || undefined}
+              title={stats.canHold === false ? "Hold 条：冷却中" : "Hold 条：可用"}
+              aria-label={stats.canHold === false ? "Hold 冷却" : "Hold 可用"}
+            >
+              <i style={{ width: stats.canHold === false ? "28%" : "100%" }} />
+            </span>
+            <span
               className="tetris-hold-coolbar"
               data-cool={stats.canHold === false || undefined}
               data-ready={stats.canHold || undefined}

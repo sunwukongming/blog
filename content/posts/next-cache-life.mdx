@@ -1,0 +1,44 @@
+---
+title: Next.js cacheLife：按配置文件管缓存寿命
+date: "2026-10-25"
+category: frontend
+summary: 站内 cache tag / revalidateTag 讲按标签失效。这篇只谈 cacheLife：用 "minutes"/"hours" 等配置文件声明新鲜度与 stale，和 tag 失效怎么配合。
+---
+
+`revalidateTag` / `revalidatePath` 是 **主动失效**。**`cacheLife`**（及 `"use cache"` 生态下的寿命配置）用 **配置名** 声明这段缓存多重、允许多旧。tag 文见站内；本文只谈寿命档位。
+
+## 在想什么
+
+```ts
+// 示意：具体 API 随 Next 版本以官方文档为准
+"use cache";
+cacheLife("hours"); // 命中 next.config 里定义的 hours 档：stale / revalidate / expire
+```
+
+配置文件里为 `minutes` / `hours` / `days` 或自定义名写清：
+
+- **stale**：可先展示旧值再后台刷新  
+- **revalidate**：过期后重新拉的节奏  
+- **expire**：硬过期
+
+比在每个 `fetch` 上散落魔法数字更容易全局调参。
+
+## 和 tag 怎么配合
+
+| | cacheLife | revalidateTag |
+|---|---|---|
+| 驱动 | 时间 / 档位 | 写路径事件 |
+| 适合 | 可容忍延迟的列表、详情 | 编辑后立刻一致 |
+| 一起用 | 寿命兜底 + 关键写打 tag | 不要只靠超长 expire |
+
+「几乎不变的营销页」可偏 life；「库存/权限」偏 tag 或更短 life。
+
+## 注意
+
+- 未开 `"use cache"` / 实验开关时 API 不可用；先对版本。  
+- 档位名拼错会静默落到默认——配置要有类型或测试。  
+- 与 CDN `s-maxage` 是另一层；别假定 `cacheLife` 等于边缘 TTL。
+
+## 一句话
+
+**时间档用 cacheLife，事件失效用 tag**；两者叠用，少在业务里写死秒数。

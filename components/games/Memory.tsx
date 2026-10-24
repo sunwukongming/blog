@@ -210,6 +210,23 @@ export default function Memory() {
             {d.label}
           </button>
         ))}
+        <span
+          className="memory-diff-bar"
+          data-hard={diff.key === "hard" || undefined}
+          data-easy={diff.key === "easy" || undefined}
+          title={`难度 ${diff.label}（${DIFFS.findIndex((d) => d.key === diff.key) + 1}/${DIFFS.length}）`}
+          aria-label={`难度 ${diff.label}`}
+        >
+          <i
+            className="memory-diff-bar__fill"
+            style={{
+              width: `${Math.min(
+                100,
+                Math.round(((DIFFS.findIndex((d) => d.key === diff.key) + 1) / Math.max(1, DIFFS.length)) * 100),
+              )}%`,
+            }}
+          />
+        </span>
         <span className="spacer" />
         <span
           className={

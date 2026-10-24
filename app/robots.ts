@@ -8,6 +8,7 @@ import { SITE_URL } from "@/lib/site";
 // batch45: 复核 host + sitemap/feed 双挂；与首页 WebSite JSON-LD（sameAs/hasPart/SearchAction）对齐
 // batch48: 再核 host + sitemap.xml/feed.xml 双挂；与 GAMES_UPDATED/sitemap 游戏 lastmod 注释对齐
 // batch53: 再核 host 解析自 SITE_URL；sitemap 仍双挂 xml+feed，与博客列表 ItemList 同源
+// batch57: 再核 allow=/ 与 host/sitemap 双挂；与 blog ItemList 注释对齐
 export default function robots(): MetadataRoute.Robots {
   let host: string | undefined;
   try {

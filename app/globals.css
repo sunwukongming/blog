@@ -2521,3 +2521,77 @@ html:has(.page--game) { overscroll-behavior: none; }
 .pk-hand-bar[data-near] > i {
   background: linear-gradient(90deg, #f87171, #ef4444);
 }
+
+
+/* batch57: memory-diff-bar / mine-density-bar / tetris-hold-bar */
+.memory-diff-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.memory-diff-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #93c5fd, #3b82f6);
+  transition: width 100ms ease-out;
+}
+.memory-diff-bar[data-easy] .memory-diff-bar__fill {
+  background: linear-gradient(90deg, #86efac, #22c55e);
+}
+.memory-diff-bar[data-hard] .memory-diff-bar__fill {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+}
+
+.mine-density-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.mine-density-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #94a3b8, #64748b);
+  transition: width 100ms ease-out;
+}
+.mine-density-bar[data-dense] .mine-density-bar__fill {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+.mine-density-bar[data-over] .mine-density-bar__fill {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+}
+
+.tetris-hold-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.tetris-hold-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #34d399, #10b981);
+  transition: width 100ms ease-out;
+}
+.tetris-hold-bar[data-cool] > i {
+  background: linear-gradient(90deg, #94a3b8, #64748b);
+}
+.tetris-hold-bar[data-ready] > i {
+  background: linear-gradient(90deg, #22d3ee, #06b6d4);
+}

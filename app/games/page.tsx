@@ -34,6 +34,7 @@ export const metadata: Metadata = {
     // batch72: 再核 ItemList 仅 playable + inLanguage；与 robots 双挂再核对齐
     // batch74: 再核 ItemList 仅 playable + inLanguage；与 robots 双挂再核对齐
     // batch76: 再核 ItemList 仅 playable + inLanguage；与 robots 双挂再核对齐
+    // batch78: 再核 ItemList 仅 playable + inLanguage；与 robots 双挂再核对齐
     images: SITE_URL ? [`${SITE_URL}/icon.svg`] : undefined,
   },
 };

@@ -782,6 +782,19 @@ const [phase, setPhase] = useState<Phase>("select");
                   }}
                 />
               </span>
+              <span
+                className="breakout-multi-ball-bar"
+                data-hot={hud.balls >= 3 || undefined}
+                data-solo={hud.balls <= 1 || undefined}
+                title={`场上球 ${hud.balls}（满刻度按 3）`}
+                aria-label={`场上球 ${hud.balls} 个`}
+              >
+                <i
+                  style={{
+                    width: `${Math.min(100, Math.round((hud.balls / 3) * 100))}%`,
+                  }}
+                />
+              </span>
               <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
               速<b className={hud.lives <= 1 || hud.slow ? "game-tip--alert" : undefined}>{hud.ballSpeed}</b>
               <span

@@ -4053,3 +4053,76 @@ html:has(.page--game) { overscroll-behavior: none; }
 .tetris-level-done-bar[data-fresh] .tetris-level-done-bar__fill {
   background: linear-gradient(90deg, #93c5fd, #3b82f6);
 }
+
+/* batch78: snake-grow-pace-bar / breakout-multi-ball-bar / pk-folded-ratio-bar */
+.snake-grow-pace-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.snake-grow-pace-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #86efac, #22c55e);
+  transition: width 100ms ease-out;
+}
+.snake-grow-pace-bar[data-hot] > i {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+.snake-grow-pace-bar[data-slow] > i {
+  background: linear-gradient(90deg, #93c5fd, #3b82f6);
+}
+
+.breakout-multi-ball-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.breakout-multi-ball-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #a5b4fc, #6366f1);
+  transition: width 100ms ease-out;
+}
+.breakout-multi-ball-bar[data-hot] > i {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+.breakout-multi-ball-bar[data-solo] > i {
+  background: linear-gradient(90deg, #93c5fd, #3b82f6);
+}
+
+.pk-folded-ratio-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.pk-folded-ratio-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+  transition: width 100ms ease-out;
+}
+.pk-folded-ratio-bar[data-hot] > i {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+}
+.pk-folded-ratio-bar[data-cold] > i {
+  background: linear-gradient(90deg, #86efac, #22c55e);
+}

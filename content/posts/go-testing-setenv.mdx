@@ -1,0 +1,35 @@
+---
+title: "Go testing：t.Setenv 与环境变量隔离"
+date: "2026-10-25"
+category: backend
+summary: "站内写过 Deadline / Helper / synctest。这篇谈 t.Setenv：单测里改环境变量并自动还原，避免污染其它用例。"
+---
+
+读配置时常依赖 `os.Getenv`。测试里若直接 `os.Setenv` 而不还原，并行或后续用例会被脏环境带偏。**`t.Setenv(key, value)`**（Go 1.17+）在测末通过 `Cleanup` 恢复原值（或取消该键）。
+
+## 写法
+
+```go
+func TestPort(t *testing.T) {
+	t.Setenv("APP_PORT", "9090")
+	if got := os.Getenv("APP_PORT"); got != "9090" {
+		t.Fatalf("got %q", got)
+	}
+}
+```
+
+未设置过的键在测后会被 unset；原先有值则写回。
+
+## 边界
+
+- 与 **`t.Parallel()`**：同一 key 上并行 `Setenv` 会冲突；对该测不要 Parallel，或改用显式参数注入，别读全局环境。  
+- 只影响**当前进程**；子进程 / `exec` 出的命令需自行传 `cmd.Env`。  
+- 与 **`t.TempDir` / `t.Cleanup`** 正交：一个管文件，一个管环境。  
+- 生产代码尽量依赖注入的 config，而不是满地 `Getenv`；`Setenv` 是测遗留边界的补丁。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| t.Setenv | 本文 |
+| Deadline / Helper | 站内 go-testing-* 文 |

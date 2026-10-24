@@ -800,6 +800,31 @@ export default function Snake() {
                   }}
                 />
               </span>
+              <span
+                className="snake-grow-pace-bar"
+                data-hot={hud.seconds > 0 && hud.len / hud.seconds >= 0.35 || undefined}
+                data-slow={hud.seconds >= 20 && hud.len / Math.max(1, hud.seconds) < 0.08 || undefined}
+                title={
+                  hud.seconds > 0
+                    ? `体长配速 ${Math.round((hud.len / hud.seconds) * 100) / 100}/s（满刻度按 0.5/s）`
+                    : "体长配速 —"
+                }
+                aria-label={
+                  hud.seconds > 0
+                    ? `每秒约增长 ${Math.round((hud.len / hud.seconds) * 100) / 100} 节`
+                    : "体长配速未知"
+                }
+              >
+                <i
+                  style={{
+                    width: `${
+                      hud.seconds > 0
+                        ? Math.min(100, Math.round((hud.len / hud.seconds / 0.5) * 100))
+                        : 0
+                    }%`,
+                  }}
+                />
+              </span>
             </span>
             </span>
             <span

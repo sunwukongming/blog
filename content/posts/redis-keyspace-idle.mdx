@@ -1,0 +1,33 @@
+---
+title: "Redis OBJECT IDLETIME：空闲时间与淘汰手感"
+date: "2026-10-25"
+category: backend
+summary: "站内写过 maxmemory-policy 与 SCAN。这篇谈 OBJECT IDLETIME / 空闲感知：LRU 近似、排查冷键，以及和 LFU 计数的差别。"
+---
+
+排查「谁占内存却几乎不被访问」时，**`OBJECT IDLETIME key`** 返回键的近似**空闲秒数**（无访问多久）。它和 `maxmemory-policy` 里的 LRU/LFU 同源思路，便于人工确认冷热。
+
+## 常用
+
+```text
+OBJECT IDLETIME mykey
+OBJECT FREQ mykey
+TYPE mykey
+MEMORY USAGE mykey
+```
+
+`FREQ` 在 LFU 策略下更有意义；IDLETIME 更贴近「多久没碰」。
+
+## 边界
+
+- **近似值**：Redis 用采样 / 时钟槽，不是精确到每次访问的审计日志。  
+- 只读命令是否刷新空闲时间，以你版本语义为准；别在脚本里假设「随便 GET 一下 IDLETIME 仍旧」。  
+- 与 **eviction**：`volatile-lru` / `allkeys-lru` 看空闲；`*-lfu` 看频率——policy 文见站内。  
+- 大键清理前可结合 **SCAN** 抽样 IDLETIME，再决定 UNLINK（见 lazyfree / SCAN 文）。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| OBJECT IDLETIME | 本文 |
+| maxmemory-policy / SCAN | 站内 redis-* 文 |

@@ -1,0 +1,35 @@
+---
+title: "Vue 3 defineModel：get / set 改造值"
+date: "2026-10-25"
+category: frontend
+summary: "站内写过 withDefaults、泛型与 defineEmits 元组。这篇谈 defineModel 的 get/set：在读写 v-model 时变换值，少手写 update:modelValue。"
+---
+
+`defineModel` 默认直接透传。需要「展示小写 / 对外大写」或「空串当 undefined」时，可用 **get / set**：
+
+```ts
+const title = defineModel<string>({
+  get(value) {
+    return value ?? "";
+  },
+  set(value) {
+    return value.trim();
+  },
+});
+```
+
+模板里仍 `v-model="title"`；set 的返回值进入 `update:modelValue`。
+
+## 边界
+
+- `get`/`set` 是**可选**的；多数场景普通 `defineModel<string>()` 即可。  
+- 与 **多个** `defineModel('foo')` 命名模型兼容；每个模型各自 get/set。  
+- 别在 set 里做重 I/O；变换保持纯、可预测，副作用放 watch。  
+- 和 **defineEmits** 手写 `update:xxx` 二选一：已用 defineModel 就不要重复 emit 同名更新。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| defineModel get/set | 本文 |
+| defineEmits / withDefaults | 站内 vue3-* 文 |

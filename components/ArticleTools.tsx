@@ -165,3 +165,40 @@ export function ShareX({ title }: { title: string }) {
     </button>
   );
 }
+
+/** 相关推荐旁的阅读进度点（按正文滚动比例点亮） */
+export function ReadingDots({ count = 5 }: { count?: number }) {
+  const root = useRef<HTMLDivElement>(null);
+  const [lit, setLit] = useState(0);
+  useEffect(() => {
+    const el = root.current;
+    const article = articleOf(el);
+    if (!el || !article) return;
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const r = article.getBoundingClientRect();
+      const total = r.height - innerHeight;
+      const p = total > 0 ? Math.min(1, Math.max(0, -r.top / total)) : r.top < innerHeight ? 1 : 0;
+      setLit(Math.round(p * (count - 1)));
+    };
+    const schedule = () => {
+      if (!raf) raf = requestAnimationFrame(update);
+    };
+    schedule();
+    addEventListener("scroll", schedule, { passive: true });
+    addEventListener("resize", schedule);
+    return () => {
+      cancelAnimationFrame(raf);
+      removeEventListener("scroll", schedule);
+      removeEventListener("resize", schedule);
+    };
+  }, [count]);
+  return (
+    <div ref={root} className="reading-dots" aria-hidden="true" title="本文阅读进度">
+      {Array.from({ length: count }, (_, i) => (
+        <span key={i} className="reading-dots__dot" data-on={i <= lit || undefined} />
+      ))}
+    </div>
+  );
+}

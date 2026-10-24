@@ -3,7 +3,14 @@ import GameBest from "@/components/games/GameBest";
 import PostList from "@/components/PostList";
 import { GAMES } from "@/lib/games";
 import { getAllPosts } from "@/lib/posts";
-import { PROFILE } from "@/lib/site";
+import { PROFILE, SITE } from "@/lib/site";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  description: SITE.description,
+  openGraph: { title: SITE.name, description: SITE.description },
+};
+
 
 export default async function Home() {
   const posts = await getAllPosts();

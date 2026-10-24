@@ -3,7 +3,10 @@ import Link from "next/link";
 import { CATEGORIES } from "@/lib/categories";
 import { getAllPosts } from "@/lib/posts";
 
-export const metadata: Metadata = { title: "分类" };
+export const metadata: Metadata = {
+  title: "分类",
+  description: "按前端、后端、云与可观测、工具与随笔浏览 GM Lab 文章；每颗行星是一个分类。",
+};
 
 export default async function Categories() {
   const posts = await getAllPosts();

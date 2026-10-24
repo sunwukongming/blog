@@ -180,6 +180,14 @@ export default function Minesweeper() {
     setFocus(i);
   };
 
+  /** 中键 / 双击 / 点已翻数字：旗数对齐时翻周围（chord） */
+  const chordAt = (i: number) => {
+    if (i < 0 || phase === "won" || phase === "lost") return;
+    const c = cells[i];
+    if (!c?.open || !c.adj) return;
+    openAt(i);
+  };
+
   const onClick = (e: MouseEvent) => {
     const i = cellIndex(e);
     if (i < 0) return;
@@ -188,6 +196,19 @@ export default function Minesweeper() {
       return;
     }
     openAt(i);
+  };
+
+  const onAuxClick = (e: MouseEvent) => {
+    // 中键 chord，避免浏览器默认自动滚动
+    if (e.button !== 1) return;
+    e.preventDefault();
+    const i = cellIndex(e);
+    chordAt(i);
+  };
+
+  const onDoubleClick = (e: MouseEvent) => {
+    const i = cellIndex(e);
+    chordAt(i);
   };
 
   const onContextMenu = (e: MouseEvent) => {
@@ -290,8 +311,15 @@ export default function Minesweeper() {
           </button>
         ))}
         <span className="spacer" />
-        <span>
-          雷<b>{level.mines - flags}</b>
+        <span
+          className="mine-remaining"
+          data-low={phase === "playing" && level.mines - flags <= 3 && level.mines - flags > 0 ? true : undefined}
+          title="剩余雷数 = 本局雷数 − 已插旗"
+        >
+          剩余雷<b>{level.mines - flags}</b>
+          <small>
+            {Math.round((cells.filter((c) => c.open).length / (level.w * level.h)) * 100)}%
+          </small>
         </span>
         <span>
           时间<b>{seconds}</b>
@@ -304,6 +332,8 @@ export default function Minesweeper() {
         className="mines"
         style={{ "--w": level.w } as CSSProperties}
         onClick={onClick}
+        onAuxClick={onAuxClick}
+        onDoubleClick={onDoubleClick}
         onContextMenu={onContextMenu}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -353,13 +383,16 @@ export default function Minesweeper() {
             : (
               <>
                 <span className="when-mouse">
-                  {best !== null
-                    ? `${level.label}最快 ${best} 秒。方向键移动，回车翻开，空格或 F 插旗。`
-                    : "方向键移动焦点，回车翻开，空格或 F 插旗。第一下安全区不会踩雷。"}
+                  {phase === "playing" && level.mines - flags <= 3 && level.mines - flags > 0
+                    ? `还剩 ${level.mines - flags} 颗雷。中键或双击已翻数字可快速翻周围（旗数要对齐）。`
+                    : best !== null
+                      ? `${level.label}最快 ${best} 秒。点/中键/双击已翻数字可 chord；回车翻开，空格或 F 插旗。`
+                      : "点已翻数字、中键或双击可 chord（旗数=数字）。回车翻开，空格/F 插旗。第一下安全区。"}
                 </span>
                 <span className="when-touch">
-                  {best !== null ? `${level.label}最快 ${best} 秒。` : ""}
-                  轻点翻开，长按插旗（滑开取消）；插旗模式可快速标雷。第一下安全区不会踩雷。
+                  {phase === "playing" && level.mines - flags <= 3 && level.mines - flags > 0
+                    ? `还剩 ${level.mines - flags} 颗雷。点已翻开的数字（旗数对齐）可一次翻周围。`
+                    : `${best !== null ? `${level.label}最快 ${best} 秒。` : ""}轻点翻开，长按插旗；点已翻数字可 chord。第一下安全区。`}
                 </span>
               </>
             )}

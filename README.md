@@ -8,7 +8,7 @@
 | `/categories` | 轨道索引（星系） | 行星是分类，卫星是文章，点击行星飞过去 |
 | `/categories/[slug]` | 同上，镜头聚焦到该行星 | 分类摘要、篇数与阅读时长 |
 | `/blog` | 卡片环 | 文章列表；标题/摘要搜索与分类筛选 |
-| `/blog/[slug]` | 信号场（点阵） | 正文、目录 TOC、复制链接、分享到 X、阅读时长与相关推荐 |
+| `/blog/[slug]` | 信号场（点阵） | 正文、目录 TOC、复制链接、分享到 X、阅读时长、相关推荐与进度点 |
 | `/about` | 跳转到首页 | |
 | `/games` | 夜行（霓虹线框地形） | 游戏入口、本机纪录汇总与相关条目 |
 | `/games/[slug]` | 同上（背景静止，省电） | 能直接玩的小游戏：贪吃蛇、俄罗斯方块、2048、打砖块、扫雷、德州扑克、记忆翻牌 |
@@ -52,6 +52,7 @@ summary: 一句话摘要
 
 - `/feed.xml`：RSS 订阅
 - `/sitemap.xml`、`/robots.txt`：给搜索引擎（文章 lastmod 用发布日，列表页用最新文章日）
+- 首页与分类页带 description，便于搜索摘要
 - 每篇文章自动生成 1200×630 的分享图（`app/blog/[slug]/opengraph-image.tsx`），中文字体在构建时从 Google Fonts 按需下载
 
 ## 结构
@@ -65,7 +66,7 @@ components/games/
   GamePlayer.tsx    按 slug 只在客户端加载对应游戏
   input.ts          键盘、滑动、震动、本机最高分（localStorage）
   Snake / Tetris / Game2048 / Breakout / Minesweeper / Poker / Memory
-components/ArticleTools.tsx 文章目录、阅读进度条、代码复制、复制链接、分享到 X
+components/ArticleTools.tsx 文章目录、阅读进度条、相关推荐旁进度点、代码复制、复制链接、分享到 X
 components/MdxContent.tsx   编译 MDX，给 h2/h3 加锚点 id（规则和 lib/toc.ts 一致）
 components/WorldTheme.tsx   把当前世界写到 <html data-world>，驱动页面配色和地址栏颜色
 lib/posts.ts                读取 MDX 并校验 frontmatter（"use cache"，构建时预渲染）
@@ -90,6 +91,8 @@ lib/og.tsx                  分享图模板
 
 贪吃蛇和打砖块的关卡都是字符画，改完刷新就能玩：
 
+- 记忆翻牌：连续配对显示连击（翻错清零）
+- 扫雷：中键/双击/点数字 chord；剩余雷数带开图进度，少雷时高亮
 - 德州扑克：盲注每 10 手翻倍，上涨时条目标红并提示下一涨手次
 - 打砖块：多球道具（M）、关卡难度提示（球速/拍宽）
 - 俄罗斯方块：落地后有短暂锁定延迟，左右/旋转可重置（有上限）；硬降仍立即固定

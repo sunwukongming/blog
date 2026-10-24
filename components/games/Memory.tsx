@@ -48,6 +48,8 @@ export default function Memory() {
   const [running, setRunning] = useState(false);
   const [focus, setFocus] = useState(0);
   const [announce, setAnnounce] = useState("");
+  const [streak, setStreak] = useState(0);
+  const [bestStreak, setBestStreak] = useState(0);
   const [best, submitBest] = useRecord(recordKey(diff), lower);
   // 兼容第一批只写过 memory 键的普通难度纪录
   const [legacy] = useRecord("memory", lower);
@@ -97,14 +99,22 @@ export default function Memory() {
     const pairB = cards[i].pair;
 
     if (pairA === pairB) {
-      buzz(18);
-      setAnnounce("配对成功，" + SYMBOLS[pairA]);
+      const nextStreak = streak + 1;
+      setStreak(nextStreak);
+      setBestStreak((b) => Math.max(b, nextStreak));
+      buzz(nextStreak >= 3 ? [18, 40, 18] : 18);
+      setAnnounce(
+        nextStreak >= 2
+          ? `配对成功，${SYMBOLS[pairA]}，连击 ×${nextStreak}`
+          : "配对成功，" + SYMBOLS[pairA],
+      );
       setCards((prev) =>
         prev.map((x) => (x.id === a || x.id === i ? { ...x, flipped: true, matched: true } : x)),
       );
       return;
     }
 
+    setStreak(0);
     setAnnounce("不同，已翻回");
     setLock(true);
     window.setTimeout(() => {
@@ -125,6 +135,9 @@ export default function Memory() {
     setSeconds(0);
     setRunning(false);
     setFocus(0);
+    setStreak(0);
+    setBestStreak(0);
+    setAnnounce("");
   };
 
   useKeys((key) => {
@@ -188,6 +201,10 @@ export default function Memory() {
             {matchedCount}/{pairs}
           </b>
         </span>
+        <span className={streak >= 2 ? "game-tip--alert" : undefined} data-combo={streak >= 2 || undefined}>
+          连击<b>{streak}</b>
+          {bestStreak > 1 ? <small style={{ marginLeft: 4, opacity: 0.7 }}>最高{bestStreak}</small> : null}
+        </span>
         <span>
           时间<b>{seconds}</b>
         </span>
@@ -242,10 +259,12 @@ export default function Memory() {
       </p>
       <p className="game-hint" aria-live="polite">
         {won
-          ? `全部配对，用了 ${moves} 步、${seconds} 秒${shownBest !== null && moves <= shownBest ? "，新纪录！" : "。"}`
-          : shownBest !== null
-            ? `${diff.label}本机最少 ${shownBest} 步。方向键移动，Home/End 跳首尾，回车或空格翻牌。`
-            : "方向键移动焦点，Home/End 跳首尾，回车或空格翻牌；也可点选。步数越少越好。"}
+          ? `全部配对，用了 ${moves} 步、${seconds} 秒${bestStreak > 1 ? `，最高连击 ×${bestStreak}` : ""}${shownBest !== null && moves <= shownBest ? "，新纪录！" : "。"}`
+          : streak >= 2
+            ? `连击 ×${streak}！连续配对会累加；翻错就清零。`
+            : shownBest !== null
+              ? `${diff.label}本机最少 ${shownBest} 步。连续配对可连击；方向键移动，Home/End 跳首尾，回车或空格翻牌。`
+              : "连续配对会显示连击。方向键移动焦点，Home/End 跳首尾，回车或空格翻牌；也可点选。步数越少越好。"}
       </p>
     </div>
   );

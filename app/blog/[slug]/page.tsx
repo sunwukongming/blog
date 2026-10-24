@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CodeCopy, CopyLink, ReadingProgress, ShareX, Toc } from "@/components/ArticleTools";
+import { CodeCopy, CopyLink, ReadingDots, ReadingProgress, ShareX, Toc } from "@/components/ArticleTools";
 import MdxContent from "@/components/MdxContent";
 import { getCategory } from "@/lib/categories";
 import { getAllPosts, getPost, getRelatedPosts } from "@/lib/posts";
@@ -71,7 +71,10 @@ async function PostBody({ params }: { params: Promise<{ slug: string }> }) {
       <CodeCopy />
       {related.length > 0 && (
         <section className="panel related-posts" data-ui aria-labelledby="related-heading">
-          <h2 id="related-heading">相关推荐</h2>
+          <div className="related-posts__head">
+            <h2 id="related-heading">相关推荐</h2>
+            <ReadingDots />
+          </div>
           <ul className="related-posts__list">
             {related.map((r) => (
               <li key={r.slug}>

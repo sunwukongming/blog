@@ -58,6 +58,7 @@ async function CategoryPanel({ params }: { params: Promise<{ slug: string }> }) 
   const posts = (await getAllPosts()).filter((p) => p.category === category.slug);
   const minutes = posts.reduce((n, p) => n + p.readingMinutes, 0);
   const pageUrl = SITE_URL ? `${SITE_URL}/categories/${category.slug}` : `/categories/${category.slug}`;
+  // batch49: CollectionPage JSON-LD 复核 numberOfItems/isPartOf/about + mainEntity ItemList
   const collectionLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",

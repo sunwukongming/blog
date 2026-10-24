@@ -22,6 +22,7 @@ export const metadata: Metadata = {
     title: SITE.name,
     description: SITE.description,
     // batch41: 与 openGraph.images 对齐，首页分享不落无图
+    // batch49: 再核 OG/Twitter images 同源 icon.svg；WebSite JSON-LD 见下方 batch45 注释
     images: SITE_URL ? [`${SITE_URL}/icon.svg`] : undefined,
   },
   alternates: SITE_URL

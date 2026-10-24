@@ -386,6 +386,22 @@ export default function Minesweeper() {
               }}
             />
           </span>
+          <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
+          旗<b>{flags}</b>
+          <span
+            className="mine-flags-bar"
+            data-over={flags > level.mines || undefined}
+            data-match={flags === level.mines || undefined}
+            title={`已插旗 ${flags} / 雷 ${level.mines}`}
+            aria-label={`已插旗 ${flags}`}
+          >
+            <i
+              className="mine-flags-bar__fill"
+              style={{
+                width: `${Math.min(100, Math.round((flags / Math.max(1, level.mines)) * 100))}%`,
+              }}
+            />
+          </span>
         </span>
         <span
           className="mine-progress mine-open-flag mine-chord-open mine-chord-openable mine-late-openable mine-chord-peak-host"

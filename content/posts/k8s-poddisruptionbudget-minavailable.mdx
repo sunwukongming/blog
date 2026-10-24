@@ -1,0 +1,57 @@
+---
+title: PDB minAvailable vs maxUnavailable：怎么选
+date: "2026-10-25"
+category: cloud
+summary: 站内 PDB 文讲自愿中断与副本配合。这篇只做对照：minAvailable 与 maxUnavailable 在滚动、HPA、单副本上的差异，以及百分比取整坑。
+---
+
+PDB 只能二选一写 **`minAvailable`** 或 **`maxUnavailable`**（个数或百分比）。语义对称，和 HPA/滚动发布叠在一起时手感不同。
+
+## 对照
+
+| | `minAvailable` | `maxUnavailable` |
+|---|---|---|
+| 含义 | 中断后仍要保住的「可用」下限 | 允许同时不可用的上限 |
+| 直觉 | 「至少留 N / N%」 | 「一次最多动 N / N%」 |
+| 扩容后 | 绝对数可能偏紧（仍要留够旧 N） | 百分比随副本涨，绝对数随涨 |
+| 缩容后 | 绝对数可能过高导致 **永远 drain 不动** | 百分比更易跟着缩 |
+
+```yaml
+# 无状态双副本：一次只动一个
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: api
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: api
+
+---
+# 要硬保「至少 2 个就绪」——副本必须 >2，否则自愿中断会卡住
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: payments
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: payments
+```
+
+## 选型信号
+
+1. **跟 HPA 的百分比副本**：优先 `maxUnavailable: 1` 或小百分比，避免 `minAvailable: 2` 在缩到 2 时把 drain 锁死。  
+2. **合规「最少 N 份」**：用 `minAvailable: N`，并把 HPA `minReplicas` 设到 **> N**。  
+3. **百分比取整**：`minAvailable: 50%` 在 3 副本时行为要自己算清楚（向下/向上取整以当前 API 为准），别假设「总能走一个」。  
+4. **单副本**：两种写法都救不了可用性——先加副本（见站内 PDB 总览）。
+
+## 和站内 PDB 文
+
+总览讲自愿中断、与拓扑/反亲和；**本文只抠两个字段的选型与和 HPA 的咬合**。
+
+## 一句话
+
+**弹性副本跟 maxUnavailable；硬保份数用 minAvailable 并抬高 minReplicas。**

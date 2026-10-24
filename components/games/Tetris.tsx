@@ -687,6 +687,14 @@ export default function Tetris() {
         </span>
         <span>
           行<b>{stats.lines}</b>
+          <span
+            className="tetris-lines-bar"
+            data-hot={stats.lines >= 40 || undefined}
+            title={`本局消行 ${stats.lines}（满刻度按 50）`}
+            aria-label={`消行 ${stats.lines}`}
+          >
+            <i style={{ width: `${Math.min(100, Math.round((stats.lines / 50) * 100))}%` }} />
+          </span>
         </span>
         <span>
           等级<b>{stats.level}</b>

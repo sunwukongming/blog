@@ -235,6 +235,20 @@ export default function Memory() {
           配对<b>
             {matchedCount}/{pairs}
           </b>
+          <span
+            className="memory-matched-bar"
+            data-done={matchedCount >= pairs && pairs > 0 || undefined}
+            data-high={pairs > 0 && matchedCount / pairs >= 0.7 || undefined}
+            title={`已配 ${matchedCount} / ${pairs}`}
+            aria-label={`已配 ${matchedCount} 对`}
+          >
+            <i
+              className="memory-matched-bar__fill"
+              style={{
+                width: `${pairs ? Math.min(100, Math.round((matchedCount / pairs) * 100)) : 0}%`,
+              }}
+            />
+          </span>
           {endgame ? <small style={{ marginLeft: 4, opacity: 0.85 }}>残局{leftPairs}</small> : null}
           <span
             className="memory-left-bar"

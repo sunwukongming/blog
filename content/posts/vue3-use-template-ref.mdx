@@ -1,0 +1,48 @@
+---
+title: Vue 3 useTemplateRef：类型化模板引用
+date: "2026-10-25"
+category: frontend
+summary: Vue 3.5 起的 useTemplateRef 用字符串名拿到模板 ref，并带上更稳的类型。对比 ref(null) + 同名变量的旧写法，以及和 defineExpose 的边界。
+---
+
+以前在 `<script setup>` 里写 `const input = ref<HTMLInputElement | null>(null)`，模板 `ref="input"` 靠同名约定。**`useTemplateRef('input')`** 把名字变成显式 API，类型也更好推。
+
+## 基本用法
+
+```vue
+<script setup lang="ts">
+import { useTemplateRef, onMounted } from "vue";
+
+const input = useTemplateRef<HTMLInputElement>("input");
+
+onMounted(() => {
+  input.value?.focus();
+});
+</script>
+
+<template>
+  <input ref="input" />
+</template>
+```
+
+字符串参数必须与模板 `ref` 一致；改名时两边一起改，比「变量名碰巧一样」更可搜。
+
+## 和旧写法
+
+| | `ref(null)` + 同名 | `useTemplateRef` |
+|---|---|---|
+| 绑定 | 靠标识符巧合 | 显式字符串 |
+| 类型 | 常要手写 `| null` | 泛型 + 运行时填充 |
+| 动态 ref | 别扭 | 仍建议稳定名；列表用函数 ref |
+
+组件实例：子组件 `defineExpose` 后，父级 `useTemplateRef<InstanceType<typeof Child>>('child')` 才能点到暴露方法。
+
+## 注意
+
+1. **setup 顶层调用**：别在条件分支里创建，和普通 composable 一样。  
+2. **v-for**：优先函数 ref 或子组件，不要指望一个 string ref 指向多项。  
+3. **SSR**：挂载前 `value` 为 `null`，读写放在 `onMounted` / 事件里。
+
+## 一句话
+
+稳定单节点/单组件引用用 **`useTemplateRef`**；列表与动态数量继续函数 ref。

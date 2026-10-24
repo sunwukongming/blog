@@ -680,12 +680,9 @@ export default function Tetris() {
         <span>
           等级<b>{stats.level}</b>
         </span>
-        {stats.combo > 1 && (
-          <span>
-            连消<b>×{stats.combo}</b>
-          </span>
-        )}
-        <span title={stats.b2b ? "下一次 Tetris / T-Spin 将触发 Back-to-Back" : "先完成 Tetris / T-Spin 以武装 B2B"}>
+        <span title="连消与 B2B 同屏：连续消行累加；Tetris/T-Spin 武装 B2B">
+          连消<b className={stats.combo > 1 ? "game-tip--alert" : undefined}>×{stats.combo}</b>
+          <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
           B2B<b className={stats.b2b ? "game-tip--alert" : undefined}>{stats.b2b ? "就绪" : "—"}</b>
         </span>
         {(phase === "running" || phase === "paused") && (
@@ -715,14 +712,12 @@ export default function Tetris() {
         </p>
       )}
       {phase === "running" && !stats.clearTip && (
-        <p className={stats.b2b || stats.canHold ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">
-          {stats.b2b ? "B2B 就绪" : "B2B 未武装"}
-          {" · 幽灵落点 "}
+        <p className={stats.b2b || stats.combo > 1 || stats.canHold ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">
+          {`连消×B2B：连消 ×${stats.combo} · B2B ${stats.b2b ? "就绪" : "未武装"}`}
+          {" · 幽灵 "}
           {stats.ghost}
           {" 格"}
           {stats.canHold === false ? " · Hold 已用" : " · Hold 可用"}
-          {stats.hold ? ` · 暂存 ${stats.hold}` : ""}
-          {stats.combo > 1 ? ` · 连消×${stats.combo}` : ""}
         </p>
       )}
       <div className="tetris">

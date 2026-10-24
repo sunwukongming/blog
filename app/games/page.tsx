@@ -3,6 +3,7 @@ import Link from "next/link";
 import GameBest from "@/components/games/GameBest";
 import GameIcon from "@/components/games/GameIcon";
 import { GAMES, gamesByStatus, type GameItem } from "@/lib/games";
+import { SITE, SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "游戏",
@@ -28,8 +29,26 @@ const STATUS_LABEL: Record<GameItem["status"], string> = {
 export default function GamesPage() {
   const playable = GAMES.filter((g) => g.playable);
   const groups = gamesByStatus().map(({ status, items }) => ({ status, items: items.filter((g) => !g.playable) }));
+  const itemListLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: `${SITE.name} 游戏`,
+    description: "站内可玩小游戏列表",
+    numberOfItems: playable.length,
+    itemListElement: playable.map((game, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      url: SITE_URL && game.href ? `${SITE_URL}${game.href}` : game.href,
+      name: game.title,
+      description: game.summary,
+    })),
+  };
   return (
     <main data-world="drive" className="page">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }}
+      />
       <div className="hero">
         <p className="eyebrow">Games · GM Lab</p>
         <h1 className="display">游戏</h1>

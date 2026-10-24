@@ -1,0 +1,25 @@
+---
+title: K8s Ingress 超时：proxy-read 与上游别各说各话
+date: "2026-10-24"
+category: cloud
+summary: Ingress/Nginx 的 proxy-read-timeout 要覆盖上游最慢接口；短了客户端先断，长了占连接。和 Service、应用自己的 deadline 对齐。
+---
+
+网关超时与应用超时不一致时，表现是「偶发 502/504」或「客户端已走、服务还在算」。
+
+## 常见旋钮（Nginx Ingress）
+
+- `nginx.ingress.kubernetes.io/proxy-connect-timeout`
+- `nginx.ingress.kubernetes.io/proxy-send-timeout`
+- `nginx.ingress.kubernetes.io/proxy-read-timeout`
+
+单位多为秒。长轮询、大上传、慢报表要把 **read** 拉到覆盖 P99，而不是平均值。
+
+## 对齐清单
+
+1. Ingress read ≥ 应用处理上限（含下游 RPC）。  
+2. 客户端（浏览器/SDK）超时略长于 Ingress，避免「网关还在等、客户端已重试」。  
+3. 上游有 `context` / 请求 deadline 时，略短于网关，便于主动取消而非被 RST。  
+4. WebSocket 另看 `proxy-read-timeout` 与注解里的 upgrade 相关项。
+
+改超时前先看 access/error 日志是 upstream timed out 还是 client closed——对症加时间，而不是一律 3600。

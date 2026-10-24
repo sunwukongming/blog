@@ -70,6 +70,8 @@ export default function Memory() {
   const leftPairs = pairs - matchedCount;
   const won = matchedCount === pairs;
   const endgame = running && !won && leftPairs > 0 && leftPairs <= 3;
+  const focusRow = Math.floor(focus / diff.cols) + 1;
+  const focusCol = (focus % diff.cols) + 1;
 
   useEffect(() => {
     if (!running || won) return;
@@ -230,7 +232,7 @@ export default function Memory() {
       </div>
       <p className={endgame || streak >= 2 ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">
         {endgame
-          ? `残局：还剩 ${leftPairs} 对 · 连击 ${streak}${bestStreak > 1 ? `（峰 ${bestStreak}）` : ""} · 步数 ${moves}`
+          ? `残局：还剩 ${leftPairs} 对 · 焦点 第${focusRow}行${focusCol}列（牌 ${focus + 1}） · 连击 ${streak}${bestStreak > 1 ? `（峰 ${bestStreak}）` : ""}`
           : `本局连击 ${streak}${bestStreak > 1 ? `（本档峰 ${bestStreak}）` : ""}`}
         {" · "}
         最少 <b>{shownBest ?? "—"}</b> 步
@@ -243,7 +245,7 @@ export default function Memory() {
             <b className={DIFFS[i].key === diff.key ? "game-tip--alert" : undefined}>{x.best ?? "—"}</b>
           </span>
         ))}
-        {endgame ? " · 少翻错更易刷纪录" : " · 切换难度保留连击峰"}
+        {endgame ? " · 方向键移焦后回车翻，少翻错" : " · 切换难度保留连击峰"}
       </p>
       <div
         className="memory"
@@ -294,7 +296,7 @@ export default function Memory() {
         {won
           ? `全部配对，用了 ${moves} 步、${seconds} 秒${bestStreak > 1 ? `，最高连击 ×${bestStreak}` : ""}${shownBest !== null && moves <= shownBest ? "，新纪录！" : "。"}`
           : endgame
-            ? `残局提示：还剩 ${leftPairs} 对未翻开，优先回忆已见过的符号。`
+            ? `残局焦点：第${focusRow}行${focusCol}列（牌 ${focus + 1}），还剩 ${leftPairs} 对；方向键移焦，回车/空格翻牌。`
             : streak >= 2
               ? `连击 ×${streak}！连续配对会累加；翻错就清零。`
               : shownBest !== null

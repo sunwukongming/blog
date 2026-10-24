@@ -1,0 +1,37 @@
+---
+title: Go atomic 还是 Mutex：计数与临界区怎么选
+date: "2026-10-24"
+category: backend
+summary: 单变量加减、标志位用 atomic；多字段不变式、切片/map 更新用 Mutex。别用 atomic 拼「看起来无锁」的复合状态。
+---
+
+热路径上锁贵，但 **错误的无锁更贵**。
+
+## atomic 合适
+
+```go
+var n atomic.Int64
+n.Add(1)
+if n.Load() > limit { ... }
+```
+
+计数器、一次写多次读的开关、`CompareAndSwap` 状态机（状态本身是一个字宽）。
+
+## Mutex 合适
+
+```go
+var mu sync.Mutex
+mu.Lock()
+defer mu.Unlock()
+// 同时改 len、buf、dirty 等多个字段
+```
+
+需要「读 A 再决定写 B」、维护 map/slice、或不变式跨字段时，用锁（或 `RWMutex` 读多写少）。
+
+## 别踩
+
+- 用多个 `atomic` 变量「拼」一个结构却不加屏障约定 → 数据竞争或逻辑洞。  
+- `atomic.Value` 存大结构要接受整换引用，不适合频繁局部改。  
+- 性能争议先 benchmark；多数业务 Mutex 足够，过早 atomic 难审。
+
+和 `sync/atomic` 文档连读：保证的是字宽操作的原子性，不是业务事务。

@@ -1,0 +1,22 @@
+---
+title: React Compiler：边界在哪，memo 还要不要手写
+date: "2026-10-24"
+category: frontend
+summary: Compiler 自动记忆化组件与钩子依赖；仍要守住纯渲染、稳定 props，并在不兼容模式或逃逸口保留手动 memo。
+---
+
+React Compiler（React 19 生态）在构建期插入缓存，减少手写 `useMemo` / `useCallback` / `memo`。
+
+## 它帮你什么
+
+- 按规则对组件输出与钩子依赖做记忆化。  
+- 减少「漏依赖」与「无意义重渲染」的样板。
+
+## 边界
+
+1. **必须保持纯**：渲染里别偷偷写外部可变状态；违规处 Compiler 可能跳过或告警。  
+2. **不稳定身份**：每次 render 新建的 `style={{}}`、内联函数若穿过未编译边界，子树仍可能抖。  
+3. **逃逸口**：第三方组件、有意每次刷新的动画、或显式 `"use no memo"` 一类指令（以当前文档为准）。  
+4. 与现有 `memo` 可共存；新代码优先让 Compiler 管，审 PR 看的是数据流而不是缓存装饰。
+
+上 Compiler 前用官方 eslint 插件扫一遍；先修不纯组件，再开全量。

@@ -163,6 +163,11 @@ export default function Minesweeper() {
   const safeLeft = safeTotal - safeOpen;
   const lateClear = phase === "playing" && safeLeft > 0 && safeLeft <= Math.max(5, Math.ceil(safeTotal * 0.12));
   const chordReady = phase === "playing" ? chordReadyIndices(cells, level).length : 0;
+  const flagDense =
+    phase === "playing" &&
+    safeProgress > 20 &&
+    safeProgress < 75 &&
+    flags >= Math.max(2, Math.ceil(level.mines * 0.45));
   const seconds = Math.floor(
     phase === "playing" ? Math.max(0, now - game.startedAt) / 1000 : phase === "ready" ? 0 : (game.endedAt - game.startedAt) / 1000,
   );
@@ -406,7 +411,7 @@ export default function Minesweeper() {
         ))}
       </div>
       {(phase === "ready" || phase === "playing") && (
-        <p className={chordReady > 0 || lateClear || (phase === "playing" && level.mines - flags <= 3 && level.mines - flags > 0) || (phase === "playing" && safeOpen > 0 && safeProgress <= 20) ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">
+        <p className={chordReady > 0 || lateClear || flagDense || (phase === "playing" && level.mines - flags <= 3 && level.mines - flags > 0) || (phase === "playing" && safeOpen > 0 && safeProgress <= 20) ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">
           {phase === "ready"
             ? "首击安全区：第一下落点及其周围不会埋雷，可放心开图。"
             : chordReady > 0
@@ -415,7 +420,9 @@ export default function Minesweeper() {
                 ? `收官：还剩 ${safeLeft} 格 · 开图 ${safeProgress}% · 旗位对齐后 chord`
                 : phase === "playing" && level.mines - flags <= 3 && level.mines - flags > 0
                   ? `剩余雷仅 ${level.mines - flags} · 开图 ${safeProgress}% · 旗位对齐后再 chord`
-                  : phase === "playing" && safeOpen > 0 && safeProgress <= 20
+                  : flagDense
+                  ? `中盘旗密：已插 ${flags}/${level.mines} · 开图 ${safeProgress}% · 核对数字再 chord，忌盲插`
+                : phase === "playing" && safeOpen > 0 && safeProgress <= 20
                     ? `首击后：安全区已展开 · 开图 ${safeProgress}%（${safeOpen}/${safeTotal}）· 先清边再标旗，旗数=数字可 chord`
                     : safeOpen === 0
                       ? `首击安全区已生效 · 开图 0% · 旗 ${flags}/${level.mines}`

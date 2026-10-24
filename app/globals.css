@@ -1617,3 +1617,85 @@ html:has(.page--game) { overscroll-behavior: none; }
 .pk-pot-odds-bar[data-rich] > i {
   background: linear-gradient(90deg, #f87171, #ef4444);
 }
+
+/* batch45: memory-eff-bar */
+.memory-eff-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+.memory-eff-bar__fill,
+.memory-eff-bar > i.memory-eff-bar__fill {
+  display: inline-block;
+  vertical-align: middle;
+  width: 36px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  position: relative;
+  overflow: hidden;
+}
+.memory-eff-bar i.memory-eff-bar__fill {
+  /* fill uses width % on the i itself as the bar track+fill pattern used elsewhere */
+  background: linear-gradient(90deg, #f87171, #fbbf24);
+}
+.memory-eff-bar[data-ok] i.memory-eff-bar__fill {
+  background: linear-gradient(90deg, #fbbf24, #34d399);
+}
+.memory-eff-bar[data-good] i.memory-eff-bar__fill {
+  background: linear-gradient(90deg, #34d399, #67e8f9);
+}
+
+/* batch45: mine-open-bar */
+.mine-open-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 44px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.mine-open-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #60a5fa, #34d399);
+  transition: width 120ms ease-out;
+}
+.mine-open-bar[data-late] .mine-open-bar__fill,
+.mine-open-bar[data-seg="late"] .mine-open-bar__fill {
+  background: linear-gradient(90deg, #fbbf24, #34d399);
+}
+.mine-open-bar[data-seg="early"] .mine-open-bar__fill {
+  background: linear-gradient(90deg, #64748b, #60a5fa);
+}
+
+/* batch45: tetris-combo-peak-bar */
+.tetris-combo-peak-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.tetris-combo-peak-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #a78bfa, #60a5fa);
+  transition: width 100ms ease-out;
+}
+.tetris-combo-peak-bar[data-peak] .tetris-combo-peak-bar__fill {
+  background: linear-gradient(90deg, #fbbf24, #f472b6);
+}
+.tetris-combo-peak-bar[data-hot] .tetris-combo-peak-bar__fill {
+  background: linear-gradient(90deg, #f472b6, #ef4444);
+}
+

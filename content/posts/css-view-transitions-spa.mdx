@@ -1,0 +1,53 @@
+---
+title: CSS View Transitions 接 SPA 导航：Next / 路由级共享元素
+date: "2026-10-25"
+category: frontend
+summary: 站内另有同文档 startViewTransition 基础文。这篇只谈 SPA 路由切换：view-transition-name、next-view-transitions 与降级。
+---
+
+同文档 VT（主题、列表重排）用 `document.startViewTransition` 包一次 DOM 突变即可。**SPA 导航**要在「旧页快照 → 路由换树 → 新页快照」之间命名共享元素，否则只有整页淡入，没有列表→详情的英雄动画。
+
+## 和同文档 VT 的边界
+
+| | 同文档（已有文） | SPA 导航（本文） |
+|---|---|---|
+| 触发 | 一次 `startViewTransition(() => mutate())` | 路由库在换页前后挂钩子 |
+| 命名 | 可选 `view-transition-name` | **必须**给跨页共享节点稳定 name |
+| 典型 | 暗色切换、卡片重排 | 列表缩略图 → 详情头图 |
+
+## 最小接线
+
+1. 列表卡片与详情英雄图使用 **同一** `view-transition-name`（例如 `vt-post-${slug}`），离场页卸 name，避免多名冲突。  
+2. 用框架适配器包住导航：Next App Router 常见 [`next-view-transitions`](https://github.com/shuding/next-view-transitions) 的 `Link` / `useTransitionRouter`；或自管 `startViewTransition` + `router.push`。  
+3. 用 `@media (prefers-reduced-motion: reduce)` 关掉或缩短动画；不支持的浏览器应 **直接导航**，不要卡在 Promise。
+
+```css
+.card-thumb[data-vt] { view-transition-name: var(--vt-name); }
+::view-transition-old(vt-post-demo),
+::view-transition-new(vt-post-demo) {
+  animation-duration: 280ms;
+  animation-timing-function: ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) { animation: none !important; }
+}
+```
+
+## 实操坑
+
+| 坑 | 现象 | 处置 |
+|---|---|---|
+| 同时两个节点同名 | 过渡乱跳 / 控制台警告 | 离场前清 name；一页一唯一名 |
+| 在 `useEffect` 里晚赋 name | 快照时还没名字 | 渲染期就写上，或同步在 transition 回调前 |
+| 大块 `view-transition-name: root` 乱加 | 整页像幻灯 | 只点名共享元素 |
+| 忽略 BFCache / 返回手势 | 返回无动画或闪白 | 测浏览器返回；必要时对 popstate 降级 |
+
+## 和 Motion 库
+
+Framer Motion 的 `layoutId` 解决「同树重排」很强；跨路由且要系统级前后快照时，VT 更贴平台（含将来的跨文档）。可以并存：列表内 layout，跨页 VT。
+
+## 一句话
+
+同文档 VT 管「这一页怎么变」；SPA VT 管「两页之间哪块是同一物件」。先稳定 `view-transition-name` 与降级，再调 `::view-transition-*` 曲线。与 `css-view-transitions` 互补，不替代。

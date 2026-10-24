@@ -38,6 +38,8 @@ type Game = {
   clearTip: string | null;
   /** consecutive line-clear locks */
   combo: number;
+  /** peak combo this run */
+  comboPeak: number;
   /** last clear was difficult (Tetris / T-Spin) — arms Back-to-Back */
   b2bArmed: boolean;
 };
@@ -50,6 +52,7 @@ type Stats = {
   canHold: boolean;
   clearTip: string | null;
   combo: number;
+  comboPeak: number;
   b2b: boolean;
   /** ghost soft-drop distance in cells */
   ghost: number;
@@ -126,6 +129,7 @@ function newGame(): Game {
     lastWasRotate: false,
     clearTip: null,
     combo: 0,
+    comboPeak: 0,
     b2bArmed: false,
   };
 }
@@ -238,6 +242,7 @@ function lock(g: Game) {
     const difficult = tspin || cleared >= 4;
     const b2b = difficult && g.b2bArmed;
     g.combo += 1;
+    if (g.combo > g.comboPeak) g.comboPeak = g.combo;
     const base = LINE_SCORE[cleared] * g.level;
     let gained = tspin ? base + 400 * g.level * cleared : base;
     if (b2b) gained = Math.floor(gained * 1.5);
@@ -399,6 +404,7 @@ export default function Tetris() {
     canHold: true,
     clearTip: null,
     combo: 0,
+    comboPeak: 0,
     b2b: false,
     ghost: 0,
     linesToLevel: 10,
@@ -423,6 +429,7 @@ export default function Tetris() {
       canHold: g.canHold,
       clearTip: g.clearTip,
       combo: g.combo,
+      comboPeak: g.comboPeak,
       b2b: g.b2bArmed,
       ghost: dropDistance(g),
       linesToLevel: 10 - (g.lines % 10),
@@ -695,9 +702,30 @@ export default function Tetris() {
             data-cool={stats.canHold === false || undefined}
             data-combo={stats.combo > 1 || undefined}
             data-preview={stats.next[0] || undefined}
-            title={`连消|Hold：连消 ×${stats.combo} · B2B ${stats.b2b ? "就绪" : "—"} · Hold ${stats.canHold === false ? "冷却" : "可用"}${stats.hold ? `/${stats.hold}` : "/空"} · 距升级 ${stats.linesToLevel} · 预览 ${stats.next[0] ?? "—"} · 幽灵 ${stats.ghost} 格`}
+            title={`连消|Hold：连消 ×${stats.combo}${stats.comboPeak > 1 ? ` · 峰 ${stats.comboPeak}` : ""} · B2B ${stats.b2b ? "就绪" : "—"} · Hold ${stats.canHold === false ? "冷却" : "可用"}${stats.hold ? `/${stats.hold}` : "/空"} · 距升级 ${stats.linesToLevel} · 预览 ${stats.next[0] ?? "—"} · 幽灵 ${stats.ghost} 格`}
           >
             连消<b className={stats.combo > 1 ? "game-tip--alert" : undefined}>×{stats.combo}</b>
+            {stats.comboPeak > 1 ? (
+              <small style={{ marginLeft: 4, opacity: 0.7 }} title={`本局连消峰值 ×${stats.comboPeak}`}>
+                峰{stats.comboPeak}
+              </small>
+            ) : null}
+            {stats.comboPeak > 1 ? (
+              <span
+                className="tetris-combo-peak-bar"
+                data-peak={stats.combo >= stats.comboPeak && stats.combo > 0 || undefined}
+                data-hot={stats.combo >= 5 || undefined}
+                title={`连消相对峰值 ${stats.combo}/${stats.comboPeak}`}
+                aria-label={`连消相对峰值 ${stats.combo}/${stats.comboPeak}`}
+              >
+                <i
+                  className="tetris-combo-peak-bar__fill"
+                  style={{
+                    width: `${Math.min(100, Math.round((stats.combo / Math.max(1, stats.comboPeak)) * 100))}%`,
+                  }}
+                />
+              </span>
+            ) : null}
             <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
             B2B<b className={stats.b2b ? "game-tip--alert" : undefined}>{stats.b2b ? "就绪" : "—"}</b>
             <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>

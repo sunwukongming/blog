@@ -214,8 +214,8 @@ export default function Memory() {
         <span
           className={
             endgame || streak >= 2
-              ? "memory-end-combo memory-endgame memory-combo memory-moves-delta-host memory-streak-peak-host game-tip--alert"
-              : "memory-end-combo memory-endgame memory-combo memory-moves-delta-host memory-streak-peak-host"
+              ? "memory-end-combo memory-endgame memory-combo memory-moves-delta-host memory-streak-peak-host memory-eff-host game-tip--alert"
+              : "memory-end-combo memory-endgame memory-combo memory-moves-delta-host memory-streak-peak-host memory-eff-host"
           }
           data-endgame={endgame || undefined}
           data-combo={streak >= 2 || undefined}
@@ -241,6 +241,24 @@ export default function Memory() {
             aria-hidden="true"
             style={{ ["--end-pct" as string]: `${pairs ? Math.round((matchedCount / pairs) * 100) : 0}%` } as CSSProperties}
           />
+          {moves > 0 ? (
+            <span
+              className="memory-eff-bar"
+              data-good={matchedCount / moves >= 0.7 || undefined}
+              data-ok={matchedCount / moves >= 0.45 && matchedCount / moves < 0.7 || undefined}
+              data-low={matchedCount / moves < 0.45 || undefined}
+              title={`配对效率 ${Math.min(100, Math.round((matchedCount / moves) * 100))}%（已配 ${matchedCount} / 步 ${moves}）`}
+              aria-label={`配对效率 ${Math.min(100, Math.round((matchedCount / moves) * 100))} percent`}
+            >
+              <small style={{ marginLeft: 4, opacity: 0.75 }}>
+                效率<b>{Math.min(100, Math.round((matchedCount / moves) * 100))}%</b>
+              </small>
+              <i
+                className="memory-eff-bar__fill"
+                style={{ width: `${Math.min(100, Math.round((matchedCount / moves) * 100))}%` }}
+              />
+            </span>
+          ) : null}
           <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
           连击<b>{streak}</b>
           {bestStreak > 1 ? <small style={{ marginLeft: 4, opacity: 0.7 }}>峰{bestStreak}</small> : null}

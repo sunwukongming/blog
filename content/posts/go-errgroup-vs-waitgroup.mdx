@@ -1,0 +1,70 @@
+---
+title: Go errgroup vs WaitGroup：取消语义与错误归并怎么选
+date: "2026-10-25"
+category: backend
+summary: 站内另有 errgroup 限流与取消文。这篇只比 WaitGroup：何时手写 wg+err 就够，何时 WithContext 才值回票价。
+---
+
+`sync.WaitGroup` 只保证「都结束」；`errgroup` 额外给 **首错取消** 与 **错误归并**。选型不是「新库更香」，是你要不要这两样。
+
+## 对照表
+
+| 需求 | WaitGroup | errgroup |
+|---|---|---|
+| 等 N 个 goroutine 结束 | ✅ | ✅ |
+| 任一失败就停其余 | 自管 cancel + 广播 | `WithContext` 开箱 |
+| 汇总第一个 / 全部错误 | 自管 `atomic`/`chan`/`Mutex` | `Wait()` 返回首错 |
+| 并发上限 | 自管 semaphore | `SetLimit` |
+| 零依赖 | 标准库 | `x/sync` |
+
+## WaitGroup 够用的场景
+
+- 纯扇出、**错误可忽略或只记日志**（指标采集、预热缓存）。  
+- 生命周期由外层 `ctx` 统一管，任务里已经尊重 `ctx.Done()`，你只缺「等齐」。  
+- 错误策略是「全跑完再汇总」，不要中途掐兄弟。
+
+```go
+var wg sync.WaitGroup
+var mu sync.Mutex
+var errs []error
+for _, id := range ids {
+  wg.Add(1)
+  go func(id string) {
+    defer wg.Done()
+    if err := work(ctx, id); err != nil {
+      mu.Lock(); errs = append(errs, err); mu.Unlock()
+    }
+  }(id)
+}
+wg.Wait()
+```
+
+短、透明；代价是取消与限流都要自己接。
+
+## 该上 errgroup 的信号
+
+1. **失败即停**：一个依赖挂了，继续打另外 50 个只会放大雪崩。  
+2. **请求级生命周期**：handler 返回前必须收干净，且要把取消传到叶子。  
+3. **只关心首错**：调用方要 `if err := g.Wait()` 一条路径退出。
+
+```go
+g, ctx := errgroup.WithContext(parent)
+g.SetLimit(8)
+for _, id := range ids {
+  id := id
+  g.Go(func() error { return work(ctx, id) })
+}
+return g.Wait()
+```
+
+## 别混用的坑
+
+| 混用 | 后果 |
+|---|---|
+| errgroup 里再 `wg.Add` 等无关任务 | `Wait` 早返回，尾巴还在跑 |
+| WaitGroup 任务忽略外层 cancel | 「看起来等齐了」其实超时后仍打下游 |
+| 把可降级错误塞进 errgroup 首错 | 局部失败误杀整组 |
+
+## 一句话
+
+要 **等齐 + 自管错误** → WaitGroup；要 **首错取消 + 限流** → errgroup（并读站内限流篇把 `SetLimit` / ctx 传到叶子）。与 `go-errgroup-limits`、`go-concurrency-pitfalls` 同一条线：原语选对边界，不选时髦。

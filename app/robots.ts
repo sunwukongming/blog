@@ -5,6 +5,7 @@ import { SITE_URL } from "@/lib/site";
 // 单文 Article + related ItemList 见 app/blog/[slug]/page.tsx，与 sitemap 博文 priority 0.8 对齐
 // 归档页 Twitter images 与游戏列表/单游戏 OG 对齐（batch38）；feed 含 media:thumbnail（batch37）
 // batch42: 游戏列表 Twitter images 与 OG 对齐；sitemap 仍用 GAMES_UPDATED 作 /games lastmod
+// batch45: 复核 host + sitemap/feed 双挂；与首页 WebSite JSON-LD（sameAs/hasPart/SearchAction）对齐
 export default function robots(): MetadataRoute.Robots {
   let host: string | undefined;
   try {

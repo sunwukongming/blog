@@ -33,6 +33,7 @@ export const metadata: Metadata = {
 export default async function Home() {
   const posts = await getAllPosts();
   const playable = GAMES.filter((g) => g.playable).slice(0, 6);
+  // batch45: WebSite JSON-LD 复核 sameAs / hasPart / SearchAction；与 robots host、sitemap 列表 lastmod 同源 SITE_URL
   const websiteLd = {
     "@context": "https://schema.org",
     "@type": "WebSite",

@@ -396,6 +396,28 @@ export default function Minesweeper() {
           <small>
             {safeOpen}/{safeTotal}
           </small>
+          <span
+            className="mine-open-bar"
+            data-late={lateClear || undefined}
+            data-seg={
+              safeProgress <= 0
+                ? "zero"
+                : safeProgress <= 20
+                  ? "early"
+                  : safeProgress < 75
+                    ? "mid"
+                    : lateClear
+                      ? "late"
+                      : "high"
+            }
+            title={`开图进度 ${safeProgress}%（${safeOpen}/${safeTotal}）`}
+            aria-label={`开图进度 ${safeProgress} percent`}
+          >
+            <i
+              className="mine-open-bar__fill"
+              style={{ width: `${Math.min(100, Math.max(0, safeProgress))}%` }}
+            />
+          </span>
           <small className="mine-progress__seg" style={{ marginLeft: 6 }}>
             {safeProgress <= 0
               ? "未开"

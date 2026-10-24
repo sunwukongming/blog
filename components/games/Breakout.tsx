@@ -565,6 +565,18 @@ const [phase, setPhase] = useState<Phase>("select");
               : `第 ${hud.level + 1} 关 · 生命 ${hud.lives}/3 · 球×${hud.balls} · 完成 ${hud.progress}%（剩 ${hud.brickLeft}/${hud.brickTotal}）· 球速约 ${Math.round(baseSpeed(hud.level))}${hud.wide ? " · 加宽" : ""}`}
         </p>
       )}
+      {(phase === "running" || phase === "aim" || phase === "paused" || phase === "select") && (
+        <p className="game-tip breakout-items" aria-label="道具说明">
+          道具：
+          <b style={{ color: ITEM_LOOK.W.color }}>宽</b>加长挡板 ·
+          <b style={{ color: ITEM_LOOK.S.color }}>慢</b>减速 ·
+          <b style={{ color: ITEM_LOOK.L.color }}>命</b>多一命 ·
+          <b style={{ color: ITEM_LOOK.M.color }}>多</b>分裂多球
+          {hud.wide || hud.slow || hud.balls > 1
+            ? ` · 当前${hud.wide ? "加宽" : ""}${hud.wide && hud.slow ? "/" : ""}${hud.slow ? "减速" : ""}${hud.balls > 1 ? `${hud.wide || hud.slow ? "/" : ""}多球×${hud.balls}` : ""}`
+            : " · 打碎带标记的砖后用挡板接住"}
+        </p>
+      )}
       <div
         className="game-stage breakout"
         style={{ touchAction: "none" }}

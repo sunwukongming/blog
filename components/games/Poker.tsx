@@ -241,6 +241,16 @@ export default function Poker() {
           {blindFlash}（每 {BLIND_EVERY} 手翻倍）
         </p>
       )}
+      {started && !gameOver && !victory && !blindFlash && (
+        <p className="game-tip pk-blind-tip" aria-live="polite">
+          盲注级别 {table.sb}/{table.bb}
+          {" · "}
+          第 {table.hand} 手
+          {" · "}
+          距下一次翻倍还有 {Math.max(0, nextBlindHand - table.hand)} 手
+          （每 {BLIND_EVERY} 手涨一级）
+        </p>
+      )}
       <div className="pk-table">
         {table.players.map((p, i) => {
           const reveal = i === 0 || (result?.showdown && !p.folded);

@@ -1,0 +1,30 @@
+---
+title: Go singleflight：把并发重复请求收成一次飞行
+date: "2026-10-24"
+category: backend
+summary: golang.org/x/sync/singleflight 让同一 key 的并发调用共用一次执行。缓存击穿与扇出回源时比盲目加锁更贴切。
+---
+
+热点 key 失效瞬间，N 个 goroutine 一起回源，是经典 **缓存击穿**。`singleflight.Group` 按 key 合并：第一个执行，其余等待并共享结果（或错误）。
+
+## 形状
+
+```go
+var g singleflight.Group
+
+v, err, _ := g.Do(key, func() (any, error) {
+  return fetchUpstream(key)
+})
+```
+
+`DoChan` 适合要取消等待的场景。记住：合并的是 **in-flight**，不是本地缓存；外面仍要有 TTL 缓存层。
+
+## 边界
+
+| 适合 | 小心 |
+|---|---|
+| 读多、回源贵、key 可枚举 | 把写路径也塞进去 |
+| 与进程内 LRU 搭配 | 多副本之间仍会各打一次——要全局合并另上分布式锁/租约 |
+| 错误也共享 | 短暂故障会被放大给等待者，可考虑失败短窗不共享 |
+
+与 `redis-cache-consistency`、`db-pool-timeouts` 连读：先减并发回源，再谈池与超时。singleflight 是进程内保险丝，不是银弹。

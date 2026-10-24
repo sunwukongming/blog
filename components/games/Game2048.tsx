@@ -200,8 +200,9 @@ export default function Game2048() {
         <span title="当前盘面最大块">
           最大<b>{mergeHint.max || "—"}</b>
         </span>
-        <span title="下一档目标（最大块 ×2）">
-          下一档<b>{mergeHint.max ? mergeHint.nextTier : 4}</b>
+        <span title="下一档目标 = 当前最大块 ×2（通往更高幂次）">
+          目标<b>{mergeHint.max ? mergeHint.nextTier : 4}</b>
+          {mergeHint.max > 0 ? <small style={{ marginLeft: 4, opacity: 0.7 }}>←{mergeHint.max}</small> : null}
         </span>
         <span className="spacer" />
         <button
@@ -223,8 +224,8 @@ export default function Game2048() {
           aria-live="polite"
         >
           {mergeHint.mergeable > 0
-            ? `可合并邻格 ${mergeHint.mergeable} 处 · 冲下一档 ${mergeHint.nextTier}`
-            : `暂无相邻同号 · 调整后再拼 ${mergeHint.nextTier}`}
+            ? `下一档目标 ${mergeHint.nextTier}：盘面最大 ${mergeHint.max}，有 ${mergeHint.mergeable} 处可合并`
+            : `下一档目标 ${mergeHint.nextTier}：最大已是 ${mergeHint.max}，暂无相邻同号，先调整再拼`}
         </p>
       )}
       <div className="game-stage t2048" {...swipe}>

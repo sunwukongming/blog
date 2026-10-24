@@ -1,0 +1,31 @@
+---
+title: Web Vitals Attribution：先定位是谁拖慢 LCP/INP，再谈预算数字
+date: "2026-10-24"
+category: frontend
+summary: web-vitals 的 attribution 指出 LCP 元素、INP 事件目标与长任务。和「设预算」互补：预算定门槛，归因定修哪里。不重复讲阈值本身。
+---
+
+有了 LCP/INP 预算（见 `frontend-perf-budget-lcp-inp`）之后，下一问是：**超标时改哪段代码？** Attribution 把指标拆成可读的调试线索，而不是再报一个分数。
+
+## 能看到什么
+
+- **LCP**：哪个元素、是否图片、加载延迟 vs 渲染延迟。  
+- **INP**：事件目标、下一帧前的长任务、强制布局等。  
+- 与 PerformanceObserver / RUM 管道结合，按路由聚合「常被归因的选择器」。
+
+```js
+import { onLCP, onINP } from "web-vitals/attribution";
+
+onLCP((m) => {
+  // m.attribution?.element / timeToFirstByte / resourceLoadDelay …
+  report(m);
+});
+```
+
+## 怎么用（而不是再定一遍预算）
+
+1. 先看归因里的 **元素与阶段**，再开性能面板复现。  
+2. 图片 LCP：尺寸、优先级、CDN；不是抽象「再压缩全站」。  
+3. INP：对着事件目标减同步工作，而不是只加 `requestIdleCallback` 碰运气。
+
+预算回答「过不过线」；attribution 回答「刀砍哪里」。两者缺一都会变成周会空转。

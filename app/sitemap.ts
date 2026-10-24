@@ -14,12 +14,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const d = postDate(p.date);
     return !acc || d > acc ? d : acc;
   }, null);
-  const pages = ["/", "/blog", "/categories", "/archive", "/games"].map((path) => ({
+  const listPages = ["/", "/blog", "/categories", "/archive"].map((path) => ({
     url: SITE_URL + path,
     ...(latest ? { lastModified: latest } : {}),
   }));
+  const gamesIndex = {
+    url: `${SITE_URL}/games`,
+    lastModified: postDate(GAMES_UPDATED),
+  };
   return [
-    ...pages,
+    ...listPages,
+    gamesIndex,
     ...posts.map((p) => ({ url: `${SITE_URL}/blog/${p.slug}`, lastModified: postDate(p.date) })),
     ...CATEGORIES.map((c) => ({ url: `${SITE_URL}/categories/${c.slug}`, ...(latest ? { lastModified: latest } : {}) })),
     ...GAMES.filter((g) => g.playable).map((g) => ({

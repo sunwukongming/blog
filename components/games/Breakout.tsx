@@ -551,6 +551,19 @@ const [phase, setPhase] = useState<Phase>("select");
               {hud.balls > 1 ? <small style={{ marginLeft: 4, opacity: 0.85 }}>多球</small> : null}
               <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
               速<b className={hud.lives <= 1 || hud.slow ? "game-tip--alert" : undefined}>{hud.ballSpeed}</b>
+              <span
+                className="breakout-speed-bar"
+                data-slow={hud.slow || undefined}
+                data-fast={hud.ballSpeed >= 420 || undefined}
+                title={`球速 ${hud.ballSpeed}${hud.slow ? "（减速中）" : ""}`}
+                aria-label={`球速 ${hud.ballSpeed}`}
+              >
+                <i
+                  style={{
+                    width: `${Math.min(100, Math.max(8, Math.round(((hud.ballSpeed - 200) / 400) * 100)))}%`,
+                  }}
+                />
+              </span>
             </span>
             <span
               className="breakout-progress breakout-progress-items breakout-progress-combo breakout-metal-host breakout-combo-peak-host"

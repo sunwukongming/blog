@@ -350,6 +350,20 @@ export default function Poker() {
                 <b className={me.chips / pot < 1 ? "game-tip--alert" : undefined}>
                   {Math.max(0, Math.round((me.chips / pot) * 10) / 10)}
                 </b>
+                <span
+                  className="pk-spr-bar"
+                  data-commit={me.chips / pot < 1 || undefined}
+                  data-low={me.chips / pot < 3 && me.chips / pot >= 1 || undefined}
+                  data-deep={me.chips / pot >= 3 || undefined}
+                  title={`SPR 条：${Math.max(0, Math.round((me.chips / pot) * 10) / 10)}（满刻度按 10）`}
+                  aria-label={`SPR ${Math.max(0, Math.round((me.chips / pot) * 10) / 10)}`}
+                >
+                  <i
+                    style={{
+                      width: `${Math.min(100, Math.round((me.chips / pot / 10) * 100))}%`,
+                    }}
+                  />
+                </span>
               </small>
             ) : null}
             {myTurn && rules && !rules.canCheck && rules.toCall > 0 && table.bb > 0 ? (

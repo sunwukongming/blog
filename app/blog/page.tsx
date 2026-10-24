@@ -27,9 +27,11 @@ export const metadata: Metadata = {
 
 export default async function BlogIndex() {
   const posts = await getAllPosts();
+  // batch46: ItemList 复核 numberOfItems + 前 50 条 ListItem；与 feed 条目同源 getAllPosts
   const itemListLd = {
     "@context": "https://schema.org",
     "@type": "ItemList",
+    itemListOrder: "https://schema.org/ItemListOrderDescending",
     name: `${SITE.name} 文章`,
     description: "GM Lab 文章列表：Go / 云原生 / 可观测 / 前端笔记",
     numberOfItems: posts.length,

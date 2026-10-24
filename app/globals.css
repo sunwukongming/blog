@@ -1699,3 +1699,81 @@ html:has(.page--game) { overscroll-behavior: none; }
   background: linear-gradient(90deg, #f472b6, #ef4444);
 }
 
+/* batch46: snake-eaten-bar */
+.snake-eaten-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 44px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.snake-eaten-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #67e8f9, #34d399);
+  transition: width 120ms ease-out;
+}
+.snake-eaten-bar[data-near] > i {
+  background: linear-gradient(90deg, #fbbf24, #34d399);
+}
+.snake-eaten-bar[data-done] > i {
+  background: linear-gradient(90deg, #34d399, #a3e635);
+}
+.snake-eaten-bar--soft > i {
+  background: linear-gradient(90deg, #94a3b8, #67e8f9);
+}
+
+/* batch46: breakout-speed-bar */
+.breakout-speed-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.breakout-speed-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #60a5fa, #a78bfa);
+  transition: width 100ms ease-out;
+}
+.breakout-speed-bar[data-slow] > i {
+  background: linear-gradient(90deg, #67e8f9, #60a5fa);
+}
+.breakout-speed-bar[data-fast] > i {
+  background: linear-gradient(90deg, #fbbf24, #f87171);
+}
+
+/* batch46: pk-spr-bar */
+.pk-spr-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.pk-spr-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #34d399, #60a5fa);
+  transition: width 100ms ease-out;
+}
+.pk-spr-bar[data-low] > i {
+  background: linear-gradient(90deg, #fbbf24, #fb923c);
+}
+.pk-spr-bar[data-commit] > i {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+}
+

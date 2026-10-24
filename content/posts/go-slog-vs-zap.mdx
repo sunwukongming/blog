@@ -1,0 +1,51 @@
+---
+title: Go slog vs zap：标准库结构化日志何时够用，何时还留 zap
+date: "2026-10-25"
+category: backend
+summary: 站内已有 slog 字段约定、Handler、LogValuer 系列。这篇做迁移/选型对照：API、分配、生态与团队习惯。
+---
+
+`log/slog`（Go 1.21+）把结构化日志送进标准库；`uber-go/zap` 仍是高性能生产常见选择。问题不是「谁更新潮」，是 **延迟预算与统一度**。
+
+## 对照
+
+| | slog | zap |
+|---|---|---|
+| 依赖 | 标准库 | 第三方 |
+| API | `Info(msg, attrs...)` / `LogAttrs` | `Info(msg, fields...)`；Sugared 另套 |
+| 分配 | 良好；热路径可用 `LogAttrs` + 预分配 | 极致零分配路线成熟 |
+| Handler 生态 | JSON/Text；可自研管道 | 丰富；与 lumberjack 等组合常见 |
+| 上下文 | `slog.With` / ctx handler | 字段挂在 logger 上 |
+| 测试 | `slogtest` 等逐渐补齐 | 观察者 / 缓冲核心成熟 |
+
+## 选 slog 的信号
+
+- 新服务、Go ≥ 1.22，想 **少依赖**。  
+- 吞吐不是瓶颈（多数业务 API）。  
+- 希望库与应用共用同一套 `Handler`（见站内 Handler 流水线文）。
+
+```go
+slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})))
+slog.Info("checkout", "order_id", id, "ms", elapsed.Milliseconds())
+```
+
+字段约定仍比换库重要（见 `go-slog-structured-logging`）。
+
+## 还留 zap 的信号
+
+- 超热路径（每请求上千条日志、或交易撮合）且已用 zap 打磨过。  
+- 现有中间件 / 追踪桥只认 zap 核心。  
+- 团队已有统一 `zap.Field` 封装，迁移成本高于收益。
+
+## 迁移注意
+
+| 项 | 建议 |
+|---|---|
+| Sugaredzap `Infow` | 对到 slog 键值对；避免 `fmt.Sprintf` 进消息 |
+| `zap.Object` | 用 `LogValuer` / `slog.Group`（见 LogValuer 文） |
+| 采样 | slog 用自定义 Handler；别假定默认有 zap 式 sampling |
+| 双写过渡 | 薄适配 `slog.Handler` → zap core，或反过来，设截止日期 |
+
+## 一句话
+
+**默认 slog**；证明热路径与生态绑死后再 **留 zap**。与 slog 系列文互补：那些讲怎么用好 slog，本文讲要不要换、怎么换。

@@ -503,6 +503,19 @@ export default function Snake() {
             </span>
             <span>
               进度<b>{Math.min(hud.eaten, level.goal)}/{level.goal}</b>
+              <span
+                className="snake-eaten-bar"
+                data-near={hud.eaten / level.goal >= 0.8 || undefined}
+                data-done={hud.eaten >= level.goal || undefined}
+                title={`关卡进度 ${Math.min(hud.eaten, level.goal)}/${level.goal}`}
+                aria-label={`关卡进度 ${Math.min(100, Math.round((hud.eaten / Math.max(1, level.goal)) * 100))} percent`}
+              >
+                <i
+                  style={{
+                    width: `${Math.min(100, Math.round((hud.eaten / Math.max(1, level.goal)) * 100))}%`,
+                  }}
+                />
+              </span>
             </span>
             <span>
               时间<b>{hud.seconds}s</b>

@@ -27,6 +27,7 @@ export const metadata: Metadata = {
 
 export default async function Categories() {
   const posts = await getAllPosts();
+  // batch46: 分类 ItemList 复核；与单分类 CollectionPage、文章列表 ItemList 对齐
   const itemListLd = {
     "@context": "https://schema.org",
     "@type": "ItemList",

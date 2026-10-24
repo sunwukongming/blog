@@ -28,6 +28,7 @@ async function buildFeed(base: string) {
       <enclosure url="${base}/icon.svg" length="0" type="image/svg+xml" />
       <media:content url="${base}/icon.svg" medium="image" type="image/svg+xml" />
       <!-- batch41: thumbnail 与 enclosure/media:content/channel.image 同源 -->
+      <!-- batch46: media:* 仍指向 icon.svg；文章 OG 图未进 RSS 以免体积膨胀 -->
       <media:thumbnail url="${base}/icon.svg" />
     </item>`;
     })

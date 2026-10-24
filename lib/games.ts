@@ -34,7 +34,7 @@ export const GAMES: GameItem[] = [
     href: "/games/tetris",
     playable: true,
     controls: "← → 移动，↑ 或 X 旋转，↓ 加速下落，空格直接落到底，P 暂停。",
-    touchControls: "下方按钮或在棋盘上滑动：左右移动，上滑旋转，下滑加速；也可点暂停。",
+    touchControls: "棋盘滑动：左右移动，上滑旋转，下滑直接落底；下方 ↓ 加速，可点暂停。",
   },
   {
     slug: "2048",
@@ -67,7 +67,7 @@ export const GAMES: GameItem[] = [
     href: "/games/minesweeper",
     playable: true,
     controls: "左键翻开，右键或 F 插旗；方向键移动焦点，回车翻开。点已翻开的数字可一次翻开周围。",
-    touchControls: "点一下翻开，长按插旗（或者打开插旗模式）。点已翻开的数字可以一次翻开周围的格子。",
+    touchControls: "轻点翻开，长按插旗（滑开会取消）；也可开插旗模式。点已翻开的数字可一次翻周围。",
   },
   {
     slug: "poker",

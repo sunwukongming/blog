@@ -17,7 +17,8 @@ const LEVELS: Level[] = [
     : { key: "medium", label: "中级", w: 16, h: 16, mines: 40 },
 ];
 
-const LONG_PRESS_MS = 380;
+const LONG_PRESS_MS = 400;
+const MOVE_CANCEL_PX = 14;
 
 function neighbors(i: number, { w, h }: Level) {
   const x = i % w;
@@ -138,7 +139,8 @@ export default function Minesweeper() {
   const [bestAtStart, setBestAtStart] = useState<number | null>(null);
   const [focus, setFocus] = useState(0);
   const [best, submitBest] = useRecord(`minesweeper-${game.level.key}`, (next, prev) => next < prev);
-  const press = useRef<{ timer: number; fired: boolean; touch: boolean } | null>(null);
+  const press = useRef<{ timer: number; fired: boolean; touch: boolean; x: number; y: number; i: number } | null>(null);
+  const [holding, setHolding] = useState<number | null>(null);
   const cellRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const { level, cells, phase } = game;
@@ -201,22 +203,41 @@ export default function Minesweeper() {
 
   const onPointerDown = (e: PointerEvent) => {
     const i = cellIndex(e);
-    if (e.pointerType === "mouse") press.current = null;
-    if (i < 0 || e.pointerType === "mouse") return;
+    if (e.pointerType === "mouse") {
+      press.current = null;
+      setHolding(null);
+      return;
+    }
+    if (i < 0) return;
     const timer = window.setTimeout(() => {
-      if (!press.current) return;
-      press.current.fired = true;
-      buzz(15);
+      const cur = press.current;
+      if (!cur || cur.i !== i) return;
+      cur.fired = true;
+      buzz(18);
       setGame((g) => toggleFlag(g, i));
       setFocus(i);
+      setHolding(null);
     }, LONG_PRESS_MS);
-    press.current = { timer, fired: false, touch: true };
+    press.current = { timer, fired: false, touch: true, x: e.clientX, y: e.clientY, i };
+    setHolding(i);
+  };
+
+  const onPointerMove = (e: PointerEvent) => {
+    const cur = press.current;
+    if (!cur || cur.fired) return;
+    const dx = e.clientX - cur.x;
+    const dy = e.clientY - cur.y;
+    if (dx * dx + dy * dy > MOVE_CANCEL_PX * MOVE_CANCEL_PX) {
+      clearTimeout(cur.timer);
+      press.current = null;
+      setHolding(null);
+    }
   };
 
   const endPress = () => {
     if (press.current) clearTimeout(press.current.timer);
-    // 长按成功时保留标记，让紧接着的 click 被忽略
     if (press.current && !press.current.fired) press.current = null;
+    setHolding(null);
   };
 
   useKeys((key) => {
@@ -285,6 +306,7 @@ export default function Minesweeper() {
         onClick={onClick}
         onContextMenu={onContextMenu}
         onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
         onPointerUp={endPress}
         onPointerCancel={endPress}
         onPointerLeave={endPress}
@@ -306,6 +328,7 @@ export default function Minesweeper() {
             data-boom={i === game.exploded || undefined}
             data-n={c.open && !c.mine ? c.adj : undefined}
             data-focus={focus === i || undefined}
+            data-holding={holding === i || undefined}
             aria-label={`第 ${Math.floor(i / level.w) + 1} 行第 ${(i % level.w) + 1} 列${c.flag ? "，已插旗" : c.open ? `，${c.mine ? "雷" : c.adj}` : ""}`}
             onFocus={() => setFocus(i)}
           >
@@ -327,9 +350,19 @@ export default function Minesweeper() {
           ? `全部排完，用时 ${seconds} 秒${record ? "，新纪录！" : ""}`
           : phase === "lost"
             ? "踩雷了。点“重新开始”或按 R 再来一局。"
-            : best !== null
-              ? `${level.label}最快 ${best} 秒。方向键移动，回车翻开，F 插旗。`
-              : "方向键移动焦点，回车翻开，F 插旗。第一下不会踩雷。"}
+            : (
+              <>
+                <span className="when-mouse">
+                  {best !== null
+                    ? `${level.label}最快 ${best} 秒。方向键移动，回车翻开，F 插旗。`
+                    : "方向键移动焦点，回车翻开，F 插旗。第一下不会踩雷。"}
+                </span>
+                <span className="when-touch">
+                  {best !== null ? `${level.label}最快 ${best} 秒。` : ""}
+                  轻点翻开，长按插旗（滑开会取消）；也可用插旗模式。第一下不会踩雷。
+                </span>
+              </>
+            )}
       </p>
     </div>
   );

@@ -69,3 +69,12 @@ export async function getPost(slug: string): Promise<Post | null> {
     return null;
   }
 }
+
+/** same-category first */
+export async function getRelatedPosts(slug: string, category: string, limit = 3): Promise<PostMeta[]> {
+  const all = await getAllPosts();
+  const same = all.filter((p) => p.slug !== slug && p.category === category);
+  if (same.length >= limit) return same.slice(0, limit);
+  const rest = all.filter((p) => p.slug !== slug && p.category !== category);
+  return [...same, ...rest].slice(0, limit);
+}

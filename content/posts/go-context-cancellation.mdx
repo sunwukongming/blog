@@ -1,0 +1,51 @@
+---
+title: Go context 取消传播：别让超时停在第一跳
+date: "2026-10-15"
+category: backend
+summary: context 是截止时间与取消信号的信封。漏传、覆盖，或在忽略 ctx 的地方阻塞，都会把超时变成雪崩。
+---
+
+gRPC 超时那篇写过 deadline 预算；落到 Go 里，信封就是 `context.Context`。
+
+## 取消从哪里来
+
+- 请求入口：`http.Request.Context()`、gRPC 入站 ctx。
+- 业务超时：`context.WithTimeout` / `WithDeadline`。
+- 主动作废：`WithCancel`，例如用户断开、父任务结束。
+
+子调用应接 **同一条链** 上的 ctx，而不是 `context.Background()`，除非你在写真正的后台独立生命周期（且要想好谁来取消它）。
+
+## 三件容易做错的事
+
+1. **漏传**：中间件、goroutine、重试循环里用了裸 `Background`，父已取消子还在打下游。
+2. **覆盖预算**：每跳 `WithTimeout(ctx, 3*time.Second)` 却未基于剩余时间，总时延被拉长（与 gRPC deadline 同病）。
+3. **忽略 `ctx.Done()`**：`select` 里只等 IO，或 `time.Sleep` 不响应取消，导致进程拖死、连接占满。
+
+## 模式
+
+```go
+ctx, cancel := context.WithTimeout(parent, 300*time.Millisecond)
+defer cancel()
+
+select {
+case <-ctx.Done():
+    return ctx.Err()
+case res := <-doWork(ctx):
+    return res
+}
+```
+
+下游 HTTP/gRPC 客户端都把 `ctx` 传下去；自己的 worker 池在 `Done` 时停止取任务。
+
+## 何时用 Background / TODO
+
+- `Background`：进程级根、`main`、确与请求无关的守护。
+- `TODO`：只在真正尚未决定谁拥有生命周期时占位，合入前应消灭。
+
+## 和错误的关系
+
+`context.Canceled` / `DeadlineExceeded` 要向上翻译成可观察的结果：对客户端是 499/504 或 gRPC 码，对指标是独立计数，避免和业务失败混成同一条红线。
+
+## 小结
+
+ctx 不是装饰参数。谁发起请求，谁负责预算；谁开 goroutine，谁负责听取消。传播做到位，超时才会停在该停的那一跳。

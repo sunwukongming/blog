@@ -1,4 +1,5 @@
 import Link from "next/link";
+import GameBest from "@/components/games/GameBest";
 import PostList from "@/components/PostList";
 import { GAMES } from "@/lib/games";
 import { getAllPosts } from "@/lib/posts";
@@ -48,10 +49,17 @@ export default async function Home() {
               全部 ↗
             </Link>
           </div>
+          <p className="home-play__note">
+            纪录存在你本机浏览器里，换设备不会带走。完整列表与本机纪录汇总见{" "}
+            <Link href="/games">游戏页</Link>。
+          </p>
           <ul className="chips home-play__chips">
             {playable.map((g) => (
               <li key={g.slug}>
-                <Link href={g.href ?? `/games/${g.slug}`}>{g.title}</Link>
+                <Link href={g.href ?? `/games/${g.slug}`}>
+                  <span>{g.title}</span>
+                  <GameBest slug={g.slug} />
+                </Link>
               </li>
             ))}
           </ul>

@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { CodeCopy, ReadingProgress, Toc } from "@/components/ArticleTools";
 import MdxContent from "@/components/MdxContent";
 import { getCategory } from "@/lib/categories";
-import { getAllPosts, getPost } from "@/lib/posts";
+import { getAllPosts, getPost, getRelatedPosts } from "@/lib/posts";
 import { SITE, SITE_URL } from "@/lib/site";
 import { extractHeadings } from "@/lib/toc";
 
@@ -43,6 +43,7 @@ async function PostBody({ params }: { params: Promise<{ slug: string }> }) {
   const [post, all] = await Promise.all([getPost(slug), getAllPosts()]);
   if (!post) notFound();
 
+  const related = await getRelatedPosts(slug, post.category, 3);
   const category = getCategory(post.category);
   const i = all.findIndex((p) => p.slug === slug);
   const newer = all[i - 1];
@@ -66,6 +67,25 @@ async function PostBody({ params }: { params: Promise<{ slug: string }> }) {
         <MdxContent source={post.body} />
       </article>
       <CodeCopy />
+      {related.length > 0 && (
+        <section className="panel related-posts" data-ui aria-labelledby="related-heading">
+          <h2 id="related-heading">相关推荐</h2>
+          <ul className="related-posts__list">
+            {related.map((r) => (
+              <li key={r.slug}>
+                <Link href={`/blog/${r.slug}`}>
+                  <span className="related-posts__title">{r.title}</span>
+                  <span className="related-posts__meta">
+                    {getCategory(r.category)?.name ?? r.category}
+                    {" · "}
+                    约 {r.readingMinutes} 分钟
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <nav className="post-nav" aria-label="上一篇和下一篇">
         {older ? (
           <Link href={`/blog/${older.slug}`} className="panel">

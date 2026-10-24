@@ -410,13 +410,17 @@ export default function Tetris() {
     hold(a);
   };
 
-  // swipe-tetris-mobile: board swipe maps to pad actions
+  // swipe-tetris-mobile: hard-drop on swipe down
   const swipe = useSwipe((dir: Dir) => {
     if (phase !== "running") return;
     if (dir === "left") hold("left");
     else if (dir === "right") hold("right");
-    else if (dir === "down") hold("down");
-    else hold("rotate");
+    else if (dir === "down") {
+      hold("drop");
+      buzz(12);
+      window.setTimeout(stopRepeat, 80);
+      return;
+    } else hold("rotate");
     window.setTimeout(stopRepeat, 120);
   });
 
@@ -525,7 +529,7 @@ export default function Tetris() {
             key={a}
             type="button"
             aria-label={label}
-            className={icon.length > 1 ? "pad__text" : undefined}
+            className={a === "drop" ? "pad__text pad__drop" : icon.length > 1 ? "pad__text" : undefined}
             style={{ gridArea: a }}
             onPointerDown={press(a)}
             onPointerUp={stopRepeat}
@@ -545,7 +549,7 @@ export default function Tetris() {
           {phase === "paused" ? "继续" : "暂停"}
         </button>
       </div>
-      <p className="game-hint when-touch">棋盘上可滑动：左右移动，上滑旋转，下滑加速。</p>
+      <p className="game-hint when-touch">棋盘滑动：左右移动，上滑旋转，下滑直接落底；下方 ↓ 加速，也可点暂停。</p>
     </div>
   );
 }

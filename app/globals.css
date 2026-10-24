@@ -612,3 +612,46 @@ html:has(.page--game) { overscroll-behavior: none; }
   }
   .game-wrap[data-game="breakout"] { --chrome: 340px; }
 }
+
+.mine-cell[data-holding] {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  background: rgb(255 62 165 / 0.18);
+}
+.mines { touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+.pad__drop { font-weight: 700; letter-spacing: 0.04em; background: rgb(255 62 165 / 0.2); }
+.related-posts { width: min(760px, 100%); margin: 0 0 18px; }
+.related-posts h2 { margin: 0 0 8px; }
+.related-posts__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.related-posts__list li + li { border-top: 1px solid var(--line); }
+.related-posts__list a {
+  display: grid; gap: 2px; padding: 12px 0; text-decoration: none;
+}
+.related-posts__list a:hover .related-posts__title { color: var(--accent); }
+.related-posts__title { font-weight: 600; }
+.related-posts__meta { font: 400 12px var(--font-mono), monospace; color: var(--muted); }
+.home-play__note { margin: 0; font-size: 13px; color: var(--muted); }
+.home-play__note a { color: var(--accent); text-decoration: none; }
+.home-play__chips a {
+  display: inline-flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  border-radius: 14px; padding: 8px 14px;
+}
+.home-play__chips .game-card__best { margin: 0; font-size: 11px; color: var(--muted); }
+@media (max-width: 640px) {
+  .pk-table {
+    border-radius: 22px; padding: 10px 6px; gap: 8px;
+    grid-template-areas:
+      "top top top"
+      "left center right"
+      "me me me";
+    grid-template-columns: 1fr 1.2fr 1fr;
+  }
+  .pk-seat[data-seat="me"] { width: 100%; max-width: 280px; }
+  .pk-actions { width: 100%; }
+  .pk-actions__row { width: 100%; }
+  .pk-actions__row .game-btn { flex: 1 1 30%; min-height: 44px; }
+  .pk-actions input[type="range"] { flex: 1 1 100%; max-width: none; min-height: 36px; }
+  .pk-msg { max-width: 100%; font-size: 12px; }
+  .game-wrap[data-game="poker"] { --chrome: 360px; }
+  .pad--tetris .pad__drop { min-height: 52px; font-size: 16px; }
+}

@@ -1,9 +1,12 @@
+import Link from "next/link";
 import PostList from "@/components/PostList";
+import { GAMES } from "@/lib/games";
 import { getAllPosts } from "@/lib/posts";
 import { PROFILE } from "@/lib/site";
 
 export default async function Home() {
   const posts = await getAllPosts();
+  const playable = GAMES.filter((g) => g.playable).slice(0, 6);
   return (
     <main data-world="room" className="page page--split">
       <section className="hero" aria-labelledby="intro">
@@ -38,6 +41,21 @@ export default async function Home() {
       <section className="panel side" data-ui aria-labelledby="latest">
         <h2 id="latest">最近更新</h2>
         <PostList posts={posts.slice(0, 3)} />
+        <div className="home-play" aria-labelledby="play-quick">
+          <div className="home-play__head">
+            <h2 id="play-quick">桌上的游戏</h2>
+            <Link href="/games" className="home-play__more">
+              全部 ↗
+            </Link>
+          </div>
+          <ul className="chips home-play__chips">
+            {playable.map((g) => (
+              <li key={g.slug}>
+                <Link href={g.href ?? `/games/${g.slug}`}>{g.title}</Link>
+              </li>
+            ))}
+          </ul>
+        </div>
       </section>
     </main>
   );

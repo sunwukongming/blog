@@ -554,3 +554,22 @@ html:has(.page--game) { overscroll-behavior: none; }
 .mine-cell[data-focus="true"]:not(:focus-visible) {
   box-shadow: inset 0 0 0 2px rgba(122, 245, 255, 0.55);
 }
+
+.home-play { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); display: grid; gap: 10px; }
+.home-play__head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.home-play__head h2 { margin: 0; font-size: 15px; letter-spacing: 0.02em; }
+.home-play__more { font-size: 13px; color: var(--muted); text-decoration: none; }
+.home-play__more:hover { color: var(--accent); }
+.home-play__chips { margin: 0; }
+.pad--tetris {
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-areas:
+    ". rotate ."
+    "left down right"
+    "drop drop pause";
+}
+.pad--tetris button { min-height: 52px; }
+@media (pointer: coarse) {
+  .pad--tetris button { min-height: 56px; font-size: 18px; }
+  .game-btn:disabled { opacity: 0.4; }
+}

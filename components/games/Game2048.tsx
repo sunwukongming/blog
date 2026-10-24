@@ -5,8 +5,9 @@ import { KEY_DIR, useKeys, useRecord, useSwipe, type Dir } from "./input";
 
 /** gone：被合并掉的方块，滑到目标位置后在下一步移除，这样合并也有滑动动画 */
 type Tile = { id: number; v: number; r: number; c: number; gone?: boolean; merged?: boolean; fresh?: boolean };
-type State = { tiles: Tile[]; score: number; nextId: number; won: boolean; keepGoing: boolean; over: boolean };
-type Action = { type: "move"; dir: Dir } | { type: "new" } | { type: "continue" };
+type Snapshot = { tiles: Tile[]; score: number; nextId: number; won: boolean; keepGoing: boolean; over: boolean };
+type State = Snapshot & { past: Snapshot | null };
+type Action = { type: "move"; dir: Dir } | { type: "new" } | { type: "continue" } | { type: "undo" };
 
 // 第 i 行（列）里离移动方向最近的第 k 格
 const CELL: Record<Dir, (i: number, k: number) => [number, number]> = {
@@ -16,7 +17,7 @@ const CELL: Record<Dir, (i: number, k: number) => [number, number]> = {
   down: (i, k) => [3 - k, i],
 };
 
-function spawn(s: State): State {
+function spawn(s: Snapshot): Snapshot {
   const taken = new Set(s.tiles.filter((t) => !t.gone).map((t) => t.r * 4 + t.c));
   const free = [...Array(16).keys()].filter((i) => !taken.has(i));
   if (!free.length) return s;
@@ -36,12 +37,29 @@ function stuck(tiles: Tile[]) {
   return true;
 }
 
+function blank(): Snapshot {
+  return { tiles: [], score: 0, nextId: 1, won: false, keepGoing: false, over: false };
+}
+
 function newGame(): State {
-  return spawn(spawn({ tiles: [], score: 0, nextId: 1, won: false, keepGoing: false, over: false }));
+  const base = spawn(spawn(blank()));
+  return { ...base, past: null };
+}
+
+function snapOf(s: State): Snapshot {
+  return {
+    tiles: s.tiles.map((t) => ({ ...t })),
+    score: s.score,
+    nextId: s.nextId,
+    won: s.won,
+    keepGoing: s.keepGoing,
+    over: s.over,
+  };
 }
 
 function move(s: State, dir: Dir): State {
   if (s.over || (s.won && !s.keepGoing)) return s;
+  const before = snapOf(s);
   const tiles = s.tiles.filter((t) => !t.gone).map((t) => ({ ...t, merged: false, fresh: false }));
   const at = new Map(tiles.map((t) => [t.r * 4 + t.c, t]));
   let moved = false;
@@ -68,14 +86,23 @@ function move(s: State, dir: Dir): State {
     }
   }
   if (!moved) return s;
-  const next = spawn({ ...s, tiles, score: s.score + gained });
+  const next = spawn({ ...before, tiles, score: s.score + gained, won: s.won, keepGoing: s.keepGoing, over: false });
   const live = next.tiles.filter((t) => !t.gone);
-  return { ...next, won: s.won || live.some((t) => t.v >= 2048), over: stuck(live) };
+  return {
+    ...next,
+    won: s.won || live.some((t) => t.v >= 2048),
+    over: stuck(live),
+    past: before,
+  };
 }
 
 function reducer(s: State, a: Action): State {
   if (a.type === "move") return move(s, a.dir);
   if (a.type === "continue") return { ...s, keepGoing: true };
+  if (a.type === "undo") {
+    if (!s.past) return s;
+    return { ...s.past, past: null };
+  }
   return newGame();
 }
 
@@ -109,12 +136,17 @@ function tileStyle(t: Tile): CSSProperties {
 export default function Game2048() {
   const [state, dispatch] = useReducer(reducer, null, newGame);
   const [best, submitBest] = useRecord("2048", (next, prev) => next > prev);
+  const canUndo = !!state.past && !state.over;
 
   useEffect(() => {
     if (state.score > 0) submitBest(state.score);
   }, [state.score, submitBest]);
 
   useKeys((key, repeat) => {
+    if (!repeat && (key === "u" || key === "U" || key === "Backspace" || key === "z" || key === "Z")) {
+      if (canUndo) dispatch({ type: "undo" });
+      return true;
+    }
     const dir = KEY_DIR[key];
     if (!dir) return false;
     // 按住方向键不放不连续移动，避免一下滑好几步
@@ -136,6 +168,15 @@ export default function Game2048() {
           最高<b>{best ?? 0}</b>
         </span>
         <span className="spacer" />
+        <button
+          type="button"
+          className="game-btn"
+          disabled={!canUndo}
+          aria-disabled={!canUndo}
+          onClick={() => dispatch({ type: "undo" })}
+        >
+          撤销
+        </button>
         <button type="button" className="game-btn" onClick={() => dispatch({ type: "new" })}>
           新游戏
         </button>
@@ -159,9 +200,16 @@ export default function Game2048() {
           <div className="game-overlay">
             <strong>没有路可走了</strong>
             <p>这局得了 {state.score} 分</p>
-            <button type="button" className="game-btn game-btn--primary" onClick={() => dispatch({ type: "new" })}>
-              再来一局
-            </button>
+            <span style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+              {state.past && (
+                <button type="button" className="game-btn" onClick={() => dispatch({ type: "undo" })}>
+                  撤销一步
+                </button>
+              )}
+              <button type="button" className="game-btn game-btn--primary" onClick={() => dispatch({ type: "new" })}>
+                再来一局
+              </button>
+            </span>
           </div>
         )}
         {state.won && !state.keepGoing && !state.over && (
@@ -183,6 +231,7 @@ export default function Game2048() {
           </div>
         )}
       </div>
+      <p className="game-hint">滑动或方向键移动。撤销上一步用按钮，或按 U / Backspace。</p>
     </div>
   );
 }

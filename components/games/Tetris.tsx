@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useEffectEvent, useRef, useState, type PointerEvent } from "react";
-import { buzz, useKeys, useRecord } from "./input";
+import { buzz, useKeys, useRecord, useSwipe, type Dir } from "./input";
 
 const W = 10;
 const H = 20;
@@ -410,6 +410,17 @@ export default function Tetris() {
     hold(a);
   };
 
+  // swipe-tetris-mobile: board swipe maps to pad actions
+  const swipe = useSwipe((dir: Dir) => {
+    if (phase !== "running") return;
+    if (dir === "left") hold("left");
+    else if (dir === "right") hold("right");
+    else if (dir === "down") hold("down");
+    else hold("rotate");
+    window.setTimeout(stopRepeat, 120);
+  });
+
+
   useKeys((key, repeat) => {
     const a = KEY_ACTION[key];
     if (a) {
@@ -461,7 +472,7 @@ export default function Tetris() {
         )}
       </div>
       <div className="tetris">
-        <div className="game-stage tetris-board">
+        <div className="game-stage tetris-board" {...swipe}>
           <canvas ref={canvas} aria-label={`俄罗斯方块，${stats.score} 分`} />
           {phase !== "running" && (
             <div className="game-overlay">
@@ -508,13 +519,14 @@ export default function Tetris() {
           <b>{best ?? 0}</b>
         </div>
       </div>
-      <div className="pad pad--5">
+      <div className="pad pad--tetris">
         {PAD.map(([a, icon, label]) => (
           <button
             key={a}
             type="button"
             aria-label={label}
             className={icon.length > 1 ? "pad__text" : undefined}
+            style={{ gridArea: a }}
             onPointerDown={press(a)}
             onPointerUp={stopRepeat}
             onPointerLeave={stopRepeat}
@@ -523,7 +535,17 @@ export default function Tetris() {
             {icon}
           </button>
         ))}
+        <button
+          type="button"
+          aria-label={phase === "paused" ? "继续" : "暂停"}
+          className="pad__text"
+          style={{ gridArea: "pause" }}
+          onClick={toggle}
+        >
+          {phase === "paused" ? "继续" : "暂停"}
+        </button>
       </div>
+      <p className="game-hint when-touch">棋盘上可滑动：左右移动，上滑旋转，下滑加速。</p>
     </div>
   );
 }

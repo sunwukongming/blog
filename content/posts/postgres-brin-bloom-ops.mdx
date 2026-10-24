@@ -1,0 +1,43 @@
+---
+title: Postgres BRIN bloom_ops：高基数里的块级过滤器
+date: "2026-10-25"
+category: backend
+summary: 站内已有 BRIN 与 minmax 文。这篇只写 bloom_ops：在相关性差、基数高的列上用布隆摘要做块跳过，以及和 minmax 的选型。
+---
+
+站内已有 BRIN 入门与 **minmax** 类 opclass。本文只谈 **`bloom_ops`**：为每个页组存一份布隆过滤器，判断「这个值是否可能在块内」。
+
+## 何时用
+
+```sql
+CREATE INDEX ON events USING brin (request_id bloom_ops)
+  WITH (pages_per_range = 32);
+```
+
+| | `minmax_ops` | `bloom_ops` |
+|---|---|---|
+| 适合 | 与物理序相关的时间、序列 | 相关性弱、值域很散的等值查询 |
+| 摘要 | 最小/最大 | 布隆成员测试 |
+| 误判 | 范围重叠导致多扫 | 假阳性多扫；无假阴性 |
+
+`request_id`、UUID、离散标签等「堆上几乎无序」时，minmax 几乎不剪枝；bloom 仍可能跳过明确不含该值的页组。
+
+## 调参直觉
+
+- `pages_per_range` 越大，索引越小、剪枝越粗。  
+- bloom 假阳性率受内部位数影响；过滤差就缩小 range 或改换 B-tree/Hash。  
+- 与堆填满方式有关：频繁 `UPDATE` 打乱局部性后，所有 BRIN 都变钝——定期看 `pg_stat_user_indexes`。
+
+## 边界
+
+- 只对 **等值**（或有限 IN 列表）友好；范围谓词仍看 minmax。  
+- 假阳性不会错结果，只会多读块——用 `EXPLAIN (ANALYZE, BUFFERS)` 验证。  
+- 不要替代唯一约束；BRIN 不保证唯一。  
+- 版本与 opclass 可用性以当前大版本文档为准。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| bloom_ops | 本文 |
+| BRIN 总览 / minmax | 站内既有 BRIN 文 |

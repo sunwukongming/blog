@@ -346,6 +346,28 @@ export default function Poker() {
               }}
             />
           </span>
+          <span
+            className="pk-out-bar"
+            data-any={table.players.some((p) => p.out) || undefined}
+            data-many={table.players.filter((p) => p.out).length >= 2 || undefined}
+            title={`出局 ${table.players.filter((p) => p.out).length}/${table.players.length}`}
+            aria-label={`出局 ${table.players.filter((p) => p.out).length} 人`}
+          >
+            <i
+              style={{
+                width: `${
+                  table.players.length
+                    ? Math.min(
+                        100,
+                        Math.round(
+                          (table.players.filter((p) => p.out).length / table.players.length) * 100,
+                        ),
+                      )
+                    : 0
+                }%`,
+              }}
+            />
+          </span>
         </span>
         <span
           className={

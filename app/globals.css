@@ -3322,3 +3322,77 @@ html:has(.page--game) { overscroll-behavior: none; }
 .tetris-pressure-bar[data-safe] .tetris-pressure-bar__fill {
   background: linear-gradient(90deg, #86efac, #22c55e);
 }
+
+/* batch68: snake-eff-bar / breakout-score-pace-bar / pk-out-bar */
+.snake-eff-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.snake-eff-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #c4b5fd, #8b5cf6);
+  transition: width 100ms ease-out;
+}
+.snake-eff-bar[data-hot] > i {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+.snake-eff-bar[data-low] > i {
+  background: linear-gradient(90deg, #93c5fd, #3b82f6);
+}
+
+.breakout-score-pace-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.breakout-score-pace-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #86efac, #22c55e);
+  transition: width 100ms ease-out;
+}
+.breakout-score-pace-bar[data-hot] > i {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+.breakout-score-pace-bar[data-slow] > i {
+  background: linear-gradient(90deg, #93c5fd, #3b82f6);
+}
+
+.pk-out-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.pk-out-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #94a3b8, #64748b);
+  transition: width 100ms ease-out;
+}
+.pk-out-bar[data-any] > i {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+.pk-out-bar[data-many] > i {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+}
+

@@ -1,0 +1,45 @@
+---
+title: CSS scrollbar-color：滚动条配色
+date: "2026-10-25"
+category: frontend
+summary: 站内 scrollbar-gutter 管占位。这篇写 scrollbar-color：thumb/track 两色、与 scrollbar-width、系统叠加条的兼容边界。
+---
+
+站内 **css-scrollbar-gutter** 解决布局跳动。本文写 **`scrollbar-color`**：用标准属性给经典滚动条上色，少写一套 `::-webkit-scrollbar` 厂商前缀。
+
+## 写法
+
+```css
+.panel {
+  overflow: auto;
+  scrollbar-width: thin;           /* auto | thin | none */
+  scrollbar-color: #94a3b8 #1e293b; /* thumb track */
+}
+```
+
+| 部分 | 含义 |
+|---|---|
+| 第一个颜色 | 滑块（thumb） |
+| 第二个颜色 | 轨道（track） |
+
+`scrollbar-width: none` 隐藏经典条（仍可滚）；与 `color` 分开设。暗色主题里 track 宜贴近面板底，避免一条「高亮槽」。
+
+## 和 webkit 伪元素
+
+- Firefox 等走标准 `scrollbar-*`。  
+- 仍要精细圆角/边框时，可并行保留 `::-webkit-scrollbar*`；两套不要颜色打架。  
+- Overlay 系统条可能完全忽略自定义色——以真机为准。
+
+## 边界
+
+- 无障碍：对比度过低时滑块难找；对照 WCAG 测 thumb/track。  
+- `scrollbar-color: auto` 回退系统默认。  
+- 与 `scrollbar-gutter: stable` 组合时，先定 gutter 再调色，避免「留了槽却看不见条」。  
+- 打印样式通常可 `scrollbar-width: none`。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| scrollbar-color | 本文 |
+| scrollbar-gutter | css-scrollbar-gutter |

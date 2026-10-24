@@ -50,7 +50,7 @@ type Game = {
   combo: number;
   bestCombo: number;
 };
-type Hud = { score: number; lives: number; level: number; wide: boolean; slow: boolean; wideLeft: number; slowLeft: number; balls: number; brickLeft: number; brickTotal: number; progress: number; combo: number; bestCombo: number; ballSpeed: number; paddleW: number; dropsAir: number; metalLeft: number };
+type Hud = { score: number; lives: number; level: number; wide: boolean; slow: boolean; wideLeft: number; slowLeft: number; balls: number; brickLeft: number; brickTotal: number; progress: number; combo: number; bestCombo: number; ballSpeed: number; paddleW: number; dropsAir: number; metalLeft: number; seconds: number };
 
 
 /** breakable bricks still alive (metal ignored) */
@@ -340,7 +340,7 @@ export default function Breakout() {
   const held = useRef({ left: false, right: false });
     const buzzMuted = useBuzzMuted();
 const [phase, setPhase] = useState<Phase>("select");
-  const [hud, setHud] = useState<Hud>({ score: 0, lives: 3, level: 0, wide: false, slow: false, wideLeft: 0, slowLeft: 0, balls: 1, brickLeft: 0, brickTotal: 0, progress: 0, combo: 0, bestCombo: 0, ballSpeed: 320, paddleW: 88 , dropsAir: 0, metalLeft: 0});
+  const [hud, setHud] = useState<Hud>({ score: 0, lives: 3, level: 0, wide: false, slow: false, wideLeft: 0, slowLeft: 0, balls: 1, brickLeft: 0, brickTotal: 0, progress: 0, combo: 0, bestCombo: 0, ballSpeed: 320, paddleW: 88 , dropsAir: 0, metalLeft: 0, seconds: 0});
   const [record, setRecord] = useState(false);
   const [best] = useRecord("breakout", higher);
   const [unlocked] = useRecord("breakout-unlocked", higher);
@@ -364,6 +364,7 @@ const [phase, setPhase] = useState<Phase>("select");
       ballSpeed: Math.round(ballSpeed(g)),
       paddleW: Math.round(paddleW(g)),
       ...bs,
+      seconds: Math.floor(g.time),
     });
   };
 
@@ -651,6 +652,31 @@ const [phase, setPhase] = useState<Phase>("select");
                     width: `${
                       hud.brickTotal > 0
                         ? Math.min(100, Math.round((hud.brickLeft / hud.brickTotal) * 100))
+                        : 0
+                    }%`,
+                  }}
+                />
+              </span>
+              <span
+                className="breakout-score-pace-bar"
+                data-hot={hud.seconds > 0 && hud.score / hud.seconds >= 40 || undefined}
+                data-slow={hud.seconds >= 20 && hud.score / Math.max(1, hud.seconds) < 8 || undefined}
+                title={
+                  hud.seconds > 0
+                    ? `得分配速 ${Math.round((hud.score / hud.seconds) * 10) / 10}/s（满刻度按 50/s）`
+                    : "得分配速 —"
+                }
+                aria-label={
+                  hud.seconds > 0
+                    ? `每秒约 ${Math.round((hud.score / hud.seconds) * 10) / 10} 分`
+                    : "得分配速未知"
+                }
+              >
+                <i
+                  style={{
+                    width: `${
+                      hud.seconds > 0
+                        ? Math.min(100, Math.round((hud.score / hud.seconds / 50) * 100))
                         : 0
                     }%`,
                   }}

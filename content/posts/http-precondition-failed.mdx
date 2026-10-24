@@ -1,0 +1,37 @@
+---
+title: HTTP 412 Precondition Failed：何时返回
+date: "2026-10-25"
+category: frontend
+summary: 站内 If-Match / If-None-Match 已讲条件头。这篇短述 412 状态本身：哪些前置条件失败会触发、和 304/428 的分工，以及客户端怎么重试。
+---
+
+站内 **http-if-match**、**http-if-none-match** 已覆盖条件头语义。本文只收束 **`412 Precondition Failed`**：服务器拒绝继续，因为请求里的前置条件不成立。
+
+## 常见触发
+
+| 条件头 | 典型 412 原因 |
+|---|---|
+| `If-Match` | 当前 ETag 对不上（资源已被别人改过） |
+| `If-Match: *` | 资源不存在，却要求「必须存在」 |
+| `If-Unmodified-Since` | 自该日期后资源已修改 |
+| `If-None-Match: *`（PUT 建资源） | 目标已存在，禁止覆盖 |
+
+条件 **GET** 命中「已有副本」时走的是 **304**，不是 412。412 偏写路径与「不允许带着过期假设继续」。
+
+## 和 428
+
+`428 Precondition Required`（RFC 6585）表示：**你没带**必要的条件头。412 表示：**带了，但没满足**。网关若统一把缺头也打成 412，客户端会难区分「请带 ETag」与「ETag 过期」。
+
+## 客户端
+
+- 412 后重新 GET，拿新 ETag，再决定合并或覆盖。  
+- 不要无脑重放同一 `If-Match`——会一直 412。  
+- 批量 API 可对子项分别返回 412，避免整单失败语义不清。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| 412 状态 | 本文 |
+| If-Match | http-if-match |
+| If-None-Match | http-if-none-match |

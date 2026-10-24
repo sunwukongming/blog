@@ -652,6 +652,43 @@ export default function Snake() {
               >
                 <i style={{ width: `${Math.min(100, Math.round((hud.len / 40) * 100))}%` }} />
               </span>
+            <span
+              title={
+                hud.eaten > 0
+                  ? `得分效率 ${Math.round((hud.score / hud.eaten) * 10) / 10} 分/食（满刻度按 20）`
+                  : "得分效率 —"
+              }
+            >
+              效率
+              <b>
+                {hud.eaten > 0 ? Math.round((hud.score / hud.eaten) * 10) / 10 : "—"}
+              </b>
+              <span
+                className="snake-eff-bar"
+                data-hot={hud.eaten > 0 && hud.score / hud.eaten >= 15 || undefined}
+                data-low={hud.eaten >= 3 && hud.score / hud.eaten < 8 || undefined}
+                title={
+                  hud.eaten > 0
+                    ? `得分效率 ${Math.round((hud.score / hud.eaten) * 10) / 10} 分/食（满刻度按 20）`
+                    : "得分效率 —"
+                }
+                aria-label={
+                  hud.eaten > 0
+                    ? `每食约 ${Math.round((hud.score / hud.eaten) * 10) / 10} 分`
+                    : "得分效率未知"
+                }
+              >
+                <i
+                  style={{
+                    width: `${
+                      hud.eaten > 0
+                        ? Math.min(100, Math.round((hud.score / hud.eaten / 20) * 100))
+                        : 0
+                    }%`,
+                  }}
+                />
+              </span>
+            </span>
             </span>
             <span
               className={

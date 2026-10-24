@@ -34,7 +34,7 @@ type Game = {
   /** 吃到东西时的光环特效 */
   fx: { x: number; y: number; at: number; color: string }[];
 };
-type Hud = { eaten: number; score: number; seconds: number; wrap: boolean; edgeHint: string | null; speedMs: number; speedTier: string; nextSpeed: string | null; goldLeft: number | null };
+type Hud = { eaten: number; score: number; seconds: number; wrap: boolean; edgeHint: string | null; speedMs: number; speedTier: string; nextSpeed: string | null; goldLeft: number | null; goldEta: number | null };
 
 const VEC: Record<Dir, P> = { up: { x: 0, y: -1 }, down: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } };
 const OPPOSITE: Record<Dir, Dir> = { up: "down", down: "up", left: "right", right: "left" };
@@ -354,7 +354,7 @@ export default function Snake() {
   const game = useRef<Game>(initial);
   const [mode, setMode] = useState<Mode>(initial.mode);
   const [phase, setPhase] = useState<Phase>("select");
-  const [hud, setHud] = useState<Hud>({ eaten: 0, score: 0, seconds: 0, wrap: false, edgeHint: null, speedMs: 150, speedTier: "中", nextSpeed: nextSpeedHint(150), goldLeft: null });
+  const [hud, setHud] = useState<Hud>({ eaten: 0, score: 0, seconds: 0, wrap: false, edgeHint: null, speedMs: 150, speedTier: "中", nextSpeed: nextSpeedHint(150), goldLeft: null, goldEta: null });
   const [record, setRecord] = useState(false);
   const [unlocked] = useRecord("snake-unlocked", higher);
   const [best] = useRecord("snake", higher);
@@ -387,6 +387,7 @@ export default function Snake() {
       speedTier: speedTier(speedMs),
       nextSpeed: nextSpeedHint(speedMs),
       goldLeft: g.gold ? Math.max(0, g.gold.until - g.time) : null,
+      goldEta: !g.gold && g.bonus ? Math.max(0, g.nextGold - g.time) : null,
     });
   };
 
@@ -508,13 +509,14 @@ export default function Snake() {
             </span>
             <span
               className={
-                hud.goldLeft != null || hud.wrap
+                hud.goldLeft != null || hud.goldEta != null || hud.wrap
                   ? "snake-speed-gold snake-wrap-gold"
                   : undefined
               }
               data-gold={hud.goldLeft != null || undefined}
+              data-eta={hud.goldEta != null || undefined}
               data-wrap={hud.wrap || undefined}
-              data-urgent={(hud.goldLeft != null && hud.goldLeft <= 2) || undefined}
+              data-urgent={(hud.goldLeft != null && hud.goldLeft <= 2) || (hud.goldEta != null && hud.goldEta <= 2) || undefined}
               data-edge={(hud.wrap && !!hud.edgeHint?.includes("将从")) || undefined}
               data-near={(hud.wrap && !!hud.edgeHint?.includes("靠")) || undefined}
               data-fast={hud.speedTier === "极速" || hud.speedTier === "很快" || undefined}
@@ -536,6 +538,12 @@ export default function Snake() {
                   <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
                   金食<b className={hud.goldLeft <= 2 ? "game-tip--alert" : undefined}>{hud.goldLeft.toFixed(1)}s</b>
                   {hud.nextSpeed ? <small style={{ marginLeft: 4, opacity: 0.7 }}>{hud.nextSpeed}</small> : <small style={{ marginLeft: 4, opacity: 0.55 }}>极速</small>}
+                </>
+              )}
+              {hud.goldLeft == null && hud.goldEta != null && (
+                <>
+                  <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
+                  距金<b className={hud.goldEta <= 2 ? "game-tip--alert" : undefined}>{hud.goldEta.toFixed(1)}s</b>
                 </>
               )}
               {hud.wrap && (
@@ -584,6 +592,12 @@ export default function Snake() {
                   {hud.nextSpeed ? <small style={{ marginLeft: 4, opacity: 0.7 }}>{hud.nextSpeed}</small> : <small style={{ marginLeft: 4, opacity: 0.55 }}>极速</small>}
                 </>
               )}
+              {hud.goldLeft == null && hud.goldEta != null && (
+                <>
+                  <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
+                  距金<b className={hud.goldEta <= 2 ? "game-tip--alert" : undefined}>{hud.goldEta.toFixed(1)}s</b>
+                </>
+              )}
             </span>
           </>
         )}
@@ -597,7 +611,7 @@ export default function Snake() {
       {(phase === "running" || phase === "paused") && (
         <p
           className={
-            hud.wrap || hud.speedTier === "极速" || hud.speedTier === "很快" || hud.goldLeft != null
+            hud.wrap || hud.speedTier === "极速" || hud.speedTier === "很快" || hud.goldLeft != null || (hud.goldEta != null && hud.goldEta <= 2)
               ? "game-tip game-tip--alert"
               : "game-tip"
           }
@@ -606,6 +620,8 @@ export default function Snake() {
           {`${
             hud.wrap && hud.goldLeft != null
               ? `穿墙预警+金食：${hud.edgeHint ?? "穿墙开"} · 金色 ${hud.goldLeft.toFixed(1)}s（×3）${hud.goldLeft <= 2 ? " · 金食将尽" : ""} · 档 ${hud.speedTier}`
+              : hud.wrap && hud.goldEta != null
+              ? `穿墙+距金食：${hud.edgeHint ?? "穿墙开"} · 距金 ${hud.goldEta.toFixed(1)}s · 档 ${hud.speedTier}`
               : hud.wrap && hud.edgeHint?.includes("将从")
               ? `穿墙预警：下一格将穿出 · ${hud.edgeHint} · 档 ${hud.speedTier}`
               : hud.wrap && hud.edgeHint?.includes("靠")

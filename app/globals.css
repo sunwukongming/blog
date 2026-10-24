@@ -1029,3 +1029,21 @@ html:has(.page--game) { overscroll-behavior: none; }
   border-radius: 6px;
   padding-inline: 4px;
 }
+
+/* batch34: Snake 距金 ETA, Breakout 连击|进度|空降, Poker 筹码/BB */
+.snake-wrap-gold[data-eta] {
+  box-shadow: 0 0 0 1px color-mix(in oklab, #ffd95e 40%, transparent);
+}
+.breakout-progress-combo[data-combo] {
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--accent) 50%, transparent);
+  border-radius: 6px;
+  padding-inline: 4px;
+}
+.pk-blinds-stack[data-short] {
+  box-shadow: 0 0 0 1px color-mix(in oklab, #ff8a7a 55%, transparent);
+  border-radius: 6px;
+  padding-inline: 4px;
+}
+.pk-stack-bb[data-critical] b {
+  color: #ff8a7a;
+}

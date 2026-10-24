@@ -1,0 +1,51 @@
+---
+title: Vue 3 异步组件：defineAsyncComponent 的加载缝与错误缝
+date: "2026-10-24"
+category: frontend
+summary: 路由懒加载之外，面板级异步组件要配 loading/error/delay/timeout。讲清与 Suspense 的分工，以及何时不该拆。
+---
+
+`defineAsyncComponent` 把「下载这块 UI」推迟到真正用到时。和路由 `() => import(...)` 同类，但能挂在任意父组件里，并自带加载态与失败态。
+
+## 最小可用
+
+```ts
+import { defineAsyncComponent } from "vue";
+
+const HeavyPanel = defineAsyncComponent({
+  loader: () => import("./HeavyPanel.vue"),
+  loadingComponent: LoadingSkeleton,
+  errorComponent: PanelError,
+  delay: 200,
+  timeout: 15_000,
+});
+```
+
+- **delay**：短请求不闪骨架，避免 50ms 的「加载中」抖动。  
+- **timeout**：网络挂死时落到 error，而不是永远转圈。  
+- **errorComponent** 里给「重试」：重新 `key` 一下异步组件即可再走 loader。
+
+## 和 Suspense 怎么分
+
+| 场景 | 更合适 |
+|---|---|
+| 等的是 **数据**（async setup / await fetch） | 页面级 `<Suspense>` |
+| 等的是 **代码块**（大编辑器、图表、地图） | `defineAsyncComponent` |
+| 两者都有 | 外 Suspense 管数据，内异步组件管分包 |
+
+别把每个小按钮都做成异步组件——分包收益会被请求数与瀑布吃掉。优先切 **路由块、低频重面板、条件才出现的编辑器**。
+
+## 工程注意
+
+1. **具名 chunk**：`import(/* webpackChunkName: "panel-heavy" */ ...)` 或 Vite 的 `manualChunks`，方便看体积。  
+2. SSR：异步组件在服务端仍可能被拉齐；需要客户端-only 时再包一层或用 `ssr: false`（视构建链）。  
+3. 与 `keep-alive`：缓存的是已解析组件实例；首次仍走 loader。  
+4. 错误边界：loader reject 进 `errorComponent`；业务异常仍要自己 `onErrorCaptured`。
+
+## 何时不拆
+
+- 首屏关键路径上的小组件（拆了多一次 RTT）。  
+- 强耦合、总是一起出现的父子（拆完还是同屏同请求）。  
+- 已经在路由级整页懒加载、页内再无重模块时——再拆收益有限。
+
+与 `vue3-suspense-async-setup`、`vue3-keep-alive-pitfalls` 一起看：异步是 **边界** 问题。代码边界用 `defineAsyncComponent`，数据边界用 Suspense，别混成一层「全都 async」。

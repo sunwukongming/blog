@@ -226,11 +226,12 @@ export default function Poker() {
         <span
           className={
             blindFlash
-              ? "pk-blinds pk-blinds--flash pk-blinds-odds"
-              : "pk-blinds pk-blinds-odds"
+              ? "pk-blinds pk-blinds--flash pk-blinds-odds pk-blinds-stack"
+              : "pk-blinds pk-blinds-odds pk-blinds-stack"
           }
           data-flash={blindFlash ? "" : undefined}
           data-odds={myTurn && rules && !rules.canCheck && rules.toCall > 0 && pot > 0 ? "" : undefined}
+          data-short={started && me && !me.out && table.bb > 0 && me.chips / table.bb < 20 ? "" : undefined}
           title={
             myTurn && rules && !rules.canCheck && rules.toCall > 0 && pot > 0
               ? `盲注 ${table.sb}/${table.bb}${blindFlash ? " · 闪涨" : ` · 下涨第${nextBlindHand}手`} · 需胜率 ${Math.min(99, Math.round((rules.toCall / (pot + rules.toCall)) * 100))}%（跟注/(底池+跟注)）`
@@ -274,6 +275,22 @@ export default function Poker() {
                       ? "中性"
                       : "偏贵"}
                 </small>
+              </span>
+            </>
+          )}
+          {started && !gameOver && !victory && me && !me.out && table.bb > 0 && (
+            <>
+              <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
+              <span
+                className="pk-stack-bb"
+                data-short={me.chips / table.bb < 20 || undefined}
+                data-critical={me.chips / table.bb < 10 || undefined}
+                title={`你的筹码约 ${Math.max(0, Math.round((me.chips / table.bb) * 10) / 10)} BB（筹码/大盲）`}
+              >
+                筹码/BB
+                <b className={me.chips / table.bb < 10 ? "game-tip--alert" : undefined}>
+                  {Math.max(0, Math.round((me.chips / table.bb) * 10) / 10)}
+                </b>
               </span>
             </>
           )}
@@ -328,6 +345,9 @@ export default function Poker() {
           {" · "}
           距翻倍 {Math.max(0, nextBlindHand - table.hand)} 手
           （每 {BLIND_EVERY} 手）
+          {me && !me.out && table.bb > 0
+            ? ` · 你约 ${Math.max(0, Math.round((me.chips / table.bb) * 10) / 10)} BB`
+            : ""}
           {table.players.some((pl) => pl.allIn && !pl.out)
             ? " · 有人全下：主池/边池分拆，摊牌按资格分结"
             : " · 全下后主池+边池分结"}

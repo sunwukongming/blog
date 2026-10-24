@@ -22,9 +22,10 @@ async function buildFeed(base: string) {
       <link>${link}</link>
       <guid isPermaLink="true">${link}</guid>
       <pubDate>${new Date(`${p.date}T00:00:00+08:00`).toUTCString()}</pubDate>
-      <author>${escape(SITE.author)}</author>
+      <author>gm@gm.lab (${escape(SITE.author)})</author>
       <category>${escape(getCategory(p.category)?.name ?? p.category)}</category>
       <description><![CDATA[${summary}]]></description>
+      <enclosure url="${base}/icon.svg" length="0" type="image/svg+xml" />
     </item>`;
     })
     .join("\n");

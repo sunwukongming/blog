@@ -1,0 +1,61 @@
+---
+title: Go json.RawMessage：先留住字节，再决定怎么解
+date: "2026-10-24"
+category: backend
+summary: 多态 JSON、延迟解析、原样回传时，用 json.RawMessage 保住原始字节。对比 json.Decoder 与 map[string]any，并标出易踩的 nil 与二次 Marshal。
+---
+
+`encoding/json.RawMessage` 本质是 `[]byte`，实现了 `Marshaler` / `Unmarshaler`：解码时把该字段对应的 JSON **原样切开存下**，编码时再原样写回。
+
+## 典型用法
+
+```go
+type Envelope struct {
+    Type string          `json:"type"`
+    Body json.RawMessage `json:"body"`
+}
+
+var env Envelope
+if err := json.Unmarshal(payload, &env); err != nil { /* ... */ }
+
+switch env.Type {
+case "user.created":
+    var u UserCreated
+    if err := json.Unmarshal(env.Body, &u); err != nil { /* ... */ }
+default:
+    // 未知类型：Body 仍可日志/转发，不必先解成 map
+}
+```
+
+适合：webhook 多态、插件配置、`extensions` 袋、要 **无损转发** 的中间层。
+
+## 和别的延迟手段
+
+| 手段 | 特点 |
+|---|---|
+| `json.RawMessage` | 字段级原样；二次 `Unmarshal` 明确 |
+| `json.Decoder` + `Token` | 流式、大文档；手写状态机 |
+| `map[string]any` | 快，但数字变 `float64`、无类型安全 |
+| 第三方（sonic 等） | 性能向；API 习惯不同 |
+
+站内若已看过 `go-json-iterator-tradeoffs`：RawMessage 解决的是 **结构边界**，不是替换整个编解码器。
+
+## 易踩点
+
+1. **`nil` vs `[]byte("null")` vs 空**：未出现的字段是 `nil`；JSON `null` 常是 `[]byte("null")`。Marshal 时 `nil` RawMessage 变成 `null`。  
+2. **二次 Marshal**：改了外层别忘了同步 Body；只改 struct 再整体 Marshal 会覆盖 Raw 意图。  
+3. **校验**：先 `json.Valid(body)` 再入队，避免脏片段进存储。  
+4. **内存**：RawMessage 持有底层 buffer 切片；若长期存，考虑 `append([]byte(nil), raw...)` 拷走。
+
+## 小模式：可选扩展袋
+
+```go
+type Node struct {
+    ID   string          `json:"id"`
+    Extra json.RawMessage `json:"extra,omitempty"`
+}
+```
+
+未知键进 `extra` 而不是静默丢弃——配合 `Decoder.DisallowUnknownFields` 用在「严格内层、宽松外袋」时很好使。
+
+需要多态时先留字节，再按 `type` 解；需要性能再谈换库。顺序别反。

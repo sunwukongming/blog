@@ -23,11 +23,13 @@ const WIDE_TIME = 12;
 const SLOW_TIME = 10;
 const MAX_LIVES = 5;
 
-type Item = "W" | "S" | "L";
+type Item = "W" | "S" | "L" | "M";
+type Ball = { x: number; y: number; vx: number; vy: number };
 const ITEM_LOOK: Record<Item, { label: string; color: string }> = {
   W: { label: "宽", color: "#7af5c0" },
   S: { label: "慢", color: "#6fa8ff" },
   L: { label: "命", color: "#ff5c8a" },
+  M: { label: "多", color: "#ffe066" },
 };
 
 type Brick = { x: number; y: number; hp: number; maxHp: number; metal: boolean; item?: Item; color: string };
@@ -39,14 +41,14 @@ type Game = {
   drops: Drop[];
   paddle: number;
   target: number | null;
-  ball: { x: number; y: number; vx: number; vy: number };
+  balls: Ball[];
   score: number;
   lives: number;
   time: number;
   wideUntil: number;
   slowUntil: number;
 };
-type Hud = { score: number; lives: number; level: number; wide: boolean; slow: boolean };
+type Hud = { score: number; lives: number; level: number; wide: boolean; slow: boolean; balls: number };
 
 const baseSpeed = (level: number) => 320 + level * 25;
 const ballSpeed = (g: Game) => baseSpeed(g.level) * (g.time < g.slowUntil ? 0.7 : 1);
@@ -64,7 +66,7 @@ function layBricks(level: number): Brick[] {
         hp,
         maxHp: hp,
         metal: ch === "#",
-        item: ch === "W" || ch === "S" || ch === "L" ? ch : undefined,
+        item: ch === "W" || ch === "S" || ch === "L" || ch === "M" ? ch : undefined,
         color: ROW_COLORS[r % ROW_COLORS.length],
       });
     }),
@@ -79,7 +81,7 @@ function newGame(level: number, carry?: Pick<Game, "score" | "lives">): Game {
     drops: [],
     paddle: W / 2,
     target: null,
-    ball: { x: W / 2, y: PADDLE_Y - BALL_R, vx: 0, vy: 0 },
+    balls: [{ x: W / 2, y: PADDLE_Y - BALL_R, vx: 0, vy: 0 }],
     score: carry?.score ?? 0,
     lives: carry?.lives ?? 3,
     time: 0,
@@ -91,18 +93,41 @@ function newGame(level: number, carry?: Pick<Game, "score" | "lives">): Game {
 function launch(g: Game) {
   const a = (Math.random() - 0.5) * 0.6;
   const v = ballSpeed(g);
-  g.ball.vx = v * Math.sin(a);
-  g.ball.vy = -v * Math.cos(a);
+  const b = g.balls[0] ?? { x: g.paddle, y: PADDLE_Y - BALL_R, vx: 0, vy: 0 };
+  b.x = g.paddle;
+  b.y = PADDLE_Y - BALL_R;
+  b.vx = v * Math.sin(a);
+  b.vy = -v * Math.cos(a);
+  g.balls = [b];
+}
+
+function splitBall(g: Game) {
+  const src = g.balls.find((b) => b.vy !== 0 || b.vx !== 0) ?? g.balls[0];
+  if (!src) return;
+  const v = ballSpeed(g);
+  const base = Math.atan2(src.vx, -src.vy || 1);
+  for (const delta of [-0.35, 0.35]) {
+    if (g.balls.length >= 3) break;
+    const ang = base + delta;
+    g.balls.push({
+      x: src.x,
+      y: src.y,
+      vx: v * Math.sin(ang),
+      vy: -v * Math.cos(ang),
+    });
+  }
 }
 
 /** 保持方向，把球速调整到当前应有的速度（变慢道具开始或结束时用） */
 function rescale(g: Game) {
-  const b = g.ball;
-  const v = Math.hypot(b.vx, b.vy);
-  if (!v) return;
-  const k = ballSpeed(g) / v;
-  b.vx *= k;
-  b.vy *= k;
+  const target = ballSpeed(g);
+  for (const b of g.balls) {
+    const v = Math.hypot(b.vx, b.vy);
+    if (!v) continue;
+    const k = target / v;
+    b.vx *= k;
+    b.vy *= k;
+  }
 }
 
 type StepResult = "ok" | "miss" | "clear" | "hit" | "item";
@@ -129,82 +154,96 @@ function step(g: Game, dt: number, held: number): StepResult {
         rescale(g);
       }
       if (d.kind === "L") g.lives = Math.min(MAX_LIVES, g.lives + 1);
+      if (d.kind === "M") splitBall(g);
       result = "item";
       return false;
     }
     return d.y < H + 20;
   });
 
-  const b = g.ball;
-  if (b.vx === 0 && b.vy === 0) {
-    b.x = g.paddle;
+  if (g.balls.length === 0) {
+    g.balls = [{ x: g.paddle, y: PADDLE_Y - BALL_R, vx: 0, vy: 0 }];
+  }
+  const resting = g.balls.length === 1 && g.balls[0].vx === 0 && g.balls[0].vy === 0;
+  if (resting) {
+    g.balls[0].x = g.paddle;
+    g.balls[0].y = PADDLE_Y - BALL_R;
     return result;
   }
 
-  const n = Math.ceil((Math.hypot(b.vx, b.vy) * dt) / (BALL_R * 0.8));
-  for (let i = 0; i < n; i++) {
-    const px = b.x;
-    const py = b.y;
-    b.x += (b.vx * dt) / n;
-    b.y += (b.vy * dt) / n;
+  const still: Ball[] = [];
+  for (const b of g.balls) {
+    let alive = true;
+    const n = Math.max(1, Math.ceil((Math.hypot(b.vx, b.vy) * dt) / (BALL_R * 0.8)));
+    for (let i = 0; i < n && alive; i++) {
+      const px = b.x;
+      const py = b.y;
+      b.x += (b.vx * dt) / n;
+      b.y += (b.vy * dt) / n;
 
-    if (b.x < BALL_R || b.x > W - BALL_R) {
-      b.x = Math.max(BALL_R, Math.min(W - BALL_R, b.x));
-      b.vx = -b.vx;
-    }
-    if (b.y < BALL_R) {
-      b.y = BALL_R;
-      b.vy = Math.abs(b.vy);
-    }
-    if (b.y > H + BALL_R * 2) return "miss";
-
-    // 球拍：按击中位置决定反弹角度，越靠边越斜
-    if (b.vy > 0 && b.y + BALL_R >= PADDLE_Y && py + BALL_R <= PADDLE_Y + 4 && Math.abs(b.x - g.paddle) <= half + BALL_R) {
-      const k = Math.max(-1, Math.min(1, (b.x - g.paddle) / half));
-      const v = ballSpeed(g);
-      b.vx = v * Math.sin(k * 1.05);
-      b.vy = -v * Math.cos(k * 1.05);
-      b.y = PADDLE_Y - BALL_R;
-    }
-
-    for (const br of g.bricks) {
-      if (br.hp <= 0) continue;
-      const cx = Math.max(br.x, Math.min(b.x, br.x + BRICK_W));
-      const cy = Math.max(br.y, Math.min(b.y, br.y + BRICK_H));
-      const dx = b.x - cx;
-      const dy = b.y - cy;
-      const d2 = dx * dx + dy * dy;
-      if (d2 > BALL_R * BALL_R) continue;
-      // 碰撞法线：从砖块最近点指向球心；球心已经进到砖块里时，按上一步的位置判断从哪边进来的
-      let nx = 0;
-      let ny = 0;
-      if (d2 > 1e-6) {
-        const d = Math.sqrt(d2);
-        nx = dx / d;
-        ny = dy / d;
-      } else if (px < br.x || px > br.x + BRICK_W) nx = px < br.x ? -1 : 1;
-      else ny = py < br.y ? -1 : 1;
-      // 把球沿法线推到砖块外面。不能简单退回上一步：上一步可能贴着另一块砖，会来回反弹卡在原地
-      if (d2 > 1e-6) {
-        b.x = cx + nx * (BALL_R + 0.5);
-        b.y = cy + ny * (BALL_R + 0.5);
-      } else if (nx) b.x = nx < 0 ? br.x - BALL_R - 0.5 : br.x + BRICK_W + BALL_R + 0.5;
-      else b.y = ny < 0 ? br.y - BALL_R - 0.5 : br.y + BRICK_H + BALL_R + 0.5;
-      // 只有朝着砖块运动时才反弹、才算打中；已经在分离的球只推出去
-      if (b.vx * nx + b.vy * ny >= 0) break;
-      if (Math.abs(nx) > Math.abs(ny)) b.vx = -b.vx;
-      else b.vy = -b.vy;
-      if (!br.metal) {
-        br.hp--;
-        const per = 10 * (g.level + 1);
-        g.score += br.hp > 0 ? per / 2 : per * br.maxHp;
-        if (br.hp === 0 && br.item) g.drops.push({ x: br.x + BRICK_W / 2, y: br.y + BRICK_H / 2, kind: br.item });
-        if (result === "ok") result = "hit";
+      if (b.x < BALL_R || b.x > W - BALL_R) {
+        b.x = Math.max(BALL_R, Math.min(W - BALL_R, b.x));
+        b.vx = -b.vx;
       }
-      break;
+      if (b.y < BALL_R) {
+        b.y = BALL_R;
+        b.vy = Math.abs(b.vy);
+      }
+      if (b.y > H + BALL_R * 2) {
+        alive = false;
+        break;
+      }
+
+      if (b.vy > 0 && b.y + BALL_R >= PADDLE_Y && py + BALL_R <= PADDLE_Y + 4 && Math.abs(b.x - g.paddle) <= half + BALL_R) {
+        const k = Math.max(-1, Math.min(1, (b.x - g.paddle) / half));
+        const v = ballSpeed(g);
+        b.vx = v * Math.sin(k * 1.05);
+        b.vy = -v * Math.cos(k * 1.05);
+        b.y = PADDLE_Y - BALL_R;
+      }
+
+      for (const br of g.bricks) {
+        if (br.hp <= 0) continue;
+        const cx = Math.max(br.x, Math.min(b.x, br.x + BRICK_W));
+        const cy = Math.max(br.y, Math.min(b.y, br.y + BRICK_H));
+        const dx = b.x - cx;
+        const dy = b.y - cy;
+        const d2 = dx * dx + dy * dy;
+        if (d2 > BALL_R * BALL_R) continue;
+        let nx = 0;
+        let ny = 0;
+        if (d2 > 1e-6) {
+          const d = Math.sqrt(d2);
+          nx = dx / d;
+          ny = dy / d;
+        } else if (px < br.x || px > br.x + BRICK_W) nx = px < br.x ? -1 : 1;
+        else ny = py < br.y ? -1 : 1;
+        if (d2 > 1e-6) {
+          b.x = cx + nx * (BALL_R + 0.5);
+          b.y = cy + ny * (BALL_R + 0.5);
+        } else if (nx) b.x = nx < 0 ? br.x - BALL_R - 0.5 : br.x + BRICK_W + BALL_R + 0.5;
+        else b.y = ny < 0 ? br.y - BALL_R - 0.5 : br.y + BRICK_H + BALL_R + 0.5;
+        if (b.vx * nx + b.vy * ny >= 0) break;
+        if (Math.abs(nx) > Math.abs(ny)) b.vx = -b.vx;
+        else b.vy = -b.vy;
+        if (!br.metal) {
+          br.hp--;
+          const per = 10 * (g.level + 1);
+          g.score += br.hp > 0 ? per / 2 : per * br.maxHp;
+          if (br.hp === 0 && br.item) g.drops.push({ x: br.x + BRICK_W / 2, y: br.y + BRICK_H / 2, kind: br.item });
+          if (result === "ok") result = "hit";
+        }
+        break;
+      }
+      if (result === "hit" && g.bricks.every((br) => br.metal || br.hp <= 0)) {
+        g.balls = still.concat(alive ? [b] : []);
+        return "clear";
+      }
     }
-    if (result === "hit" && g.bricks.every((br) => br.metal || br.hp <= 0)) return "clear";
+    if (alive) still.push(b);
   }
+  g.balls = still;
+  if (g.balls.length === 0) return "miss";
   return result;
 }
 
@@ -270,9 +309,11 @@ function draw(el: HTMLCanvasElement | null, g: Game) {
   ctx.fill();
   ctx.shadowColor = "#fff";
   ctx.fillStyle = g.time < g.slowUntil ? "#a8c8ff" : "#fff";
-  ctx.beginPath();
-  ctx.arc(g.ball.x, g.ball.y, BALL_R, 0, Math.PI * 2);
-  ctx.fill();
+  for (const b of g.balls) {
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, BALL_R, 0, Math.PI * 2);
+    ctx.fill();
+  }
   ctx.shadowBlur = 0;
 }
 
@@ -283,14 +324,14 @@ export default function Breakout() {
   const held = useRef({ left: false, right: false });
     const buzzMuted = useBuzzMuted();
 const [phase, setPhase] = useState<Phase>("select");
-  const [hud, setHud] = useState<Hud>({ score: 0, lives: 3, level: 0, wide: false, slow: false });
+  const [hud, setHud] = useState<Hud>({ score: 0, lives: 3, level: 0, wide: false, slow: false, balls: 1 });
   const [record, setRecord] = useState(false);
   const [best] = useRecord("breakout", higher);
   const [unlocked] = useRecord("breakout-unlocked", higher);
 
   const sync = () => {
     const g = game.current;
-    setHud({ score: g.score, lives: g.lives, level: g.level, wide: g.time < g.wideUntil, slow: g.time < g.slowUntil });
+    setHud({ score: g.score, lives: g.lives, level: g.level, wide: g.time < g.wideUntil, slow: g.time < g.slowUntil, balls: g.balls.length });
   };
 
   useEffect(() => {
@@ -330,7 +371,7 @@ const [phase, setPhase] = useState<Phase>("select");
       sync();
       if (g.lives <= 0) endRun("over");
       else {
-        g.ball = { x: g.paddle, y: PADDLE_Y - BALL_R, vx: 0, vy: 0 };
+        g.balls = [{ x: g.paddle, y: PADDLE_Y - BALL_R, vx: 0, vy: 0 }];
         setPhase("aim");
       }
     }
@@ -351,7 +392,7 @@ const [phase, setPhase] = useState<Phase>("select");
       const r = step(g, dt, Number(h.right) - Number(h.left));
       draw(canvas.current, g);
       // 道具到期时刷新状态栏
-      const effects = `${g.time < g.wideUntil}${g.time < g.slowUntil}`;
+      const effects = `${g.time < g.wideUntil}${g.time < g.slowUntil}:${g.balls.length}`;
       if (effects !== shown) {
         shown = effects;
         sync();
@@ -387,7 +428,7 @@ const [phase, setPhase] = useState<Phase>("select");
 
   const toggle = () => {
     if (phase === "running" || phase === "aim") setPhase("paused");
-    else if (phase === "paused") setPhase(game.current.ball.vy === 0 ? "aim" : "running");
+    else if (phase === "paused") setPhase(game.current.balls.every((b) => b.vy === 0 && b.vx === 0) ? "aim" : "running");
   };
 
   useKeys((key, repeat) => {
@@ -485,6 +526,14 @@ const [phase, setPhase] = useState<Phase>("select");
           </button>
         )}
       </div>
+      {(phase === "running" || phase === "aim" || phase === "paused") && (
+        <p className="game-tip" aria-live="polite">
+          第 {hud.level + 1} 关难度：球速约 {Math.round(baseSpeed(hud.level))} · 球拍宽{" "}
+          {Math.round(Math.max(64, 88 - hud.level * 3))}
+          {hud.wide ? "（已加宽）" : ""} · # 金属打不碎
+          {hud.balls > 1 ? ` · 多球×${hud.balls}` : ""}
+        </p>
+      )}
       <div
         className="game-stage breakout"
         style={{ touchAction: "none" }}
@@ -523,9 +572,12 @@ const [phase, setPhase] = useState<Phase>("select");
                 onPick={(i) => start(i)}
               >
                 <p>
-                  从选中的关卡一路打下去，3 条命。<span style={{ color: ITEM_LOOK.W.color }}>宽</span>{" "}
-                  <span style={{ color: ITEM_LOOK.S.color }}>慢</span> <span style={{ color: ITEM_LOOK.L.color }}>命</span>{" "}
-                  是道具，用球拍接住{best ? ` · 最高 ${best} 分` : ""}
+                  从选中的关卡一路打下去，3 条命。关卡越高球越快、球拍越短。
+                  <span style={{ color: ITEM_LOOK.W.color }}>宽</span>{" "}
+                  <span style={{ color: ITEM_LOOK.S.color }}>慢</span>{" "}
+                  <span style={{ color: ITEM_LOOK.L.color }}>命</span>{" "}
+                  <span style={{ color: ITEM_LOOK.M.color }}>多</span>{" "}
+                  是道具（多=多球），用球拍接住{best ? ` · 最高 ${best} 分` : ""}
                 </p>
               </LevelSelect>
             )}

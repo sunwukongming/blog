@@ -46,7 +46,7 @@ export type Action = { type: "fold" | "check" | "call" | "raise" | "allin"; to?:
 
 export const STARTING_CHIPS = 1000;
 const BASE_SB = 10;
-const BLIND_EVERY = 10;
+export const BLIND_EVERY = 10;
 
 // ---------- 牌和牌型 ----------
 

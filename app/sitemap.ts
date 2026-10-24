@@ -4,14 +4,27 @@ import { GAMES } from "@/lib/games";
 import { getAllPosts } from "@/lib/posts";
 import { SITE_URL } from "@/lib/site";
 
+/** Post date is YYYY-MM-DD in Asia/Shanghai; expose a stable lastmod Instant. */
+const postDate = (d: string) => new Date(`${d}T12:00:00+08:00`);
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   if (!SITE_URL) return [];
   const posts = await getAllPosts();
-  const pages = ["/", "/blog", "/categories", "/archive", "/games"].map((path) => ({ url: SITE_URL + path }));
+  const latest = posts.reduce<Date | null>((acc, p) => {
+    const d = postDate(p.date);
+    return !acc || d > acc ? d : acc;
+  }, null);
+  const pages = ["/", "/blog", "/categories", "/archive", "/games"].map((path) => ({
+    url: SITE_URL + path,
+    ...(latest ? { lastModified: latest } : {}),
+  }));
   return [
     ...pages,
-    ...posts.map((p) => ({ url: `${SITE_URL}/blog/${p.slug}`, lastModified: p.date })),
-    ...CATEGORIES.map((c) => ({ url: `${SITE_URL}/categories/${c.slug}` })),
-    ...GAMES.filter((g) => g.playable).map((g) => ({ url: `${SITE_URL}/games/${g.slug}` })),
+    ...posts.map((p) => ({ url: `${SITE_URL}/blog/${p.slug}`, lastModified: postDate(p.date) })),
+    ...CATEGORIES.map((c) => ({ url: `${SITE_URL}/categories/${c.slug}`, ...(latest ? { lastModified: latest } : {}) })),
+    ...GAMES.filter((g) => g.playable).map((g) => ({
+      url: `${SITE_URL}/games/${g.slug}`,
+      ...(latest ? { lastModified: latest } : {}),
+    })),
   ];
 }

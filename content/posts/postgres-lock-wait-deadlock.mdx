@@ -1,0 +1,61 @@
+---
+title: Postgres 锁等待与死锁排查
+date: "2026-10-24"
+category: backend
+summary: 从 pg_locks / pg_stat_activity 读懂谁堵住谁，死锁图怎么看，以及应用侧怎样少制造锁等待。
+---
+
+慢查询不一定是「SQL 写丑」——经常是在等锁。Postgres 把行锁、事务锁暴露得比较清楚，会看视图就能少猜半小时。
+
+## 先分清：等待 vs 死锁
+
+- **锁等待**：A 持有，B 阻塞；最终 A 提交/回滚后 B 继续。表现是 p99 毛刺、`lock wait` 日志。  
+- **死锁**：环依赖；Postgres 检测到后**回滚其中一个**事务并报 `deadlock detected`。  
+
+死锁是等待的特例；日常更多是长事务拖住短更新。
+
+## 谁堵住谁
+
+常用组合：
+
+```sql
+SELECT a.pid, a.state, a.wait_event_type, a.wait_event,
+       a.query, age(now(), a.xact_start) AS xact_age,
+       l.mode, l.locktype, l.relation::regclass
+FROM pg_stat_activity a
+LEFT JOIN pg_locks l ON l.pid = a.pid
+WHERE a.datname = current_database()
+ORDER BY a.xact_start NULLS LAST;
+```
+
+堵车时再查阻塞链（版本不同列名略有差异，思路一致）：
+
+- 等待者的 `blocking_pids`（或 `pg_blocking_pids(pid)`）  
+- 持锁者是否还在跑长事务、`idle in transaction`
+
+看到 `idle in transaction` 还占着行锁，优先查应用：事务里做了 HTTP / 睡大觉，或忘了 commit。
+
+## 死锁日志怎么用
+
+日志里通常有 detail：两个进程各自持有/等待的锁。画成边：
+
+```text
+T1 持有行 X → 等待行 Y
+T2 持有行 Y → 等待行 X
+```
+
+修法优先**统一加锁顺序**（按主键排序再更新），而不是把 `deadlock_timeout` 调到很大假装没这回事。
+
+## 应用侧减负
+
+1. **事务尽量短**：只包住必要写入；外部 I/O 放外面。  
+2. **先读后写要一致**：可重复读下别用「先 SELECT 再靠运气 UPDATE」对抗竞态；用 `SELECT … FOR UPDATE` 或单条 `UPDATE … WHERE` 条件更新。  
+3. **热点行**：计数器、余额行容易排队；考虑汇总表延迟写、或把热点拆键。  
+4. **DDL**：在线变更也占锁；大表加索引用 `CONCURRENTLY`，并避开高峰。  
+5. **超时**：`lock_timeout` / `statement_timeout` 让等待失败得快，比无限卡住好排障。
+
+## 和索引、池化的关系
+
+锁等待多时，先别只加索引——索引减少扫描，不消除同行上的写写冲突。连接池过大则更多会话同时抢同一行，等待队列更长；池大小要和可并行写匹配。
+
+排查口诀：先找**最老的未结束事务**，再看它持什么锁，最后才改 SQL 形状。多数「数据库突然变慢」在应用事务边界，不在 vacuum 玄学。

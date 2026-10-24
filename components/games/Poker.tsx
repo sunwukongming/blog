@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useEffectEvent, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { mascotSay, pick, POKER_ALLIN, POKER_BIG_WIN, POKER_BUST } from "@/lib/mascot";
 import { buzz, higher, useKeys, useRecord } from "./input";
 import {
   act,
   botAction,
+  BLIND_EVERY,
   handName,
   bestHand,
   humanOut,
@@ -78,6 +79,23 @@ export default function Poker() {
   const gameOver = started && humanOut(table);
   const victory = started && !gameOver && humanWonTable(table);
   const pot = potSize(table);
+  const [blindFlash, setBlindFlash] = useState<string | null>(null);
+  const prevSb = useRef(table.sb);
+  // next hand number where blinds double (hands 11, 21, 31…)
+  const nextBlindHand =
+    table.hand <= 0 ? BLIND_EVERY + 1 : Math.floor((table.hand - 1) / BLIND_EVERY) * BLIND_EVERY + BLIND_EVERY + 1;
+
+  useEffect(() => {
+    if (table.hand > 0 && table.sb > prevSb.current) {
+      const msg = `盲注上涨 → ${table.sb}/${table.bb}`;
+      setBlindFlash(msg);
+      buzz([25, 35, 25]);
+      prevSb.current = table.sb;
+      const id = window.setTimeout(() => setBlindFlash(null), 4000);
+      return () => clearTimeout(id);
+    }
+    prevSb.current = table.sb;
+  }, [table.hand, table.sb, table.bb]);
 
   const update = (fn: (t: Table) => void) => {
     const next = structuredClone(table);
@@ -120,7 +138,11 @@ export default function Poker() {
     // 纪录从起始筹码算起，第一手输一点也不会出现低于 1000 的“最高”
     submitBest(STARTING_CHIPS);
     update((t) => {
-      if (humanOut(t) || humanWonTable(t)) Object.assign(t, newTable());
+      if (humanOut(t) || humanWonTable(t)) {
+        Object.assign(t, newTable());
+        prevSb.current = t.sb;
+        setBlindFlash(null);
+      }
       startHand(t);
     });
   };
@@ -173,7 +195,7 @@ export default function Poker() {
   const isGlow = (c: Card) => glowCards.some((g) => same(g, c));
 
   const message = (() => {
-    if (!started) return "点「发牌」开始。你和三个电脑对局，每人 1000 筹码。";
+    if (!started) return "点「发牌」开始。你和三个电脑对局，每人 1000 筹码；盲注每 10 手翻倍。";
     if (gameOver) return "筹码输光了。";
     if (victory) return "三个电脑都出局了，你赢下了整张桌子！";
     if (result) {
@@ -196,10 +218,13 @@ export default function Poker() {
         <span>
           第<b>{table.hand}</b>手
         </span>
-        <span>
+        <span className={blindFlash ? "pk-blinds pk-blinds--flash" : "pk-blinds"} title={`每 ${BLIND_EVERY} 手翻倍`}>
           盲注<b>
             {table.sb}/{table.bb}
           </b>
+          {started && !gameOver && !victory && (
+            <small className="pk-blinds__next"> · 下涨第{nextBlindHand}手</small>
+          )}
         </span>
         <span className="spacer" />
         <span>
@@ -207,6 +232,11 @@ export default function Poker() {
         </span>
       </div>
 
+      {blindFlash && (
+        <p className="game-tip game-tip--alert" aria-live="assertive">
+          {blindFlash}（每 {BLIND_EVERY} 手翻倍）
+        </p>
+      )}
       <div className="pk-table">
         {table.players.map((p, i) => {
           const reveal = i === 0 || (result?.showdown && !p.folded);

@@ -145,3 +145,23 @@ export function CopyLink() {
     </button>
   );
 }
+
+/** 分享当前文章到 X（Twitter intent） */
+export function ShareX({ title }: { title: string }) {
+  return (
+    <button
+      type="button"
+      className="share-x"
+      data-ui
+      onClick={() => {
+        const url = typeof location !== "undefined" ? location.href.replace(/#.*$/, "") : "";
+        const intent = new URL("https://twitter.com/intent/tweet");
+        intent.searchParams.set("text", title);
+        intent.searchParams.set("url", url);
+        window.open(intent.toString(), "_blank", "noopener,noreferrer");
+      }}
+    >
+      分享到 X
+    </button>
+  );
+}

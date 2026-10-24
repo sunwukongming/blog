@@ -732,3 +732,20 @@ html:has(.page--game) { overscroll-behavior: none; }
     box-sizing: border-box;
   }
 }
+
+.share-x {
+  appearance: none; border: 0; background: transparent; cursor: pointer;
+  font: inherit; color: var(--accent); padding: 0;
+}
+.share-x:hover { color: var(--fg); text-decoration: underline; }
+.pk-blinds { display: inline-flex; align-items: baseline; gap: 2px; }
+.pk-blinds__next { font: 400 11px var(--font-mono), monospace; color: var(--muted); }
+.pk-blinds--flash b { color: var(--accent); animation: pk-blind-pulse 0.9s ease-in-out 2; }
+@keyframes pk-blind-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+.game-tip--alert {
+  color: var(--accent);
+  font-weight: 600;
+}

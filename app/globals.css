@@ -717,3 +717,18 @@ html:has(.page--game) { overscroll-behavior: none; }
 .tetris-next-queue { display: grid; gap: 6px; margin-bottom: 8px; }
 .tetris-next-queue .tetris-next { margin-bottom: 0; }
 .tetris-next-queue .tetris-next[data-queue="next"] { opacity: 0.72; transform: scale(0.92); transform-origin: top left; }
+
+.copy-link {
+  appearance: none; border: 0; background: transparent; cursor: pointer;
+  font: inherit; color: var(--accent); padding: 0; text-decoration: none;
+}
+.copy-link:hover { color: var(--fg); text-decoration: underline; }
+@media (max-width: 640px) {
+  .site-nav { padding-block: 4px; }
+  .site-nav nav { gap: 4px; flex-wrap: wrap; }
+  .site-nav nav a,
+  .site-nav__name {
+    min-height: 44px; padding: 10px 10px; display: inline-flex; align-items: center;
+    box-sizing: border-box;
+  }
+}

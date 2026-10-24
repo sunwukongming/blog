@@ -1,0 +1,55 @@
+---
+title: Vite / Next 构建缓存：什么该留、什么会脏
+date: "2026-10-24"
+category: frontend
+summary: 本地 dev 缓存、CI 远程缓存、Next 的 .next/cache 与 Vite 的依赖预构建，各自的失效条件与排查顺序。
+---
+
+构建变慢时第一反应是「开缓存」。缓存开对了省分钟，开错了会让你查半小时「为什么线上还是旧 chunk」。
+
+## 分层看
+
+| 层 | Vite | Next.js | 典型失效 |
+|---|---|---|---|
+| 依赖预构建 | `node_modules/.vite` | （SWC/webpack 自己的） | 锁文件或优化依赖列表变了 |
+| 编译增量 | 开发服务器内存 / 磁盘 | `.next/cache` | 源文件、环境变量、`next.config` |
+| CI 远程 | 自建或 Turborepo remote | Vercel / 自建 cache 键 | cache key 没包含该变的输入 |
+
+本地「第二次 `pnpm build` 很快」和 CI「每次都冷」往往不是同一类问题。
+
+## Vite：依赖预构建最脏
+
+`optimizeDeps` 把裸导入打成 ESM 丢进 `.vite`。遇到：
+
+- 改了 `pnpm-lock.yaml` / 增删依赖却仍报旧解析；
+- 某包的 deep import 在预构建前后行为不一致；
+
+先 `rm -rf node_modules/.vite`，再考虑 `optimizeDeps.force`。把「清 Vite 缓存」写进排障清单，比反复重启 dev server 有效。
+
+生产 `vite build` 默认不靠这份预构建；慢通常在插件、大包拆分或 sourcemap。别把 dev 缓存的锅扣到 prod。
+
+## Next：`.next/cache` 与 fetch 缓存
+
+- **编译缓存**：SWC / webpack / turbopack 产物。配置、major 升级、或怀疑坏缓存时删 `.next` 最干净。
+- **Data Cache / Full Route Cache**（App Router）：`fetch` 缓存、静态页。`revalidate`、`cache: 'no-store'`、路径重验没有生效时，先分清是**构建期静态**还是**运行期缓存**。本地 `next build` 出的静态页，和线上 ISR 不是一回事。
+
+环境变量：`NEXT_PUBLIC_*` 打进客户端包，变了却命中旧构建缓存时，确认 CI cache key 包含了相关 env 的哈希，而不是只按 `lockfile` 缓存。
+
+## CI 远程缓存的键
+
+Turborepo / Nx / 自建「存 `node_modules/.cache`」时，键至少要覆盖：
+
+1. 锁文件哈希  
+2. 影响编译的配置（`tsconfig`、`next.config`、`postcss`、相关 env）  
+3. 运行时 Node 主版本  
+
+漏了配置文件 → 改 config 仍命中旧缓存 → 「我改了啊为什么没变」。多出来无关输入 → 命中率差，白白传缓存。
+
+## 排查顺序
+
+1. 本地复现：删 `.vite` / `.next` 后是否恢复预期。  
+2. 确认改的是源文件还是被缓存的数据层（Route Cache / CDN）。  
+3. 看 CI 是否命中远程缓存、键里有没有本次变更。  
+4. 最后才考虑关缓存「先上线」——并开 ticket 修键，而不是永久关闭。
+
+缓存是加速器，不是真理来源。把失效条件写进 README 或 runbook，比在群里问「谁又清了缓存」便宜得多。

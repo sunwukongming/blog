@@ -194,13 +194,29 @@ function draw(el: HTMLCanvasElement | null, g: Game, t = 1) {
   ctx.fillStyle = "rgb(255 255 255 / 0.035)";
   for (let y = 0; y < N; y++) for (let x = (y + 1) % 2; x < N; x += 2) ctx.fillRect(x * cell, y * cell, cell, cell);
 
-  // 穿墙关：四周画一圈青色虚线，提示可以从边上穿过去
+  // 穿墙关：脉冲虚线边框 + 四边中点箭头，提示头会从对面出来
   if (g.wrap) {
-    ctx.strokeStyle = "rgb(122 245 255 / 0.55)";
-    ctx.lineWidth = Math.max(2, cell * 0.12);
-    ctx.setLineDash([cell * 0.5, cell * 0.4]);
+    const pulse = 0.4 + 0.35 * (0.5 + 0.5 * Math.sin(now * 3));
+    ctx.strokeStyle = `rgb(122 245 255 / ${pulse})`;
+    ctx.lineWidth = Math.max(2, cell * 0.14);
+    ctx.setLineDash([cell * 0.55, cell * 0.35]);
     ctx.strokeRect(1, 1, el.width - 2, el.height - 2);
     ctx.setLineDash([]);
+    const mid = el.width / 2;
+    const tip = Math.max(4, cell * 0.35);
+    const drawArrow = (x: number, y: number, dx: number, dy: number) => {
+      ctx.fillStyle = `rgb(122 245 255 / ${0.55 + pulse * 0.4})`;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - dy * tip - dx * tip, y - dx * tip - dy * tip);
+      ctx.lineTo(x + dy * tip - dx * tip, y + dx * tip - dy * tip);
+      ctx.closePath();
+      ctx.fill();
+    };
+    drawArrow(mid, tip * 0.9, 0, 1);
+    drawArrow(mid, el.height - tip * 0.9, 0, -1);
+    drawArrow(tip * 0.9, mid, 1, 0);
+    drawArrow(el.width - tip * 0.9, mid, -1, 0);
   }
 
   for (const i of g.walls) {
@@ -454,7 +470,7 @@ export default function Snake() {
       {level && (phase === "running" || phase === "paused") && (
         <p className="game-tip" aria-live="polite">
           第 {levelNo} 关·{level.name}：目标 {Math.min(hud.eaten, level.goal)}/{level.goal}
-          {level.wrap ? " · 可穿墙" : ""}
+          {level.wrap ? " · 边缘可穿墙（头从对面出）" : ""}
           {level.bonus ? " · 有金色食物" : ""}
         </p>
       )}
@@ -474,7 +490,7 @@ export default function Snake() {
                 <strong>{level ? `第 ${levelNo} 关 · ${level.name}` : "无尽模式"}</strong>
                 <p>
                   {level ? `吃够 ${level.goal} 个过关` : "没有终点，越吃越快"}
-                  {level?.wrap ? "，可以从边上穿过去" : ""}
+                  {level?.wrap ? "，边缘可穿墙——头从对面出来" : ""}
                   {(level ? level.bonus : true) ? "，金色食物一个顶三个" : ""}
                 </p>
                 <button type="button" className="game-btn game-btn--primary" onClick={() => setPhase("running")}>

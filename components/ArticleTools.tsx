@@ -121,3 +121,27 @@ export function CodeCopy() {
   }, []);
   return <span ref={marker} hidden />;
 }
+
+/** 文章页：复制当前篇链接（不含 hash） */
+export function CopyLink() {
+  const [label, setLabel] = useState("复制链接");
+  return (
+    <button
+      type="button"
+      className="copy-link"
+      data-ui
+      onClick={async () => {
+        const url = typeof location !== "undefined" ? location.href.replace(/#.*$/, "") : "";
+        try {
+          await navigator.clipboard.writeText(url);
+          setLabel("已复制");
+        } catch {
+          setLabel("复制失败");
+        }
+        window.setTimeout(() => setLabel("复制链接"), 1500);
+      }}
+    >
+      {label}
+    </button>
+  );
+}

@@ -28,6 +28,10 @@ type Game = {
   level: number;
   clearFx: ClearFx | null;
   dropFx: DropFx | null;
+  /** remaining lock delay ms while grounded; 0 = not locking */
+  lockMs: number;
+  /** how many times lock timer was reset for this piece */
+  lockResets: number;
 };
 type Stats = { score: number; lines: number; level: number; next: Kind[]; hold: Kind | null; canHold: boolean };
 
@@ -60,6 +64,10 @@ const DROP_MS = 180;
 // 按住左右、下：先等 DAS 毫秒，之后每 ARR 毫秒移动一格（比系统按键重复的半秒停顿跟手得多）
 const DAS = 140;
 const ARR = 40;
+/** Guideline-ish lock delay: grounded piece waits before locking */
+const LOCK_DELAY = 500;
+/** max lock-timer resets per piece (move/rotate while grounded) */
+const MAX_LOCK_RESETS = 15;
 let pieceId = 0;
 
 const gravity = (level: number) => Math.max(70, 800 - (level - 1) * 75);
@@ -91,6 +99,8 @@ function newGame(): Game {
     level: 1,
     clearFx: null,
     dropFx: null,
+    lockMs: 0,
+    lockResets: 0,
   };
 }
 
@@ -122,6 +132,23 @@ const dropDistance = (g: Game) => {
   return d;
 };
 
+const grounded = (g: Game) => collides(g.board, g.piece, 0, 1);
+
+/** Reset lock timer after a successful shift/rotate that stays grounded */
+function touchLock(g: Game) {
+  if (!grounded(g)) {
+    g.lockMs = 0;
+    g.lockResets = 0;
+    return;
+  }
+  if (g.lockResets < MAX_LOCK_RESETS) {
+    g.lockMs = LOCK_DELAY;
+    g.lockResets += 1;
+  } else if (g.lockMs <= 0) {
+    g.lockMs = LOCK_DELAY;
+  }
+}
+
 /** Hold / swap current piece; once per piece until lock */
 function swapHold(g: Game) {
   if (!g.canHold) return false;
@@ -136,6 +163,8 @@ function swapHold(g: Game) {
     g.piece = spawn(kept);
   }
   g.canHold = false;
+  g.lockMs = 0;
+  g.lockResets = 0;
   return true;
 }
 
@@ -163,6 +192,8 @@ function lock(g: Game) {
   if (g.bag.length < 7) g.bag = refill(g.bag);
   g.piece = spawn(g.bag.shift()!);
   g.canHold = true;
+  g.lockMs = 0;
+  g.lockResets = 0;
   return !collides(g.board, g.piece);
 }
 
@@ -249,7 +280,9 @@ function draw(el: HTMLCanvasElement | null, g: Game, showPiece: boolean, view?: 
   ctx.globalAlpha = 1;
   const px = view?.x ?? piece.x;
   const py = view?.y ?? piece.y;
-  for (const [cx, cy] of piece.cells) block(px + cx, py + cy, COLORS[piece.kind]);
+  const locking = g.lockMs > 0 && !collides(g.board, g.piece, 0, 1);
+  const lockAlpha = locking ? 0.55 + 0.45 * Math.abs(Math.sin(now / 90)) : 1;
+  for (const [cx, cy] of piece.cells) block(px + cx, py + cy, COLORS[piece.kind], lockAlpha);
 }
 
 type Action = "left" | "right" | "rotate" | "down" | "drop" | "hold";
@@ -334,8 +367,23 @@ export default function Tetris() {
     sync();
   };
 
+  const onLockExpire = useEffectEvent(() => {
+    settle();
+  });
+
   const tick = useEffectEvent(() => {
-    if (!dead.current && !move(game.current, 0, 1)) settle();
+    if (dead.current) return;
+    const g = game.current;
+    if (move(g, 0, 1)) {
+      g.lockMs = 0;
+      g.lockResets = 0;
+      return;
+    }
+    // grounded: start lock delay if needed; actual settle happens in the frame loop
+    if (g.lockMs <= 0) {
+      g.lockMs = LOCK_DELAY;
+      g.lockResets = 0;
+    }
   });
 
   useEffect(() => {
@@ -352,9 +400,31 @@ export default function Tetris() {
         acc -= gravity(game.current.level);
         tick();
       }
+      let g = game.current;
+      let canFall = !collides(g.board, g.piece, 0, 1);
+      // lock delay: grounded piece counts down in real time, then settles
+      if (!canFall && !dead.current) {
+        if (g.lockMs <= 0) {
+          g.lockMs = LOCK_DELAY;
+          g.lockResets = 0;
+        } else {
+          g.lockMs -= dt * 1000;
+          if (g.lockMs <= 0) {
+            g.lockMs = 0;
+            onLockExpire();
+            if (dead.current) {
+              draw(canvas.current, game.current, true);
+              return;
+            }
+            g = game.current;
+          }
+        }
+      } else if (canFall) {
+        g.lockMs = 0;
+        g.lockResets = 0;
+      }
+      canFall = !collides(g.board, g.piece, 0, 1);
       // 平滑下落：在逻辑位置上加上这一格已经走过的比例；落到底时不再往下滑
-      const g = game.current;
-      const canFall = !collides(g.board, g.piece, 0, 1);
       const targetY = g.piece.y + (canFall ? acc / gravity(g.level) : 0);
       const v = view.current;
       if (v.id !== g.piece.id) Object.assign(v, { id: g.piece.id, x: g.piece.x, y: targetY });
@@ -390,19 +460,32 @@ export default function Tetris() {
       return;
     }
     const g = game.current;
-    if (a === "left") move(g, -1, 0);
-    else if (a === "right") move(g, 1, 0);
-    else if (a === "rotate") rotate(g);
-    else if (a === "hold") {
+    if (a === "left") {
+      if (move(g, -1, 0)) touchLock(g);
+    } else if (a === "right") {
+      if (move(g, 1, 0)) touchLock(g);
+    } else if (a === "rotate") {
+      const before = g.piece;
+      rotate(g);
+      if (g.piece !== before) touchLock(g);
+    } else if (a === "hold") {
       if (swapHold(g)) buzz(10);
     } else if (a === "down") {
-      if (move(g, 0, 1)) g.score += 1;
+      if (move(g, 0, 1)) {
+        g.score += 1;
+        g.lockMs = 0;
+        g.lockResets = 0;
+      } else if (grounded(g)) {
+        // soft-drop into ground: hasten lock
+        g.lockMs = Math.min(g.lockMs > 0 ? g.lockMs : LOCK_DELAY, 120);
+      }
     } else {
       const d = dropDistance(g);
       const { cells, x, y, kind } = g.piece;
       move(g, 0, d);
       g.dropFx = { cells, x, fromY: view.current.id === g.piece.id ? view.current.y : y, toY: y + d, color: COLORS[kind], at: performance.now() };
       g.score += d * 2;
+      g.lockMs = 0;
       settle();
     }
     if (dead.current) return;

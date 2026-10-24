@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CodeCopy, ReadingProgress, Toc } from "@/components/ArticleTools";
+import { CodeCopy, CopyLink, ReadingProgress, Toc } from "@/components/ArticleTools";
 import MdxContent from "@/components/MdxContent";
 import { getCategory } from "@/lib/categories";
 import { getAllPosts, getPost, getRelatedPosts } from "@/lib/posts";
@@ -58,6 +58,7 @@ async function PostBody({ params }: { params: Promise<{ slug: string }> }) {
           {category && <Link href={`/categories/${category.slug}`}>{category.name}</Link>}
           <time dateTime={post.date}>{post.date}</time>
           <span>约 {post.readingMinutes} 分钟</span>
+          <CopyLink />
         </div>
         <h1 className="display">{post.title}</h1>
         {post.summary && <p className="lede">{post.summary}</p>}

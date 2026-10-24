@@ -298,11 +298,12 @@ export default function Poker() {
             <>
               <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
               <span
-                className="pk-blind-progress"
+                className="pk-blind-progress pk-blind-eta"
                 data-near={Math.max(0, nextBlindHand - table.hand) <= 2 || undefined}
-                title={`距涨盲 ${Math.max(0, nextBlindHand - table.hand)} 手（每 ${BLIND_EVERY} 手翻倍）· 本段进度 ${Math.min(100, Math.round((((table.hand - 1) % BLIND_EVERY) + 1) / BLIND_EVERY * 100))}%`}
+                data-eta={Math.max(0, nextBlindHand - table.hand)}
+                title={`涨盲 ETA：距翻倍 ${Math.max(0, nextBlindHand - table.hand)} 手（目标第 ${nextBlindHand} 手）· 每 ${BLIND_EVERY} 手 · 本段 ${Math.min(100, Math.round((((table.hand - 1) % BLIND_EVERY) + 1) / BLIND_EVERY * 100))}%`}
               >
-                涨盲
+                涨盲 ETA
                 <b className={Math.max(0, nextBlindHand - table.hand) <= 2 ? "game-tip--alert" : undefined}>
                   {Math.max(0, nextBlindHand - table.hand)}
                 </b>
@@ -368,8 +369,8 @@ export default function Poker() {
           {" · "}
           第 {table.hand} 手
           {" · "}
-          距翻倍 {Math.max(0, nextBlindHand - table.hand)} 手
-          （每 {BLIND_EVERY} 手）
+          涨盲 ETA {Math.max(0, nextBlindHand - table.hand)} 手
+          （目标第 {nextBlindHand} 手 · 每 {BLIND_EVERY} 手）
           {me && !me.out && table.bb > 0
             ? ` · 你约 ${Math.max(0, Math.round((me.chips / table.bb) * 10) / 10)} BB`
             : ""}

@@ -1,0 +1,43 @@
+---
+title: Go reflect：先做便宜检查再反射
+date: "2026-10-25"
+category: backend
+summary: 反射贵在分配与接口约定。先用类型断言、generics、编码生成挡住热路径，只把真正动态的边角留给 reflect，并缓存 Type/Method。
+---
+
+`reflect` 能打开任意值的结构，但每次 `ValueOf`、`Field`、`Call` 都可能分配、失优化。热路径上应 **先便宜后反射**。
+
+## 便宜检查清单
+
+1. **具体类型 / 接口断言**：`v, ok := x.(T)` 或 type switch，比反射查 kind 便宜。
+2. **泛型**：编译期定类型的编解码、约束方法，避免 `any` + reflect。
+3. **代码生成**：`stringer`、`easyjson`、内部 gen 把「已知结构」变成普通 Go。
+4. **缓存 `reflect.Type`**：同一类型的 `TypeOf`、字段索引、方法句柄放到 `sync.Map` / 包级 map，勿在循环里反复算。
+
+```go
+var u64Type = reflect.TypeOf(uint64(0))
+
+func isU64(v any) bool {
+    if _, ok := v.(uint64); ok { // 便宜路径
+        return true
+    }
+    return reflect.TypeOf(v) == u64Type // 指针/别名等边角
+}
+```
+
+## 何时必须反射
+
+- 未知结构的通用校验、DI、配置绑定。
+- 与 `encoding/json` 类似的约定式标签遍历（能 gen 则更好）。
+
+即便如此：先过滤 `nil`、非导出、错误 kind；`Value.CanInterface` 再碰；避免在锁内做重反射。
+
+## 测量
+
+用 `bench` 对比「断言 / 泛型 / 反射」三条路径；生产看分配（`benchmem`）而不只是 ns/op。CPU 热点里出现 `runtime.growslice` + reflect 包，多半该下沉。
+
+## 小结
+
+- 热路径：断言 → 泛型/生成 → 反射。
+- 反射结果（Type、索引）要缓存。
+- 用 benchmark 证明「便宜」真的便宜。

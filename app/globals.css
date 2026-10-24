@@ -1179,3 +1179,48 @@ html:has(.page--game) { overscroll-behavior: none; }
   width: 100%;
   margin: 4px 0 0;
 }
+
+/* batch38: snake wrap edge-tier */
+.snake-wrap-badge--tier[data-edge-tier="safe"] {
+  color: color-mix(in oklab, #6ee7b7 75%, white);
+}
+.snake-wrap-badge--tier[data-edge-tier="near"] {
+  color: color-mix(in oklab, #fbbf24 80%, white);
+}
+.snake-wrap-badge--tier[data-edge-tier="edge"] {
+  color: color-mix(in oklab, #f87171 85%, white);
+  font-weight: 600;
+}
+.snake-speed-gold[data-edge-tier="near"],
+.snake-wrap-gold[data-edge-tier="near"] {
+  box-shadow: 0 0 0 1px color-mix(in oklab, #fbbf24 40%, transparent);
+}
+.snake-speed-gold[data-edge-tier="edge"],
+.snake-wrap-gold[data-edge-tier="edge"] {
+  box-shadow: 0 0 0 1px color-mix(in oklab, #f87171 50%, transparent);
+}
+
+/* batch38: breakout metal|air group */
+.breakout-metal-air {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: color-mix(in oklab, currentColor 8%, transparent);
+}
+.breakout-metal-air[data-metal][data-air] {
+  box-shadow: 0 0 0 1px color-mix(in oklab, #93c5fd 45%, transparent);
+}
+.breakout-progress[data-metal-air] {
+  /* host highlight when either present */
+}
+
+/* batch38: poker blind ETA */
+.pk-blind-eta[data-near] {
+  color: color-mix(in oklab, #fbbf24 80%, white);
+  font-weight: 600;
+}
+.pk-blind-eta:not([data-near]) {
+  opacity: 0.95;
+}

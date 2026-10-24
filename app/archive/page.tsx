@@ -20,6 +20,7 @@ export const metadata: Metadata = {
     card: "summary",
     title: "归档",
     description: "GM Lab 文章归档：按年份折叠浏览 Go / 前端 / 云原生 / 可观测与随笔；当前年默认展开，可跳进卡片环续读。",
+    images: SITE_URL ? [`${SITE_URL}/icon.svg`] : undefined,
   },
 };
 

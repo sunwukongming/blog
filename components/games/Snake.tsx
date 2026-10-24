@@ -519,6 +519,15 @@ export default function Snake() {
               data-urgent={(hud.goldLeft != null && hud.goldLeft <= 2) || (hud.goldEta != null && hud.goldEta <= 2) || undefined}
               data-edge={(hud.wrap && !!hud.edgeHint?.includes("将从")) || undefined}
               data-near={(hud.wrap && !!hud.edgeHint?.includes("靠")) || undefined}
+              data-edge-tier={
+                !hud.wrap
+                  ? undefined
+                  : hud.edgeHint?.includes("将从")
+                    ? "edge"
+                    : hud.edgeHint?.includes("靠")
+                      ? "near"
+                      : "safe"
+              }
               data-fast={hud.speedTier === "极速" || hud.speedTier === "很快" || undefined}
               title={
                 hud.wrap && hud.goldLeft != null
@@ -549,7 +558,25 @@ export default function Snake() {
               {hud.wrap && (
                 <>
                   <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
-                  <span className="snake-wrap-badge" data-edge={hud.edgeHint?.includes("将从") || undefined} data-near={hud.edgeHint?.includes("靠") || undefined}>
+                  <span
+                    className="snake-wrap-badge snake-wrap-badge--tier"
+                    data-edge={hud.edgeHint?.includes("将从") || undefined}
+                    data-near={hud.edgeHint?.includes("靠") || undefined}
+                    data-edge-tier={
+                      hud.edgeHint?.includes("将从")
+                        ? "edge"
+                        : hud.edgeHint?.includes("靠")
+                          ? "near"
+                          : "safe"
+                    }
+                    title={
+                      hud.edgeHint?.includes("将从")
+                        ? `穿墙色阶 edge：${hud.edgeHint}`
+                        : hud.edgeHint?.includes("靠")
+                          ? `穿墙色阶 near：${hud.edgeHint}`
+                          : "穿墙色阶 safe：边缘可出入"
+                    }
+                  >
                     穿墙
                     {hud.edgeHint?.includes("将从") ? (
                       <small className="snake-wrap-badge__warn"> · 将穿出</small>
@@ -636,9 +663,9 @@ export default function Snake() {
               : hud.wrap && hud.goldEta != null
               ? `穿墙+距金食：${hud.edgeHint ?? "穿墙开"} · 距金 ${hud.goldEta.toFixed(1)}s · 档 ${hud.speedTier}`
               : hud.wrap && hud.edgeHint?.includes("将从")
-              ? `穿墙预警：下一格将穿出 · ${hud.edgeHint} · 档 ${hud.speedTier}`
+              ? `穿墙预警色阶：下一格将穿出 · ${hud.edgeHint} · tier edge · 档 ${hud.speedTier}`
               : hud.wrap && hud.edgeHint?.includes("靠")
-              ? `穿墙近缘：${hud.edgeHint} · 档 ${hud.speedTier}（${hud.speedMs}ms）`
+              ? `穿墙近缘色阶：${hud.edgeHint} · tier near · 档 ${hud.speedTier}（${hud.speedMs}ms）`
               : hud.wrap && hud.edgeHint
               ? `穿墙+加速：${hud.edgeHint} · 档位 ${hud.speedTier}（${hud.speedMs}ms）`
               : hud.wrap

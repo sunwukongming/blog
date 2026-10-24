@@ -549,6 +549,7 @@ const [phase, setPhase] = useState<Phase>("select");
               data-done={hud.progress >= 100 || undefined}
               data-items={(hud.wide || hud.slow || hud.dropsAir > 0 || hud.metalLeft > 0) || undefined}
               data-metal={hud.metalLeft > 0 || undefined}
+              data-metal-air={(hud.metalLeft > 0 || hud.dropsAir > 0) || undefined}
               data-combo={hud.combo >= 5 || undefined}
               title={
                 [
@@ -578,17 +579,28 @@ const [phase, setPhase] = useState<Phase>("select");
               />
               <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
               拍宽<b className={hud.wide ? "game-tip--alert" : undefined}>{hud.paddleW}</b>
-              {hud.dropsAir > 0 && (
+              {(hud.dropsAir > 0 || hud.metalLeft > 0) && (
                 <>
                   <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
-                  空降<b className="game-tip--alert">{hud.dropsAir}</b>
-                </>
-              )}
-              {hud.metalLeft > 0 && (
-                <>
-                  <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
-                  <span className="breakout-metal" data-metal="">
-                    金属<b>{hud.metalLeft}</b>
+                  <span
+                    className="breakout-metal-air"
+                    data-air={hud.dropsAir > 0 || undefined}
+                    data-metal={hud.metalLeft > 0 || undefined}
+                    title={`金属|空降：金属砖 ${hud.metalLeft} · 空降道具 ${hud.dropsAir}`}
+                  >
+                    {hud.metalLeft > 0 ? (
+                      <>
+                        金属<b>{hud.metalLeft}</b>
+                      </>
+                    ) : null}
+                    {hud.metalLeft > 0 && hud.dropsAir > 0 ? (
+                      <small style={{ margin: "0 4px", opacity: 0.45 }}>|</small>
+                    ) : null}
+                    {hud.dropsAir > 0 ? (
+                      <>
+                        空降<b className="game-tip--alert">{hud.dropsAir}</b>
+                      </>
+                    ) : null}
                   </span>
                 </>
               )}
@@ -640,7 +652,7 @@ const [phase, setPhase] = useState<Phase>("select");
               ? `多球/残命：多球×${hud.balls} · ♥×${hud.lives} · 速 ${hud.ballSpeed} · 连击 ${hud.combo}`
             : hud.brickLeft <= 3 && hud.brickLeft > 0
               ? `多球/残命：♥×${hud.lives} · 球×${hud.balls} · 残局 ${hud.brickLeft} 块 · 拍 ${hud.paddleW}`
-              : `连击|进度|道具：连${hud.combo}${hud.bestCombo > 0 ? `/峰${hud.bestCombo}` : ""} · ${hud.progress}%（砖 ${hud.brickLeft}/${hud.brickTotal}）${hud.dropsAir > 0 ? ` · 空降${hud.dropsAir}` : ""}${hud.metalLeft > 0 ? ` · 金属${hud.metalLeft}` : ""}${hud.wide ? ` · 宽${hud.wideLeft.toFixed(1)}s` : ""}${hud.slow ? ` · 慢${hud.slowLeft.toFixed(1)}s` : ""} · ♥×${hud.lives} · 球×${hud.balls} · 速 ${hud.ballSpeed} · 连击 ${hud.combo}`}
+              : `连击|进度|道具：连${hud.combo}${hud.bestCombo > 0 ? `/峰${hud.bestCombo}` : ""} · ${hud.progress}%（砖 ${hud.brickLeft}/${hud.brickTotal}）${hud.metalLeft > 0 || hud.dropsAir > 0 ? ` · 金属|空降 ${hud.metalLeft}/${hud.dropsAir}` : ""}${hud.wide ? ` · 宽${hud.wideLeft.toFixed(1)}s` : ""}${hud.slow ? ` · 慢${hud.slowLeft.toFixed(1)}s` : ""} · ♥×${hud.lives} · 球×${hud.balls} · 速 ${hud.ballSpeed} · 连击 ${hud.combo}`}
         </p>
       )}
       {(phase === "running" || phase === "aim" || phase === "paused" || phase === "select") && (

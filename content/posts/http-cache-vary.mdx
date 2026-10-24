@@ -1,0 +1,47 @@
+---
+title: HTTP Vary：协商缓存键里容易漏的那一维
+date: "2026-10-25"
+category: backend
+summary: 专讲 Vary 如何把响应纳入正确的缓存键。对比已有的再验证（ETag/Last-Modified）文：本文不展开 304 流程，只盯 Accept-Encoding、Authorization、Cookie 与 CDN 规范化。
+---
+
+站内已有一篇讲 **再验证**（ETag / `If-None-Match` → 304）。本文只谈另一半：**`Vary` 决定「同一个 URL」在共享缓存里有几份表示**。
+
+## 缓存键 = URL + 选中的请求头
+
+```http
+HTTP/1.1 200 OK
+Content-Type: application/json
+Content-Encoding: gzip
+Vary: Accept-Encoding
+```
+
+共享缓存（CDN、浏览器 HTTP cache）在存这份响应时，会把 `Accept-Encoding` 的值并进键。若缺 `Vary`，可能把 gzip 体发给只声明 `identity` 的客户端。
+
+## 常见维
+
+| 请求头 | 何时 Vary |
+| --- | --- |
+| `Accept-Encoding` | 压缩内容协商 |
+| `Accept` / `Accept-Language` | 内容/语言协商 |
+| `Authorization` | 按用户区分的私有响应（更常见是直接 `Cache-Control: private`） |
+| `Cookie` | 极少；多数场景应避免把 Cookie 推进共享缓存键 |
+
+`Vary: *` 等于告诉中间人「别共享缓存」。
+
+## 和再验证的边界
+
+- **再验证**：已有条目是否仍新鲜（条件请求 → 304）。
+- **Vary**：条目本身有几份、键怎么拼。
+
+漏 `Vary` 的 bug 表现为「偶发错语言/错压缩」，而不是「该 304 却 200」。排查时先看响应是否声明了协商用过的头。
+
+## CDN 规范化
+
+边缘常对 `Accept-Encoding` 做规范化（只认 br/gzip）。应用侧仍应输出正确 `Vary`，避免源站与中间层假设不一致。带 cookie 的 HTML 优先 `private`，不要靠巨型 `Vary: Cookie` 硬撑共享缓存。
+
+## 小结
+
+- 用过哪个请求头做内容协商，就 `Vary` 它。
+- 本文不替代再验证；304 流程见《HTTP 缓存再验证》专文。
+- 用户态差异优先 `private`，慎用 `Vary: Cookie`。

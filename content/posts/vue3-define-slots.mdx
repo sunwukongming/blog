@@ -1,0 +1,48 @@
+---
+title: Vue 3 defineSlots：插槽也有类型
+date: "2026-10-25"
+category: frontend
+summary: 用 defineSlots 声明具名/作用域插槽的 props 形状，让父组件模板补全与校验生效。对比 slots 运行时对象与 defineProps 的分工。
+---
+
+`<slot>` 在运行时很灵活，但对父组件缺少结构提示。`<script setup lang="ts">` 里的 **`defineSlots`** 把插槽名和作用域 props 写成类型。
+
+## 声明
+
+```vue
+<script setup lang="ts">
+export type Row = { id: string; title: string };
+
+defineSlots<{
+  default(props: { row: Row }): any
+  empty?: (props: {}) => any
+  footer?(props: { total: number }): any
+}>()
+</script>
+
+<template>
+  <slot v-if="rows.length" name="default" v-bind="{ row: rows[0] }" />
+  <slot v-else name="empty" />
+  <slot name="footer" :total="rows.length" />
+</template>
+```
+
+父组件写 `#default="{ row }"` 时，`row` 会按 `Row` 推断；拼错插槽名可在支持的 IDE / `vue-tsc` 里暴露。
+
+## 和运行时 `useSlots`
+
+- `defineSlots`：**类型侧**契约，编译期擦除或仅用于检查。
+- `useSlots()` / `slots.xxx`：**运行时**是否传入、条件渲染。
+
+两者一起用：类型保证形状，运行时决定有无。
+
+## 注意
+
+- 返回类型写成 `any` / `VNode` 均可，重点在 **props 参数**。
+- 可选插槽用 `?`；不要把业务状态塞进插槽类型，保持瘦。
+- 与 `defineProps` / `defineEmits` 并列，同属宏，勿手动 import。
+
+## 小结
+
+- 公共组件的具名/作用域插槽用 `defineSlots` 定契约。
+- 运行时有无仍看 `slots`；类型与运行时分工清晰。

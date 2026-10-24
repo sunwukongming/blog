@@ -1,0 +1,34 @@
+---
+title: Vue 3 defineExpose：脚本组件的对外句柄
+date: "2026-10-25"
+category: frontend
+summary: script setup 默认不对外暴露。这篇写 defineExpose：父级 ref 能调用哪些方法、和 Options API 的对比，以及不要暴露过多内部状态。
+---
+
+`<script setup>` 里声明的绑定默认是 **私有的**。父组件 `ref` 拿不到子方法，除非用 **`defineExpose`**。
+
+```vue
+<script setup lang="ts">
+const open = () => { /* ... */ }
+defineExpose({ open })
+</script>
+```
+
+父级：
+
+```ts
+const child = ref<{ open: () => void } | null>(null)
+child.value?.open()
+```
+
+## 边界
+
+- 只暴露稳定命令式 API（`focus`、`reset`），不要把整份响应式状态甩出去。  
+- 与 `defineProps` / `defineEmits` 互补：数据向下、事件向上、暴露给少数命令式场景。  
+- TypeScript 需为子组件标注暴露类型，否则父级是宽松的。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| defineExpose | 本文 |

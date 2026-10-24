@@ -676,6 +676,32 @@ export default function Minesweeper() {
               }}
             />
           </span>
+          <span
+            className="mine-flag-pace-bar"
+            data-hot={seconds > 0 && flags / seconds >= 0.35 || undefined}
+            data-slow={seconds >= 25 && flags / Math.max(1, seconds) < 0.08 || undefined}
+            title={
+              seconds > 0
+                ? `插旗配速 ${Math.round((flags / seconds) * 100) / 100}/s（满刻度按 0.5/s）`
+                : "插旗配速 —"
+            }
+            aria-label={
+              seconds > 0
+                ? `每秒约插旗 ${Math.round((flags / seconds) * 100) / 100}`
+                : "插旗配速未知"
+            }
+          >
+            <i
+              className="mine-flag-pace-bar__fill"
+              style={{
+                width: `${
+                  seconds > 0
+                    ? Math.min(100, Math.round((flags / seconds / 0.5) * 100))
+                    : 0
+                }%`,
+              }}
+            />
+          </span>
           {best != null && phase === "playing" && best > 0 ? (
             <>
               <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>

@@ -1,0 +1,51 @@
+---
+title: HTTP Range：分段下载与 206
+date: "2026-10-25"
+category: frontend
+summary: 大文件、音视频、断点续传都依赖 Range。这篇写请求头、206 Partial Content、416，以及和 ETag/412 条件请求的配合边界。
+---
+
+客户端只要资源的一段时，用 **`Range`**；服务器同意则回 **`206 Partial Content`**，并带 `Content-Range`。
+
+## 请求与响应
+
+```http
+GET /video.mp4 HTTP/1.1
+Range: bytes=0-1023
+```
+
+```http
+HTTP/1.1 206 Partial Content
+Content-Range: bytes 0-1023/10485760
+Content-Length: 1024
+Accept-Ranges: bytes
+```
+
+| 场景 | 行为 |
+|---|---|
+| 单段 `bytes=a-b` | 常见；缺省 end 表示到 EOF |
+| 多段 `bytes=0-1,100-199` | 少见；可能 `multipart/byteranges` |
+| 无法满足 | **`416 Range Not Satisfiable`**，常带 `*/size` |
+| 不支持 Range | 忽略头，回整文件 `200` |
+
+`Accept-Ranges: bytes` 声明可分段；`none` 或省略则客户端勿依赖续传。
+
+## 和条件头
+
+- 分段 GET 仍可带 `If-Range`（ETag 或日期）：资源变了就改回整份，而不是错段。  
+- 写路径的 `If-Match` / **412** 与 Range 正交——站内 412 文已述，此处不复述。  
+- 缓存：`206` 的缓存键通常含 Range；CDN 配置不当会把错段当整文件。
+
+## 边界
+
+- 只对可随机读的静态/对象存储友好；动态流式生成器常拒绝 Range。  
+- 安全：勿因 Range 绕过鉴权；鉴权失败仍应 401/403，而不是 206。  
+- 播放器会并发多个 Range——源站要能扛，或前置 CDN。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| Range / 206 | 本文 |
+| 412 | http-precondition-failed |
+| ETag | 站内 ETag 文 |

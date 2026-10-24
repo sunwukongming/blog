@@ -563,6 +563,32 @@ export default function Memory() {
               }}
             />
           </span>
+          <span
+            className="memory-streak-ratio-bar"
+            data-hot={streak >= 3 && bestStreak > 0 && streak >= bestStreak || undefined}
+            data-warm={streak >= 2 && bestStreak > 0 && streak / bestStreak >= 0.6 || undefined}
+            title={
+              bestStreak > 0
+                ? `连对相对峰值 ${streak}/${bestStreak}`
+                : `连对 ${streak}`
+            }
+            aria-label={
+              bestStreak > 0
+                ? `连对 ${streak} 相对峰 ${bestStreak}`
+                : `连对 ${streak}`
+            }
+          >
+            <i
+              className="memory-streak-ratio-bar__fill"
+              style={{
+                width: `${
+                  bestStreak > 0
+                    ? Math.min(100, Math.round((streak / bestStreak) * 100))
+                    : Math.min(100, Math.round((streak / 5) * 100))
+                }%`,
+              }}
+            />
+          </span>
         </span>
       </div>
       <p className={endgame || streak >= 2 ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">

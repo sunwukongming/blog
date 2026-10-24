@@ -1,0 +1,45 @@
+---
+title: Postgres 覆盖索引 vs 部分索引：少回表还是少索引行
+date: "2026-10-25"
+category: backend
+summary: 对比 INCLUDE 覆盖索引与 WHERE 部分索引：一个消灭堆取，一个缩小索引体积。组合使用、写放大与「看起来用了索引却仍慢」的排查。
+---
+
+已有专文分别讲过覆盖索引与部分索引；本文只钉 **选型对照**：同样想加速 `WHERE` + `SELECT` 少数列，先砍行数还是先免回表？
+
+## 一句话
+
+- **部分索引**（`WHERE`）：索引里根本没有「冷数据」行 → 更小、更好缓存。
+- **覆盖索引**（`INCLUDE` / 把投影列放进索引）：命中后 **Index Only Scan**，少碰堆。
+
+```sql
+-- 部分：只索引未删除
+CREATE INDEX ON orders (user_id) WHERE deleted_at IS NULL;
+
+-- 覆盖：查 status 不回表
+CREATE INDEX ON orders (user_id) INCLUDE (status);
+
+-- 常常更香：部分 + 覆盖
+CREATE INDEX ON orders (user_id) INCLUDE (status) WHERE deleted_at IS NULL;
+```
+
+## 怎么选
+
+| 场景 | 更倾向 |
+| --- | --- |
+| 谓词高度选择性且稳定（`status=open`） | 部分索引 |
+| 谓词多样但投影固定 | 覆盖 / INCLUDE |
+| 两者都有 | 部分 + INCLUDE |
+| 写极多、读很少 | 先质疑要不要新索引 |
+
+## 仍慢时查什么
+
+- `EXPLAIN`：是 `Index Only Scan` 还是仍 `Heap Fetches` 很高（可见性图未 freeze / 从未 vacuum）。
+- 部分索引的谓词必须与查询 **字面可匹配**（或规划器能证明蕴含）。
+- INCLUDE 列更新仍会维护索引；宽 INCLUDE = 写放大。
+
+## 小结
+
+- 先问「能不能少索引行」，再问「能不能少回表」。
+- 部分解决基数，覆盖解决 I/O 形状；可叠。
+- 用 EXPLAIN 与 vacuum/可见性验证「only」是否名副其实。

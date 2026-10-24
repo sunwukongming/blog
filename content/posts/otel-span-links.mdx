@@ -1,0 +1,48 @@
+---
+title: OpenTelemetry Span Links：关联而不嵌套的因果
+date: "2026-10-25"
+category: devops
+summary: Link 把批处理、扇入扇出、补录的 Span 连到既有 Trace，而不伪造父子。对比 Continues / ChildOf，讲清何时用 Link、属性怎么带。
+---
+
+不是所有因果关系都该做成 **父子 Span**。批量消费把 100 条消息揉成一次处理、或事后把诊断 Span 挂到旧 Trace 时，硬套 `ChildOf` 会扭曲火焰图。**Span Link** 表示「相关，但不是子树」。
+
+## 和父子的差别
+
+| | Parent/Child | Link |
+| --- | --- | --- |
+| 树结构 | 改变 trace 树 | 不改变父子 |
+| 典型 | 请求内调用链 | 扇入、批处理、跨 trace 引用 |
+| 传播 | 通常走 context | 显式 `AddLink` / 创建时带 Links |
+
+```go
+link := trace.Link{
+    SpanContext: upstream.SpanContext(),
+    Attributes: []attribute.KeyValue{
+        attribute.String("messaging.operation", "process"),
+        attribute.String("messaging.message_id", id),
+    },
+}
+ctx, span := tracer.Start(ctx, "batch.process", trace.WithLinks(link))
+defer span.End()
+```
+
+## 何时用
+
+- **扇入**：多消息 → 一次 handler；每条消息一条 Link。
+- **跨 Trace**：回调、异步完成通知指向发起方 Trace。
+- **补录 / 关联**：告警排查 Span 链到业务 Trace，避免假父子。
+
+仍在同一请求同步调用栈里，优先正常父子；Link 不是「懒得传 context」的借口。
+
+## 后端与查询
+
+- 确认 Tempo / Jaeger / 厂商 UI 是否展示 Links（有的只当属性）。
+- Link 上的 attributes 保持低基数；消息 id 可以，无界 URL 慎放。
+- 与 Baggage / Exemplars 分工：Link 连 Span，Baggage 传业务键，Exemplars 连指标。
+
+## 小结
+
+- 有因果、不该嵌套 → Link。
+- 批处理与跨 trace 是主战场。
+- 先保证 context 父子正确，再在扇入点加 Link。

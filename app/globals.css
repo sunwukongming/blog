@@ -1395,3 +1395,67 @@ html:has(.page--game) { overscroll-behavior: none; }
 .tetris-level-fill[data-tier="mid"] .tetris-level-fill__bar {
   background: linear-gradient(90deg, #34d399, #60a5fa);
 }
+
+/* batch42: snake-gold-life-bar */
+.snake-gold-life-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.snake-gold-life-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #fde68a, #f59e0b);
+  transition: width 100ms linear;
+}
+.snake-gold-life-bar[data-tier="hot"] > i {
+  background: linear-gradient(90deg, #fbbf24, #ef4444);
+}
+.snake-gold-life-bar[data-tier="cool"] > i {
+  background: linear-gradient(90deg, #fde68a, #93c5fd);
+}
+.snake-gold-eta-bar > i {
+  background: linear-gradient(90deg, #93c5fd, #a78bfa);
+}
+
+/* batch42: breakout metal|air dual bar */
+.breakout-metal-air-bar {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 48px;
+  height: 5px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 10%, transparent);
+}
+.breakout-metal-air-bar__metal,
+.breakout-metal-air-bar__air {
+  display: block;
+  height: 100%;
+  transition: width 120ms ease-out;
+}
+.breakout-metal-air-bar__metal {
+  background: color-mix(in oklab, #94a3b8 80%, #64748b);
+}
+.breakout-metal-air-bar__air {
+  background: linear-gradient(90deg, #38bdf8, #a78bfa);
+}
+
+/* batch42: poker SPR */
+.pk-pot-spr {
+  opacity: 0.88;
+  font-variant-numeric: tabular-nums;
+}
+.pk-pot-spr[data-low] {
+  color: #fbbf24;
+}
+.pk-pot-spr[data-commit] {
+  color: #f87171;
+}

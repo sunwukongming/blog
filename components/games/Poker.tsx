@@ -323,7 +323,7 @@ export default function Poker() {
         </span>
         {started && !gameOver && !victory && (
           <span
-            className="pk-pot-hud pk-pot-bb-screen"
+            className="pk-pot-hud pk-pot-bb-screen pk-pot-spr-host"
             title={
               result && result.pots.length > 1
                 ? `主池 ${result.pots[0]?.amount ?? 0} · 边池合计 ${result.pots.slice(1).reduce((s, x) => s + x.amount, 0)}`
@@ -337,6 +337,19 @@ export default function Poker() {
               <small className="pk-pot-bb-together" title={`底池约 ${Math.max(0, Math.round((pot / table.bb) * 10) / 10)} BB · 你约 ${Math.max(0, Math.round((me.chips / table.bb) * 10) / 10)} BB`}>
                 {" "}· {Math.max(0, Math.round((pot / table.bb) * 10) / 10)}BB
                 <span className="pk-pot-bb-together__you"> / 你{Math.max(0, Math.round((me.chips / table.bb) * 10) / 10)}BB</span>
+              </small>
+            ) : null}
+            {me && pot > 0 ? (
+              <small
+                className="pk-pot-spr"
+                data-low={me.chips / pot < 3 || undefined}
+                data-commit={me.chips / pot < 1 || undefined}
+                title={`SPR 筹码/底池 ≈ ${Math.max(0, Math.round((me.chips / pot) * 10) / 10)}（低于3偏深码压力，低于1近似投入）`}
+              >
+                {" "}· SPR
+                <b className={me.chips / pot < 1 ? "game-tip--alert" : undefined}>
+                  {Math.max(0, Math.round((me.chips / pot) * 10) / 10)}
+                </b>
               </small>
             ) : null}
             {result && result.pots.length > 1 ? (

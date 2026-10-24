@@ -22,6 +22,8 @@ export const metadata: Metadata = {
     card: "summary",
     title: "游戏",
     description: "GM Lab 桌上小游戏：贪吃蛇、俄罗斯方块、2048、打砖块、扫雷、德州扑克与记忆翻牌；本机纪录存浏览器，HUD 提示连击/道具/胜率，可直接在站内玩。",
+    // batch42: 与 openGraph.images 对齐
+    images: SITE_URL ? [`${SITE_URL}/icon.svg`] : undefined,
   },
 };
 

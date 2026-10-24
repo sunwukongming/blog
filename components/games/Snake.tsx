@@ -551,6 +551,14 @@ export default function Snake() {
                   <small className="snake-gold-tier" data-tier={hud.goldLeft <= 2 ? "hot" : hud.goldLeft <= 5 ? "warm" : "cool"} style={{ marginLeft: 4 }}>
                     {hud.goldLeft <= 2 ? "hot" : hud.goldLeft <= 5 ? "warm" : "cool"}
                   </small>
+                  <span
+                    className="snake-gold-life-bar"
+                    data-tier={hud.goldLeft <= 2 ? "hot" : hud.goldLeft <= 5 ? "warm" : "cool"}
+                    title={`金食剩余 ${hud.goldLeft.toFixed(1)}s / ${6}s`}
+                    aria-label={`金食剩余 ${hud.goldLeft.toFixed(1)} 秒`}
+                  >
+                    <i style={{ width: `${Math.min(100, Math.round((hud.goldLeft / 6) * 100))}%` }} />
+                  </span>
                   {hud.nextSpeed ? <small style={{ marginLeft: 4, opacity: 0.7 }}>{hud.nextSpeed}</small> : <small style={{ marginLeft: 4, opacity: 0.55 }}>极速</small>}
                 </>
               )}
@@ -561,6 +569,14 @@ export default function Snake() {
                   <small className="snake-gold-tier" data-tier={hud.goldEta <= 2 ? "hot" : hud.goldEta <= 5 ? "warm" : "cool"} style={{ marginLeft: 4 }}>
                     {hud.goldEta <= 2 ? "hot" : hud.goldEta <= 5 ? "warm" : "cool"}
                   </small>
+                  <span
+                    className="snake-gold-life-bar snake-gold-eta-bar"
+                    data-tier={hud.goldEta <= 2 ? "hot" : hud.goldEta <= 5 ? "warm" : "cool"}
+                    title={`距金约 ${hud.goldEta.toFixed(1)}s（窗口按 14s 估）`}
+                    aria-label={`距金 ${hud.goldEta.toFixed(1)} 秒`}
+                  >
+                    <i style={{ width: `${Math.min(100, Math.round((hud.goldEta / 14) * 100))}%` }} />
+                  </span>
                 </>
               )}
               {hud.wrap && (
@@ -640,6 +656,14 @@ export default function Snake() {
                   <small className="snake-gold-tier" data-tier={hud.goldLeft <= 2 ? "hot" : hud.goldLeft <= 5 ? "warm" : "cool"} style={{ marginLeft: 4 }}>
                     {hud.goldLeft <= 2 ? "hot" : hud.goldLeft <= 5 ? "warm" : "cool"}
                   </small>
+                  <span
+                    className="snake-gold-life-bar"
+                    data-tier={hud.goldLeft <= 2 ? "hot" : hud.goldLeft <= 5 ? "warm" : "cool"}
+                    title={`无尽金食剩余 ${hud.goldLeft.toFixed(1)}s / 6s`}
+                    aria-label={`金食剩余 ${hud.goldLeft.toFixed(1)} 秒`}
+                  >
+                    <i style={{ width: `${Math.min(100, Math.round((hud.goldLeft / 6) * 100))}%` }} />
+                  </span>
                   <small className="snake-endless-gold__tag" style={{ marginLeft: 4, opacity: 0.8 }}>无尽</small>
                   {hud.nextSpeed ? <small style={{ marginLeft: 4, opacity: 0.7 }}>{hud.nextSpeed}</small> : <small style={{ marginLeft: 4, opacity: 0.55 }}>极速</small>}
                 </>
@@ -651,6 +675,14 @@ export default function Snake() {
                   <small className="snake-gold-tier" data-tier={hud.goldEta <= 2 ? "hot" : hud.goldEta <= 5 ? "warm" : "cool"} style={{ marginLeft: 4 }}>
                     {hud.goldEta <= 2 ? "hot" : hud.goldEta <= 5 ? "warm" : "cool"}
                   </small>
+                  <span
+                    className="snake-gold-life-bar snake-gold-eta-bar"
+                    data-tier={hud.goldEta <= 2 ? "hot" : hud.goldEta <= 5 ? "warm" : "cool"}
+                    title={`无尽距金约 ${hud.goldEta.toFixed(1)}s（窗口按 14s 估）`}
+                    aria-label={`距金 ${hud.goldEta.toFixed(1)} 秒`}
+                  >
+                    <i style={{ width: `${Math.min(100, Math.round((hud.goldEta / 14) * 100))}%` }} />
+                  </span>
                   <small className="snake-endless-gold__tag" style={{ marginLeft: 4, opacity: 0.8 }}>无尽</small>
                 </>
               )}

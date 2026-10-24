@@ -617,6 +617,32 @@ const [phase, setPhase] = useState<Phase>("select");
                         空降<b className="game-tip--alert">{hud.dropsAir}</b>
                       </>
                     ) : null}
+                    <span
+                      className="breakout-metal-air-bar"
+                      data-metal={hud.metalLeft > 0 || undefined}
+                      data-air={hud.dropsAir > 0 || undefined}
+                      title={`金属 ${hud.metalLeft} · 空降 ${hud.dropsAir}`}
+                      aria-label={`金属 ${hud.metalLeft} 空降 ${hud.dropsAir}`}
+                    >
+                      <i
+                        className="breakout-metal-air-bar__metal"
+                        style={{
+                          width: `${Math.min(
+                            100,
+                            Math.round((hud.metalLeft / Math.max(1, hud.metalLeft + hud.dropsAir)) * 100),
+                          )}%`,
+                        }}
+                      />
+                      <i
+                        className="breakout-metal-air-bar__air"
+                        style={{
+                          width: `${Math.min(
+                            100,
+                            Math.round((hud.dropsAir / Math.max(1, hud.metalLeft + hud.dropsAir)) * 100),
+                          )}%`,
+                        }}
+                      />
+                    </span>
                   </span>
                 </>
               )}

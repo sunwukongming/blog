@@ -1,0 +1,49 @@
+---
+title: Go synctest：把「时间」和「调度」关进可测的泡泡
+date: "2026-10-25"
+category: backend
+summary: testing/synctest（或实验包）在泡泡里推进虚拟时钟、等待空闲，测超时与并发而不 sleep。讲清 Run、Wait、与 time.Timer 的配合及适用边界。
+---
+
+测超时、重试、`context.WithTimeout` 时，真实 `time.Sleep` 又慢又脆。**synctest** 思路：在隔离「泡泡」里跑被测代码，虚拟时钟可瞬间推进，并在 goroutine 阻塞在定时器上时 `Wait` 到安静点。
+
+## 典型形状
+
+```go
+func TestRetry(t *testing.T) {
+    synctest.Run(t, func(t *testing.T) {
+        ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+        defer cancel()
+        done := make(chan struct{})
+        go func() {
+            defer close(done)
+            _ = doWithRetry(ctx) // 内部用 time.Timer / After
+        }()
+        synctest.Wait() // 推进到定时器该响、或全部阻塞
+        // 断言中间态 / 最终错误
+        <-done
+    })
+}
+```
+
+具体 API 名随 Go 版本（实验 `testing/synctest` / 提案落地）略有差异；原则不变：**别用墙钟睡，用泡泡推进**。
+
+## 适合 / 不适合
+
+| 适合 | 不适合 |
+| --- | --- |
+| Timer、Ticker、Deadline | 真网络 RTT、真磁盘抖动 |
+| 「等所有 goroutine 阻塞」的确定性 | 依赖外部真实时间的集成测 |
+| 重试退避曲线的单位测 | 需要与墙钟对齐的 cron |
+
+## 注意
+
+- 泡泡外的代码仍走真时间；不要半截混用。
+- 忙等（空转 spin）会让 `Wait` 永远等不到「安静」——被测逻辑应阻塞在 channel/timer 上。
+- CI 里用 synctest 替换 `time.Sleep(2 * time.Second)` 类断言，套件会明显变快。
+
+## 小结
+
+- synctest = 虚拟时间 + 调度同步，专治「睡一会再断言」。
+- 先把并发收敛到 timer/channel，再放进泡泡。
+- 版本升级时核对包路径与 API，逻辑模式可复用。

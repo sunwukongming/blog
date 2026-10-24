@@ -534,9 +534,11 @@ const [phase, setPhase] = useState<Phase>("select");
               连击<b className={hud.combo >= 5 ? "game-tip--alert" : undefined}>{hud.combo}</b>
               {hud.bestCombo > 0 ? <small style={{ marginLeft: 4, opacity: 0.75 }}>峰{hud.bestCombo}</small> : null}
             </span>
-            <span title="剩余生命（掉球扣一命）">
+            <span title="生命与球速同屏（掉球扣一命；球速受减速道具影响）">
               生命<b className={hud.lives <= 1 ? "game-tip--alert" : undefined}>{"♥".repeat(Math.max(0, hud.lives)) || "0"}</b>
               <small style={{ marginLeft: 4, opacity: 0.7 }}>/3</small>
+              <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
+              球速<b className={hud.lives <= 1 || hud.slow ? "game-tip--alert" : undefined}>{hud.ballSpeed}</b>
             </span>
             <span title="场上球数；多球道具可叠加">
               球<b className={hud.balls > 1 ? "game-tip--alert" : undefined}>{hud.balls}</b>
@@ -547,9 +549,6 @@ const [phase, setPhase] = useState<Phase>("select");
             </span>
             <span>
               完成<b>{hud.progress}%</b>
-            </span>
-            <span title="本关基础球速（受减速道具影响）">
-              球速<b>{hud.ballSpeed}</b>
             </span>
             <span title="当前拍宽（关卡越高越短；加宽道具×1.5）">
               拍宽<b className={hud.wide ? "game-tip--alert" : undefined}>{hud.paddleW}</b>
@@ -578,12 +577,12 @@ const [phase, setPhase] = useState<Phase>("select");
         )}
       </div>
       {(phase === "running" || phase === "aim" || phase === "paused") && (
-        <p className={hud.brickLeft <= 3 && hud.brickLeft > 0 ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">
+        <p className={hud.lives <= 1 || (hud.brickLeft <= 3 && hud.brickLeft > 0) ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">
           {hud.lives <= 1
-            ? `残命 ${hud.lives} · 球速 ${hud.ballSpeed} · 拍宽 ${hud.paddleW} · 连击 ${hud.combo}`
+            ? `生命/球速：残命 ${hud.lives} · 球速 ${hud.ballSpeed} · 拍宽 ${hud.paddleW} · 连击 ${hud.combo}`
             : hud.brickLeft <= 3 && hud.brickLeft > 0
-              ? `残局：还剩 ${hud.brickLeft} 块 · 球速 ${hud.ballSpeed}/拍宽 ${hud.paddleW} · 连击 ${hud.combo}`
-              : `第 ${hud.level + 1} 关 · 球速 ${hud.ballSpeed} · 拍宽 ${hud.paddleW}${hud.wide ? "(加宽)" : ""}${hud.slow ? "(减速)" : ""} · 连击 ${hud.combo}（峰 ${hud.bestCombo}）`}
+              ? `生命/球速：♥×${hud.lives} · 速 ${hud.ballSpeed} · 残局 ${hud.brickLeft} 块 · 拍 ${hud.paddleW}`
+              : `生命/球速：♥×${hud.lives} · 速 ${hud.ballSpeed}${hud.slow ? "(减)" : ""} · 拍 ${hud.paddleW}${hud.wide ? "(宽)" : ""} · 连击 ${hud.combo}（峰 ${hud.bestCombo}）`}
         </p>
       )}
       {(phase === "running" || phase === "aim" || phase === "paused" || phase === "select") && (

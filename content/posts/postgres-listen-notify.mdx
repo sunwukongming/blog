@@ -1,0 +1,27 @@
+---
+title: Postgres LISTEN/NOTIFY：轻量进程内事件总线
+date: "2026-10-24"
+category: backend
+summary: 同库进程用 LISTEN/NOTIFY 推配置热更、缓存失效；payload 宜短，别当消息队列，跨机可靠投递仍走专用 broker。
+---
+
+`NOTIFY channel, 'payload'` 与 `LISTEN channel` 让连接在事务提交后收到通知。适合 **同 Postgres 集群内** 的轻量信号。
+
+## 用法轮廓
+
+```sql
+LISTEN cache_bust;
+-- 另一会话
+NOTIFY cache_bust, 'user:42';
+```
+
+应用侧（如 `pg` / JDBC）在连接上挂通知回调；收到后按 payload 失效本地缓存或触发刷新。
+
+## 边界
+
+1. **不可靠队列**：断线会丢未读通知；需要至少一次投递请用表外队或 Kafka/NATS。  
+2. **payload 短**：历史上约 8KB 上限；大对象放表，通知只传主键。  
+3. **连接模型**：长连接才听得到；连接池要单独留「监听连接」，别和短查询混用。  
+4. 与逻辑复制/多主无关：通知不跨逻辑复制传播业务语义。
+
+配置热更新、单区域缓存失效、开发环境 fan-out——好用。跨机、跨区域、要堆积——换真正的消息系统。

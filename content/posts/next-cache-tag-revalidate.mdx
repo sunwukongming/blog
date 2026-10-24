@@ -1,0 +1,41 @@
+---
+title: Next.js cache tag 与 revalidateTag：按标签失效
+date: "2026-10-24"
+category: frontend
+summary: fetch/unstable_cache 打上 tag，写路径 revalidateTag 只刷相关片段；别整站 revalidatePath 当锤子。
+---
+
+App Router 里数据缓存可挂 **tag**。变更发生时按标签失效，比整页路径更细。
+
+## 打标
+
+```ts
+const posts = await fetch(url, {
+  next: { tags: ["posts", `post:${id}`] },
+});
+// 或
+import { unstable_cache } from "next/cache";
+const get = unstable_cache(loader, ["key"], { tags: ["posts"] });
+```
+
+## 失效
+
+```ts
+"use server";
+import { revalidateTag } from "next/cache";
+
+export async function afterPublish(id: string) {
+  revalidateTag("posts");
+  revalidateTag(`post:${id}`);
+}
+```
+
+`revalidatePath` 仍适合「这棵路由树整体变了」；标签适合「多页共享同一数据源」。
+
+## 注意
+
+- 标签名要稳定、可枚举，避免瞬时 UUID 刷爆缓存键。  
+- 与 `export const revalidate = N` ISR 叠加时，分清「时间到期」与「事件驱动」。  
+- 仅在服务端 / Route Handler / Server Action 调 `revalidateTag`。
+
+和 CDN 缓存头分工：Next 数据缓存管 RSC/fetch；边缘 HTML/静态另议。

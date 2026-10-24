@@ -1,0 +1,29 @@
+---
+title: Go Testcontainers：集成测试的烟雾弹
+date: "2026-10-24"
+category: backend
+summary: 用 Testcontainers 拉起真实 Postgres/Redis 做冒烟；保持短生命周期、可跳过、与单测分层，别让 CI 变成码头夜市。
+---
+
+单元测试 mock 仓储很快，但驱动、SQL、连接池的坑要在 **真依赖** 上冒烟。Testcontainers 在测试里起 Docker 容器。
+
+## 最小形态
+
+```go
+ctr, err := postgres.Run(ctx, "postgres:16-alpine",
+  postgres.WithDatabase("t"),
+  postgres.WithUsername("t"),
+  postgres.WithPassword("t"),
+)
+dsn, _ := ctr.ConnectionString(ctx, "sslmode=disable")
+// migrate + 业务断言
+```
+
+## 实践
+
+1. **`-short` 跳过**：笔记本无 Docker 时 `testing.Short()` 直接 return。  
+2. **一套容器多测**：`TestMain` 或 suite 级复用，避免每个子测冷启动。  
+3. **与单测分层**：纯逻辑仍 table-driven；容器测只覆盖「连得上、迁得动、查得对」。  
+4. CI 要 Docker-in-Docker 或 sibling socket；超时与镜像预拉要写进流水线。
+
+别把全站 E2E 塞进 Testcontainers；它是仓储/适配器层的烟雾弹，不是替代浏览器测。

@@ -230,6 +230,20 @@ export default function Poker() {
             <small className="pk-blinds__next"> · 下涨第{nextBlindHand}手</small>
           )}
         </span>
+        {myTurn && rules && !rules.canCheck && rules.toCall > 0 && pot > 0 && (
+          <span
+            className="pk-odds-hud"
+            title="跟注打平所需胜率（跟注/(底池+跟注)）"
+          >
+            需胜率
+            <b className="game-tip--alert">
+              {Math.min(99, Math.round((rules.toCall / (pot + rules.toCall)) * 100))}%
+            </b>
+            <small style={{ marginLeft: 4, opacity: 0.75 }}>
+              跟{rules.toCall}
+            </small>
+          </span>
+        )}
         <span className="spacer" />
         <span>
           本机最多<b>{best ?? STARTING_CHIPS}</b>
@@ -302,11 +316,14 @@ export default function Poker() {
           </p>
           {myTurn && rules && !rules.canCheck && rules.toCall > 0 && pot > 0 && (
             <p className="game-tip game-tip--alert pk-odds" aria-live="polite">
-              跟注 {rules.toCall} · 底池 {pot}
-              （打平约需 {Math.min(99, Math.round((rules.toCall / (pot + rules.toCall)) * 100))}% 胜率）
+              胜率 HUD：跟 {rules.toCall} / 池 {pot}
+              {" · "}
+              打平需{" "}
+              <b>{Math.min(99, Math.round((rules.toCall / (pot + rules.toCall)) * 100))}%</b>
+              {" 胜率"}
               {table.players.some((pl) => pl.allIn && !pl.out)
-                ? " · 同屏：已有全下，跟注只进你可参与的主池/边池"
-                : ""}
+                ? " · 全下中：只进你可参与的主池/边池"
+                : " · 顶栏同步显示需胜率"}
             </p>
           )}
           {started && !gameOver && !victory && !result && table.players.some((pl) => pl.allIn && !pl.out) && !(myTurn && rules && !rules.canCheck && rules.toCall > 0 && pot > 0) && (

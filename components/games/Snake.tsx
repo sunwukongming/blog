@@ -536,7 +536,7 @@ export default function Snake() {
           <span
             className="snake-gold-timer"
             data-urgent={hud.goldLeft <= 2 || undefined}
-            title="金色食物剩余时间（一个顶三个）"
+            title={hud.wrap ? "金食+穿墙同屏：金色剩余（一个顶三个）" : "金色食物剩余时间（一个顶三个）"}
           >
             金色<b className={hud.goldLeft <= 2 ? "game-tip--alert" : undefined}>{hud.goldLeft.toFixed(1)}s</b>
           </span>
@@ -551,22 +551,28 @@ export default function Snake() {
       {(phase === "running" || phase === "paused") && (
         <p
           className={
-            hud.wrap || hud.speedTier === "极速" || hud.speedTier === "很快" || (hud.goldLeft != null && hud.goldLeft <= 2)
+            hud.wrap || hud.speedTier === "极速" || hud.speedTier === "很快" || hud.goldLeft != null
               ? "game-tip game-tip--alert"
               : "game-tip"
           }
           aria-live="polite"
         >
           {`${
-            hud.wrap && hud.edgeHint
+            hud.wrap && hud.goldLeft != null
+              ? `金食+穿墙：金色 ${hud.goldLeft.toFixed(1)}s（一个顶三个） · ${hud.edgeHint ?? "穿墙开"} · 档 ${hud.speedTier}`
+              : hud.wrap && hud.edgeHint
               ? `穿墙+加速：${hud.edgeHint} · 档位 ${hud.speedTier}（${hud.speedMs}ms）`
               : hud.wrap
                 ? `穿墙模式 · 加速档 ${hud.speedTier}（${hud.speedMs}ms）${level ? ` · 目标 ${Math.min(hud.eaten, level.goal)}/${level.goal}` : " · 无尽"}`
+                : hud.goldLeft != null
+                  ? `金色食物 ${hud.goldLeft.toFixed(1)}s（一个顶三个） · 档 ${hud.speedTier}（${hud.speedMs}ms）`
                 : level
                   ? `第 ${levelNo} 关·${level.name}：目标 ${Math.min(hud.eaten, level.goal)}/${level.goal}${level.bonus ? " · 有金色食物" : ""} · 加速档 ${hud.speedTier}（${hud.speedMs}ms）`
                   : `无尽模式 · 加速档 ${hud.speedTier}（${hud.speedMs}ms）· 越高分越快`
-          }${hud.nextSpeed ? ` · ${hud.nextSpeed}` : " · 已达极速"}${
-            hud.goldLeft != null ? ` · 金色食物 ${hud.goldLeft.toFixed(1)}s` : ""
+          }${
+            hud.wrap && hud.goldLeft != null
+              ? (hud.nextSpeed ? ` · ${hud.nextSpeed}` : "")
+              : (hud.nextSpeed ? ` · ${hud.nextSpeed}` : " · 已达极速") + (hud.goldLeft != null && !hud.wrap ? "" : hud.goldLeft != null ? ` · 金色食物 ${hud.goldLeft.toFixed(1)}s` : "")
           }`}
         </p>
       )}

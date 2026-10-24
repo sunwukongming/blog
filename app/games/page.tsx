@@ -24,6 +24,7 @@ export const metadata: Metadata = {
     description: "GM Lab 桌上小游戏：贪吃蛇、俄罗斯方块、2048、打砖块、扫雷、德州扑克与记忆翻牌；本机纪录存浏览器，HUD 提示连击/道具/胜率，可直接在站内玩。",
     // batch42: 与 openGraph.images 对齐
     // batch50: 再核游戏列表 OG/Twitter images 同源 icon.svg；ItemList 仅 playable
+    // batch55: ItemList 补 inLanguage=zh-CN；numberOfItems 仍=playable.length
     images: SITE_URL ? [`${SITE_URL}/icon.svg`] : undefined,
   },
 };
@@ -42,6 +43,7 @@ export default function GamesPage() {
     "@type": "ItemList",
     name: `${SITE.name} 游戏`,
     description: "站内可玩小游戏列表（蛇 / 方块 / 2048 / 砖块 / 扫雷 / 扑克 / 记忆）",
+    inLanguage: "zh-CN",
     numberOfItems: playable.length,
     itemListElement: playable.map((game, i) => ({
       "@type": "ListItem",

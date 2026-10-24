@@ -312,6 +312,32 @@ export default function Memory() {
           />
           <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
           最少<b className={shownBest != null && moves > 0 && moves <= shownBest ? "game-tip--alert" : undefined}>{shownBest ?? "—"}</b>
+          <span
+            className="memory-pb-bar"
+            data-lead={shownBest != null && moves > 0 && moves <= shownBest || undefined}
+            data-over={shownBest != null && moves > shownBest || undefined}
+            title={
+              shownBest != null && moves > 0
+                ? `相对最少 ${moves}/${shownBest}（满格=追平或更好）`
+                : "尚无本档最少纪录"
+            }
+            aria-label={
+              shownBest != null && moves > 0
+                ? `相对最少 ${Math.min(100, Math.round((shownBest / Math.max(moves, shownBest)) * 100))} percent`
+                : "无最少纪录"
+            }
+          >
+            <i
+              className="memory-pb-bar__fill"
+              style={{
+                width: `${
+                  shownBest != null && moves > 0
+                    ? Math.min(100, Math.round((shownBest / Math.max(moves, shownBest)) * 100))
+                    : 0
+                }%`,
+              }}
+            />
+          </span>
           <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
           <span
             className="memory-moves-delta memory-moves-delta--tier"

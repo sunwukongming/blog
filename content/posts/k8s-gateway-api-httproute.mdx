@@ -1,0 +1,66 @@
+---
+title: Gateway API HTTPRoute：匹配、过滤与后端引用
+date: "2026-10-25"
+category: devops
+summary: 站内 Gateway API 总览讲角色分离。这篇只抠 HTTPRoute：hostname/path 匹配、过滤器、backendRefs 权重，以及和 Ingress 规则迁移的对应。
+---
+
+Gateway 管入口与 Listener；**HTTPRoute** 管「哪些请求打到哪」。总览见站内 Gateway API；本文只谈路由规则。
+
+## 最小形状
+
+```yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: app
+  namespace: app
+spec:
+  parentRefs:
+    - name: shared-gw
+      namespace: gateway-system
+  hostnames: ["app.example.com"]
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /api
+      filters:
+        - type: RequestHeaderModifier
+          requestHeaderModifier:
+            set:
+              - name: X-Env
+                value: prod
+      backendRefs:
+        - name: app-svc
+          port: 80
+          weight: 80
+        - name: app-canary
+          port: 80
+          weight: 20
+```
+
+## 规则要点
+
+1. **parentRefs**：挂到哪个 Gateway / Listener（需 ReferenceGrant 跨 ns）。  
+2. **matches**：hostname + path/method/header；多 rule 按实现优先级合并。  
+3. **filters**：改头、重定向、镜像、URLRewrite——尽量用标准 filter，少靠厂商扩展。  
+4. **backendRefs.weight**：同 rule 内流量拆分；权重和不必 100，按实现归一。
+
+## 和 Ingress 迁移
+
+| Ingress | HTTPRoute |
+|---|---|
+| `path` + `pathType` | `matches.path` |
+| 注解重写/超时 | 标准 filter 或 Gateway 策略对象 |
+| 单 Ingress 揉入口+路由 | 入口在 Gateway，路由在 HTTPRoute |
+
+## 注意
+
+- 无匹配 rule 时行为依赖实现（404 / 落到别的 route）；上线前用对测。  
+- `hostname` 与 Gateway listener 的 hostname 要兼容。  
+- 金丝雀用 weight；蓝绿更常换 `backendRefs` 名或拆两条 route。
+
+## 一句话
+
+**HTTPRoute 只描述匹配与后端**；入口容量与 TLS 仍在 Gateway，别把注解丛林搬回来。

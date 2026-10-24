@@ -782,6 +782,27 @@ export default function Tetris() {
             <b className={stats.next[0] === "I" || stats.next[0] === "T" ? "game-tip--alert" : undefined}>
               {stats.next[0] ?? "—"}
             </b>
+            <span
+              className="tetris-preview-bar"
+              data-prime={stats.next[0] === "I" || stats.next[0] === "T" || undefined}
+              data-i={stats.next[0] === "I" || undefined}
+              title={`预览 ${stats.next[0] ?? "空"}（I/T 高亮）`}
+              aria-label={`预览 ${stats.next[0] ?? "空"}`}
+            >
+              <i
+                style={{
+                  width: `${
+                    stats.next[0] === "I"
+                      ? 100
+                      : stats.next[0] === "T"
+                        ? 80
+                        : stats.next[0]
+                          ? 40
+                          : 8
+                  }%`,
+                }}
+              />
+            </span>
             <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
             <span
               className="tetris-ghost-tier"

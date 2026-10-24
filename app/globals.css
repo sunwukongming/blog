@@ -2379,3 +2379,77 @@ html:has(.page--game) { overscroll-behavior: none; }
 .pk-odds-bar[data-tier="high"] > i {
   background: linear-gradient(90deg, #f87171, #ef4444);
 }
+
+
+/* batch55: memory-pb-bar / mine-chord-ready-bar / tetris-preview-bar */
+.memory-pb-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.memory-pb-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #94a3b8, #64748b);
+  transition: width 100ms ease-out;
+}
+.memory-pb-bar[data-lead] .memory-pb-bar__fill {
+  background: linear-gradient(90deg, #86efac, #22c55e);
+}
+.memory-pb-bar[data-over] .memory-pb-bar__fill {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+
+.mine-chord-ready-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.mine-chord-ready-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #93c5fd, #3b82f6);
+  transition: width 100ms ease-out;
+}
+.mine-chord-ready-bar[data-ready] .mine-chord-ready-bar__fill {
+  background: linear-gradient(90deg, #34d399, #10b981);
+}
+.mine-chord-ready-bar[data-many] .mine-chord-ready-bar__fill {
+  background: linear-gradient(90deg, #f472b6, #a78bfa);
+}
+
+.tetris-preview-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.tetris-preview-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #94a3b8, #60a5fa);
+  transition: width 100ms ease-out;
+}
+.tetris-preview-bar[data-prime] > i {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+.tetris-preview-bar[data-i] > i {
+  background: linear-gradient(90deg, #22d3ee, #06b6d4);
+}

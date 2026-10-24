@@ -485,6 +485,20 @@ export default function Minesweeper() {
           </span>
                     <span className="mine-chord" data-ready={chordReady > 0 || undefined} data-openable={chordOpenable > 0 || undefined}>
             Chord<b className={chordReady > 0 ? "game-tip--alert" : undefined}>{chordReady}</b>
+            <span
+              className="mine-chord-ready-bar"
+              data-ready={chordReady > 0 || undefined}
+              data-many={chordReady >= 3 || undefined}
+              title={`Chord 可点格 ${chordReady}（满刻度按 5）`}
+              aria-label={`Chord 可点 ${chordReady}`}
+            >
+              <i
+                className="mine-chord-ready-bar__fill"
+                style={{
+                  width: `${Math.min(100, Math.round((chordReady / 5) * 100))}%`,
+                }}
+              />
+            </span>
             {chordOpenable > 0 || peakOpenable > 0 ? (
               <small style={{ marginLeft: 4, opacity: 0.85 }} data-late-open={lateClear || undefined} data-peak={peakOpenable > 0 || undefined}>
                 {chordOpenable > 0 ? (lateClear ? "收官可翻" : "可翻") : "可翻峰"}

@@ -1,0 +1,53 @@
+---
+title: Vue 3 defineModel 修饰符：.trim / .number / 自定义
+date: "2026-10-25"
+category: frontend
+summary: 站内 defineModel 文讲双向绑定少样板。这篇只谈修饰符：内置 trim/number/lazy，以及 get/set 里做自定义规范化，避免父组件重复处理。
+---
+
+`defineModel` 收成可写 ref 之后，输入型组件常要 **规范化**。基本用法见站内 defineModel；本文只谈 **修饰符与 get/set**。
+
+## 内置修饰符
+
+```vue
+<script setup lang="ts">
+// 父：v-model.trim / v-model.number
+const model = defineModel<string>({ required: true });
+const count = defineModel<number>("count", { local: true });
+</script>
+```
+
+父模板写 `v-model.trim="name"` 时，子组件的 model 在赋值路径上会按修饰符处理（与 Vue 对组件 v-model 修饰符的约定一致）。具体支持以当前 Vue 版本为准；不确定时在 `set` 里显式做。
+
+## 用 get / set 自定义
+
+```ts
+const model = defineModel<string>({
+  get(v) {
+    return v ?? "";
+  },
+  set(v) {
+    return v.trim().toLowerCase();
+  },
+});
+```
+
+- **get**：读给子组件 UI 的值。  
+- **set**：写回父级前的变换（去空格、夹紧数字、空串转 `null`）。
+
+多个 model：`defineModel('title')`、`defineModel('open')`，修饰符跟在对应 `v-model:title.trim` 上。
+
+## 和基本文的分工
+
+- 何时用 defineModel、默认值、`local` → 基本文。  
+- **本文：trim/number/自定义 set，少在父组件 watch 里再洗一遍。**
+
+## 注意
+
+- `.number` 对空输入可能得到 `NaN`；在 set 里回退到 `0` 或 `null`。  
+- 对象/数组 model 勿在 set 里原地 mutate 后原样返回却期望触发更新——换新引用。  
+- 修饰符是约定糖，复杂校验仍放表单库或显式 set。
+
+## 一句话
+
+**规范化放 defineModel 的 set（或修饰符）**；别让每个父组件重复 `trim()`。

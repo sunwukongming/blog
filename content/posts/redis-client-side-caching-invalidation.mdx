@@ -1,0 +1,41 @@
+---
+title: Redis 客户端缓存：失效策略与 TRACKING 边界
+date: "2026-10-25"
+category: backend
+summary: 站内 client-side caching 文讲 TRACKING / 本地热点。这篇只谈失效：服务端推送、前缀订阅、主动 bypass，以及和 TTL 旁路缓存别混用。
+---
+
+客户端缓存把热点键留在进程内，靠 Redis **失效通知**纠偏。机制总览见站内 client-side caching；本文只谈 **什么时候丢掉本地副本**。
+
+## 三条失效路径
+
+1. **服务端 invalidate**：`CLIENT TRACKING ON` 后，被跟踪键被写/删时推送失效（RESP3）。  
+2. **前缀 / BCAST**：按 key 前缀广播，适合命名空间整批失效，流量更大。  
+3. **主动 bypass**：写路径本地先删或短时拒绝读缓存，避免「写完立刻读到旧值」。
+
+```text
+读命中本地 → 返回
+未命中 → GET Redis → 填本地
+收到 invalidate(key) → 丢本地 key
+写成功 → 可选 DEL 本地同 key（双保险）
+```
+
+## 和 TTL 本地缓存
+
+| | TRACKING 客户端缓存 | 自管 TTL Map |
+|---|---|---|
+| 正确性 | 依赖推送及时 | 靠过期赌运气 |
+| 适用 | 共享 Redis、多实例 | 单机、可脏读 |
+| 失效 | 服务器驱动 | 客户端猜 |
+
+别把「本地再套 30s TTL」当成 TRACKING 的替代；需要强一致读时，写后应 **bypass 或等 invalidate**。
+
+## 注意
+
+- 连接断开会丢跟踪状态，重连后本地应 **整表清空**。  
+- 大 key / 高写前缀用 BCAST 可能打爆客户端；收窄前缀。  
+- 与旁路 Cache（应用自己的 Redis 缓存层）分层：CSC 在驱动侧，勿双重失效逻辑打架。
+
+## 一句话
+
+**CSC 的价值在失效推送**；策略写清「谁删本地、何时 bypass」，而不是只开 TRACKING。

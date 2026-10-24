@@ -725,6 +725,31 @@ export default function Snake() {
                   }}
                 />
               </span>
+              <span
+                className="snake-food-eff-bar"
+                data-hot={hud.eaten > 0 && hud.score / hud.eaten >= 35 || undefined}
+                data-low={hud.eaten >= 5 && hud.score / hud.eaten < 12 || undefined}
+                title={
+                  hud.eaten > 0
+                    ? `食物效率 ${Math.round((hud.score / hud.eaten) * 10) / 10} 分/个（满刻度按 50）`
+                    : "食物效率 —"
+                }
+                aria-label={
+                  hud.eaten > 0
+                    ? `每个食物约 ${Math.round((hud.score / hud.eaten) * 10) / 10} 分`
+                    : "食物效率未知"
+                }
+              >
+                <i
+                  style={{
+                    width: `${
+                      hud.eaten > 0
+                        ? Math.min(100, Math.round((hud.score / hud.eaten / 50) * 100))
+                        : 0
+                    }%`,
+                  }}
+                />
+              </span>
             </span>
             </span>
             <span

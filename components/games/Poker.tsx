@@ -390,6 +390,19 @@ export default function Poker() {
               }}
             />
           </span>
+          <span
+            className="pk-board-fill-bar"
+            data-turn={table.board.length === 4 || undefined}
+            data-river={table.board.length >= 5 || undefined}
+            title={`公共牌 ${table.board.length}/5`}
+            aria-label={`公共牌 ${table.board.length} 张，共 5`}
+          >
+            <i
+              style={{
+                width: `${Math.min(100, Math.round((table.board.length / 5) * 100))}%`,
+              }}
+            />
+          </span>
         </span>
         <span
           className={

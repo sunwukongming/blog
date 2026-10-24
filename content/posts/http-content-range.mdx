@@ -1,0 +1,40 @@
+---
+title: HTTP Content-Range：206 回了哪一段
+date: "2026-10-25"
+category: frontend
+summary: 站内已有 Range、Accept-Ranges、If-Range。这篇只写响应侧 Content-Range：单位、起止与总长、星号总长，以及和 Content-Length 的对应。
+---
+
+客户端用 **`Range`** 要一段；服务器在 **`206 Partial Content`** 里用 **`Content-Range`** 说明「这段是什么」。本文不复述 206 全流程，只钉响应头。
+
+## 形态
+
+```http
+HTTP/1.1 206 Partial Content
+Content-Range: bytes 0-1023/10485760
+Content-Length: 1024
+Accept-Ranges: bytes
+```
+
+| 部分 | 含义 |
+|---|---|
+| `bytes` | 单位（与 Accept-Ranges 声明一致） |
+| `0-1023` | 闭区间起止（含端点） |
+| `/10485760` | 当前表示的完整实体总长 |
+| `*/1234` 或 `0-99/*` | 总长未知时用 `*`（少见，多见于流式） |
+
+## 边界
+
+- **`Content-Length`** 是**本段**字节数，不是总长；总长在 `Content-Range` 的斜杠右侧。  
+- 起止越界或单位不支持时，常见 **`416 Range Not Satisfiable`**，并可带回 `Content-Range: bytes */total`。  
+- 与 **If-Range**、校验和的配合见站内既有文；本文不展开协商时序。  
+- CDN / 反代若重写长度却不改 `Content-Range`，播放器会裁切错位——边缘与源站要一致。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| Content-Range | 本文 |
+| Range 请求 | http-range-requests |
+| Accept-Ranges | http-accept-ranges |
+| If-Range | http-if-range |

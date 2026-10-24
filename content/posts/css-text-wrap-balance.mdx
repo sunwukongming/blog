@@ -1,0 +1,40 @@
+---
+title: CSS text-wrap: balance：标题行均衡
+date: "2026-10-25"
+category: frontend
+summary: 多行标题常一头沉。这篇写 text-wrap: balance / pretty、适用与代价，以及和 word-break、max-width 的配合。
+---
+
+长标题折成两行时，浏览器默认常把第二行剩两三个字。**`text-wrap: balance`** 让引擎尽量均分行长，标题更稳。
+
+## 写法
+
+```css
+h1, h2, .card-title {
+  text-wrap: balance;
+}
+
+.article-body p {
+  text-wrap: pretty; /* 更偏正文末行观感，代价与支持度因引擎而异 */
+}
+```
+
+| 值 | 典型用途 |
+|---|---|
+| `wrap`（默认） | 普通流式折行 |
+| `balance` | 短标题、卡片标题（行数不宜过多） |
+| `pretty` | 段落，减少孤行观感 |
+
+## 边界
+
+- `balance` 对很长段落成本高，优先标题与短块。  
+- 与 `text-align: justify`、强制 `word-break: break-all` 叠用时，视觉可能互相打架——先定折行策略再调对齐。  
+- 容器 `max-width` / 字号变化后应再扫一眼；均衡结果随可用宽度变。  
+- 不支持时静默回退为普通 `wrap`，可做渐进增强。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| text-wrap balance | 本文 |
+| overflow-anchor | css-overflow-anchor |

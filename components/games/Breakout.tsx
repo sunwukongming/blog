@@ -707,6 +707,31 @@ const [phase, setPhase] = useState<Phase>("select");
                   }}
                 />
               </span>
+              <span
+                className="breakout-combo-ratio-bar"
+                data-hot={hud.bestCombo > 0 && hud.combo >= hud.bestCombo && hud.combo >= 3 || undefined}
+                data-warm={hud.bestCombo > 0 && hud.combo / hud.bestCombo >= 0.6 || undefined}
+                title={
+                  hud.bestCombo > 0
+                    ? `连击相对峰值 ${hud.combo}/${hud.bestCombo}`
+                    : `连击 ${hud.combo}`
+                }
+                aria-label={
+                  hud.bestCombo > 0
+                    ? `连击 ${hud.combo} 相对峰 ${hud.bestCombo}`
+                    : `连击 ${hud.combo}`
+                }
+              >
+                <i
+                  style={{
+                    width: `${
+                      hud.bestCombo > 0
+                        ? Math.min(100, Math.round((hud.combo / hud.bestCombo) * 100))
+                        : Math.min(100, Math.round((hud.combo / 8) * 100))
+                    }%`,
+                  }}
+                />
+              </span>
               <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
               速<b className={hud.lives <= 1 || hud.slow ? "game-tip--alert" : undefined}>{hud.ballSpeed}</b>
               <span

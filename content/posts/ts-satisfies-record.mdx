@@ -1,0 +1,47 @@
+---
+title: TypeScript satisfies 与 Record 映射表
+date: "2026-10-25"
+category: frontend
+summary: 路由表、主题表既要符合 Record 约束又要保留字面量时，satisfies 比 as 更稳。这篇写 as const satisfies Record、键联合，以及和 NoInfer 的分工。
+---
+
+```ts
+const routes = {
+  home: "/",
+  post: "/blog/:slug",
+} as const satisfies Record<string, string>;
+
+// routes.home 仍是 "/" 字面量，同时整表被校验为字符串值
+```
+
+`satisfies` 在定义处核对「像不像 `Record<…>`」，失败立刻报错；又不会像 `as Record<string, string>` 那样抹掉键与值的字面量信息。
+
+## 写法要点
+
+| 手法 | 作用 |
+|---|---|
+| `as const satisfies Record<K, V>` | 字面量 + 约束双保留 |
+| `satisfies Record<MyKey, V>` | 键必须落在联合 `MyKey` 上 |
+| 单靠 `as Record<…>` | 易放过缺键、并加宽类型 |
+
+```ts
+type Theme = "light" | "dark";
+const colors = {
+  light: "#fff",
+  dark: "#111",
+} as const satisfies Record<Theme, string>;
+```
+
+## 边界
+
+- 需要 TypeScript 4.9+。  
+- `Record<string, V>` 键过宽时，缺键不会在 satisfies 阶段被抓——闭集请用键联合。  
+- 与站内 **NoInfer** 文分工：一个管「值要满足的形状」，一个管「泛型从哪一侧推断」。  
+- 超大配置对象仍建议拆模块，避免单文件类型膨胀。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| satisfies + Record | 本文 |
+| NoInfer | 站内 ts-noinfer 相关文 |

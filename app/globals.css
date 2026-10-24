@@ -3615,3 +3615,76 @@ html:has(.page--game) { overscroll-behavior: none; }
 .tetris-score-level-bar[data-cold] .tetris-score-level-bar__fill {
   background: linear-gradient(90deg, #f87171, #ef4444);
 }
+
+/* batch72: snake-food-eff-bar / breakout-combo-ratio-bar / pk-board-fill-bar */
+.snake-food-eff-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.snake-food-eff-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #86efac, #22c55e);
+  transition: width 100ms ease-out;
+}
+.snake-food-eff-bar[data-hot] > i {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+.snake-food-eff-bar[data-low] > i {
+  background: linear-gradient(90deg, #93c5fd, #3b82f6);
+}
+
+.breakout-combo-ratio-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.breakout-combo-ratio-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #c4b5fd, #8b5cf6);
+  transition: width 100ms ease-out;
+}
+.breakout-combo-ratio-bar[data-hot] > i {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+.breakout-combo-ratio-bar[data-warm] > i {
+  background: linear-gradient(90deg, #86efac, #22c55e);
+}
+
+.pk-board-fill-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.pk-board-fill-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #93c5fd, #3b82f6);
+  transition: width 100ms ease-out;
+}
+.pk-board-fill-bar[data-turn] > i {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+.pk-board-fill-bar[data-river] > i {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+}

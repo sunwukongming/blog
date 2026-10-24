@@ -1,0 +1,59 @@
+---
+title: Redis Streams XCLAIM：把 Pending 认领做成可运维动作
+date: "2026-10-25"
+category: backend
+summary: 消费组文讲 ACK/PEL 闭环。这篇只谈 XCLAIM / XAUTOCLAIM：min-idle、JUSTID、FORCE、RETRYCOUNT，以及认领后怎么避免双消费。
+---
+
+站内《消费组：ACK、Pending 与认领》把 PEL 当工单。**本文专写认领命令本身**：何时抢、抢到什么字段、如何防止两个消费者同时处理同一条。
+
+## 和消费组文怎么分工
+
+| 文 | 焦点 |
+|---|---|
+| consumer-groups | XREADGROUP / XACK / XPENDING 总览 |
+| **本文** | **XCLAIM 参数、空闲阈值、自动认领、所有权转移** |
+
+## 最小认领
+
+```text
+XCLAIM mystream mygroup worker-b 60000 1710000000000-0
+```
+
+- 第四个参数是 **min-idle-time（毫秒）**：只有 PEL 里 idle ≥ 该值才转给 `worker-b`。  
+- 返回认领到的条目（默认带 payload）。处理完仍要 **XACK**，否则又会进新主人的 PEL。
+
+## 常用修饰
+
+```text
+XCLAIM mystream mygroup worker-b 60000 <id> JUSTID
+XCLAIM mystream mygroup worker-b 0 <id> FORCE
+XCLAIM mystream mygroup worker-b 60000 <id> IDLE 0 RETRYCOUNT 1
+```
+
+- **JUSTID**：只改所有权，不回传 body（省带宽；你本地已有副本时用）。  
+- **FORCE**：忽略 idle，强行改主人（慎用；适合运维明确知道原消费者已死）。  
+- **IDLE / RETRYCOUNT**：认领后重置空闲与重试计数，避免立刻再被别人按旧 idle 抢走。
+
+## XAUTOCLAIM：扫 PEL 而不是点名 id
+
+```text
+XAUTOCLAIM mystream mygroup worker-b 60000 0-0 COUNT 20
+```
+
+从游标扫一组超时 pending，适合「挂了就有人接手」的 worker 心跳循环。仍要：幂等处理 + ACK。
+
+## 防双消费清单
+
+1. **业务键幂等**（订单号 / 去重表），认领不等于「别人没做过」。  
+2. min-idle 大于「最慢一次正常处理」的 P99，减少活着的 consumer 被误抢。  
+3. 原消费者恢复后应先看 PEL / 自己的认领状态，不要盲 ACK 已易主条目。  
+4. 监控：按 consumer 分的 pending 数、idle 分位、claim 次数。
+
+## 和死信
+
+Streams 没有开箱 DLQ。常见做法：claim 超过 N 次后 `XADD dlq ...` 再 ACK 原组，或单独 `XGROUP` 做隔离流。阈值用 RETRYCOUNT 或你自己的 attrs。
+
+## 小结
+
+认领是 **所有权转移 + 继续至少一次**，不是魔法去重。把 idle、FORCE、幂等和 ACK 写进同一张 runbook，PEL 才不会变成黑盒。

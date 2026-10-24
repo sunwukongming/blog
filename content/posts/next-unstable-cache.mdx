@@ -1,0 +1,49 @@
+---
+title: Next.js unstable_cache：函数级缓存键与 tag
+date: "2026-10-25"
+category: frontend
+summary: cacheLife 讲寿命配置文件，cache tag / revalidateTag 讲失效。这篇只谈 unstable_cache：把任意 async 函数结果按 keyParts 缓存，并挂 revalidate 与 tags。
+---
+
+站内已有 **cacheLife**（寿命档）与 **cache tag / revalidateTag**（按标签失效）。**`unstable_cache`** 解决的是另一刀：在还没全面 `"use cache"` 的路径上，给 **普通 async 函数** 包一层缓存。
+
+## 签名直觉
+
+```ts
+import { unstable_cache } from "next/cache";
+
+const getUser = unstable_cache(
+  async (id: string) => db.user.find(id),
+  ["user"], // keyParts：缓存键前缀
+  { revalidate: 60, tags: ["user"] },
+);
+
+export async function load(id: string) {
+  return getUser(id); // 实参会参与键
+}
+```
+
+- **keyParts**：静态前缀，区分不同缓存空间。  
+- **函数参数**：一并进入键；参数要可序列化、稳定。  
+- **revalidate**：秒级时间失效（ISR 味）。  
+- **tags**：供 `revalidateTag("user")` 主动扫掉。
+
+## 和两篇站内文的边界
+
+| 机制 | 管什么 |
+|---|---|
+| `cacheLife("hours")` | `"use cache"` 段的寿命配置名 |
+| `revalidateTag` / tag | 失效信号 |
+| **`unstable_cache`** | **把函数结果变成可 tag/可 TTL 的缓存条目** |
+
+可以同时挂 `tags` 与 `revalidate`：时间到了刷新，编辑发布时也可以立刻 tag 失效。
+
+## 使用清单
+
+1. 不要把整段请求头、cookies 默默闭包进函数而不进 key——否则串数据。需要差异就当参数传入。  
+2. 错误与空结果是否缓存，要想清楚；很多团队对 `null` 短 TTL、对抛错不缓存。  
+3. API 仍带 `unstable_`：升级 Next 时对照文档，迁移到 `"use cache"` + `cacheTag` / `cacheLife` 时按页面渐进。
+
+## 小结
+
+`unstable_cache` 是 **函数级** 的键 + TTL + tag 胶水；寿命策略用 cacheLife，失效广播用 tag。三件分开记，配置不会缠成一团。

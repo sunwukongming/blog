@@ -1,0 +1,51 @@
+---
+title: Go slog JSONHandler Options：字段形状与源位置
+date: "2026-10-25"
+category: backend
+summary: LevelVar / Handler 中间件 / Attr 助手另有专文。这篇只谈 slog.HandlerOptions 与 JSONHandler：Level、AddSource、ReplaceAttr 如何定 JSON 形状。
+---
+
+站内已有 Handler 流水线、中间件、LevelVar。**本文只盯 `slog.HandlerOptions` + `JSONHandler`**：级别门槛、源码位置、以及用 `ReplaceAttr` 改键名/打码，而不再包一层自定义 Handler。
+
+## 三件套
+
+```go
+h := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+    Level:     slog.LevelInfo,
+    AddSource: true,
+    ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+        if a.Key == slog.TimeKey {
+            return slog.String("ts", a.Value.Time().UTC().Format(time.RFC3339Nano))
+        }
+        if a.Key == "password" {
+            return slog.String("password", "***")
+        }
+        return a
+    },
+})
+slog.SetDefault(slog.New(h))
+```
+
+| 字段 | 作用 |
+|---|---|
+| `Level` | Handler 侧静态门槛（动态见 LevelVar 文） |
+| `AddSource` | 注入 `source`：file/line/function |
+| `ReplaceAttr` | 在写入前改名、丢弃、改类型；`groups` 是当前组路径 |
+
+## ReplaceAttr 注意点
+
+- 返回 `slog.Attr{}`（空 key）可 **丢弃** 该字段。  
+- 只在「叶子 attr」调用；改 `group` 本身要谨慎。  
+- 与中间件 Handler 分工：Options 适合 **稳定的输出契约**（时间格式、密钥打码）；请求级 trace id 更适合中间件 `WithAttrs`。
+
+## JSON 里常见键
+
+默认大致：`time` / `level` / `msg` / `source`（若开启）+ 你的 attrs。采集端（Loki、CloudWatch）若要求 `severity`、`severity`、`message`，用 ReplaceAttr 映射，而不是业务里写两套。
+
+## 和 TextHandler
+
+同一套 `HandlerOptions` 也可喂给 `TextHandler`。差别在序列化，不在 Options 语义。联调时 stdout 用 Text、生产用 JSON，只换构造函数。
+
+## 小结
+
+先把 **JSON 形状** 用 Options 定死，再考虑 LevelVar 与中间件。形状不稳时，动态级别救不了下游解析。

@@ -733,6 +733,31 @@ export default function Snake() {
             </span>
             <span>
               最高<b>{best ?? 0}</b>
+              <span
+                className="snake-best-gap-bar"
+                data-record={best != null && hud.score >= best && hud.score > 0 || undefined}
+                data-near={best != null && best > 0 && hud.score / best >= 0.8 || undefined}
+                title={
+                  best != null && best > 0
+                    ? `距纪录 ${Math.max(0, best - hud.score)}（当前 ${hud.score} / 最高 ${best}）`
+                    : `最高 ${best ?? 0}`
+                }
+                aria-label={
+                  best != null && best > 0
+                    ? `达到最高分的 ${Math.min(100, Math.round((hud.score / best) * 100))} percent`
+                    : `最高分 ${best ?? 0}`
+                }
+              >
+                <i
+                  style={{
+                    width: `${
+                      best != null && best > 0
+                        ? Math.min(100, Math.round((hud.score / best) * 100))
+                        : 0
+                    }%`,
+                  }}
+                />
+              </span>
             </span>
             <span title={`无尽蛇长 ${hud.len} 格（满刻度按 40）`}>
               长度<b>{hud.len}</b>

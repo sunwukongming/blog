@@ -28,11 +28,13 @@ export const metadata: Metadata = {
 export default async function Categories() {
   const posts = await getAllPosts();
   // batch46: 分类 ItemList 复核；与单分类 CollectionPage、文章列表 ItemList 对齐
+  // batch58: ItemList 补 inLanguage=zh-CN；与 games ItemList 对齐再核
   const itemListLd = {
     "@context": "https://schema.org",
     "@type": "ItemList",
     name: `${SITE.name} 分类`,
     description: "按前端、后端、云与可观测、工具与随笔浏览",
+    inLanguage: "zh-CN",
     numberOfItems: CATEGORIES.length,
     itemListElement: CATEGORIES.map((c, i) => ({
       "@type": "ListItem",

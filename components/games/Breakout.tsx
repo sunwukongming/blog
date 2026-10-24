@@ -530,6 +530,21 @@ const [phase, setPhase] = useState<Phase>("select");
           <>
             <span>
               第 {hud.level + 1} 关<b>{level.name}</b>
+              <span
+                className="breakout-level-bar"
+                data-late={hud.level + 1 >= Math.max(1, BREAKOUT_LEVELS.length - 1) || undefined}
+                title={`关卡 ${hud.level + 1} / ${BREAKOUT_LEVELS.length}`}
+                aria-label={`第 ${hud.level + 1} 关，共 ${BREAKOUT_LEVELS.length} 关`}
+              >
+                <i
+                  style={{
+                    width: `${Math.min(
+                      100,
+                      Math.round(((hud.level + 1) / Math.max(1, BREAKOUT_LEVELS.length)) * 100),
+                    )}%`,
+                  }}
+                />
+              </span>
             </span>
             <span>
               分数<b>{hud.score}</b>

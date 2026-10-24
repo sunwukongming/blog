@@ -242,6 +242,31 @@ export default function Poker() {
               }}
             />
           </span>
+          <span
+            className="pk-street-bar"
+            data-river={table.street === "river" || undefined}
+            data-done={table.street === "done" || undefined}
+            title={`街道 ${table.street}`}
+            aria-label={`街道 ${table.street}`}
+          >
+            <i
+              style={{
+                width: `${
+                  table.street === "done"
+                    ? 100
+                    : table.street === "river"
+                      ? 80
+                      : table.street === "turn"
+                        ? 60
+                        : table.street === "flop"
+                          ? 40
+                          : started
+                            ? 20
+                            : 0
+                }%`,
+              }}
+            />
+          </span>
         </span>
         <span
           className={

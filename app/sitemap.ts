@@ -14,7 +14,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const d = postDate(p.date);
     return !acc || d > acc ? d : acc;
   }, null);
-  const listPages = ["/", "/blog", "/categories", "/archive"].map((path) => ({
+  const listPages = ["/", "/blog", "/categories", "/archive", "/feed.xml"].map((path) => ({
     url: SITE_URL + path,
     ...(latest ? { lastModified: latest } : {}),
   }));

@@ -34,7 +34,7 @@ type Game = {
   /** 吃到东西时的光环特效 */
   fx: { x: number; y: number; at: number; color: string }[];
 };
-type Hud = { eaten: number; score: number; seconds: number; wrap: boolean; edgeHint: string | null; speedMs: number; speedTier: string; nextSpeed: string | null };
+type Hud = { eaten: number; score: number; seconds: number; wrap: boolean; edgeHint: string | null; speedMs: number; speedTier: string; nextSpeed: string | null; goldLeft: number | null };
 
 const VEC: Record<Dir, P> = { up: { x: 0, y: -1 }, down: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } };
 const OPPOSITE: Record<Dir, Dir> = { up: "down", down: "up", left: "right", right: "left" };
@@ -354,7 +354,7 @@ export default function Snake() {
   const game = useRef<Game>(initial);
   const [mode, setMode] = useState<Mode>(initial.mode);
   const [phase, setPhase] = useState<Phase>("select");
-  const [hud, setHud] = useState<Hud>({ eaten: 0, score: 0, seconds: 0, wrap: false, edgeHint: null, speedMs: 150, speedTier: "中", nextSpeed: nextSpeedHint(150) });
+  const [hud, setHud] = useState<Hud>({ eaten: 0, score: 0, seconds: 0, wrap: false, edgeHint: null, speedMs: 150, speedTier: "中", nextSpeed: nextSpeedHint(150), goldLeft: null });
   const [record, setRecord] = useState(false);
   const [unlocked] = useRecord("snake-unlocked", higher);
   const [best] = useRecord("snake", higher);
@@ -386,6 +386,7 @@ export default function Snake() {
       speedMs,
       speedTier: speedTier(speedMs),
       nextSpeed: nextSpeedHint(speedMs),
+      goldLeft: g.gold ? Math.max(0, g.gold.until - g.time) : null,
     });
   };
 
@@ -531,6 +532,15 @@ export default function Snake() {
             </span>
           </>
         )}
+        {hud.goldLeft != null && (phase === "running" || phase === "paused") && (
+          <span
+            className="snake-gold-timer"
+            data-urgent={hud.goldLeft <= 2 || undefined}
+            title="金色食物剩余时间（一个顶三个）"
+          >
+            金色<b className={hud.goldLeft <= 2 ? "game-tip--alert" : undefined}>{hud.goldLeft.toFixed(1)}s</b>
+          </span>
+        )}
         <span className="spacer" />
         {(phase === "running" || phase === "paused") && (
           <button type="button" className="game-btn" onClick={toggle}>
@@ -541,7 +551,7 @@ export default function Snake() {
       {(phase === "running" || phase === "paused") && (
         <p
           className={
-            hud.wrap || hud.speedTier === "极速" || hud.speedTier === "很快"
+            hud.wrap || hud.speedTier === "极速" || hud.speedTier === "很快" || (hud.goldLeft != null && hud.goldLeft <= 2)
               ? "game-tip game-tip--alert"
               : "game-tip"
           }
@@ -555,7 +565,9 @@ export default function Snake() {
                 : level
                   ? `第 ${levelNo} 关·${level.name}：目标 ${Math.min(hud.eaten, level.goal)}/${level.goal}${level.bonus ? " · 有金色食物" : ""} · 加速档 ${hud.speedTier}（${hud.speedMs}ms）`
                   : `无尽模式 · 加速档 ${hud.speedTier}（${hud.speedMs}ms）· 越高分越快`
-          }${hud.nextSpeed ? ` · ${hud.nextSpeed}` : " · 已达极速"}`}
+          }${hud.nextSpeed ? ` · ${hud.nextSpeed}` : " · 已达极速"}${
+            hud.goldLeft != null ? ` · 金色食物 ${hud.goldLeft.toFixed(1)}s` : ""
+          }`}
         </p>
       )}
       <div className="game-stage" {...swipe}>

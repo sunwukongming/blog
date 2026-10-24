@@ -50,7 +50,7 @@ type Game = {
   combo: number;
   bestCombo: number;
 };
-type Hud = { score: number; lives: number; level: number; wide: boolean; slow: boolean; balls: number; brickLeft: number; brickTotal: number; progress: number; combo: number; bestCombo: number };
+type Hud = { score: number; lives: number; level: number; wide: boolean; slow: boolean; balls: number; brickLeft: number; brickTotal: number; progress: number; combo: number; bestCombo: number; ballSpeed: number; paddleW: number };
 
 
 /** breakable bricks still alive (metal ignored) */
@@ -340,7 +340,7 @@ export default function Breakout() {
   const held = useRef({ left: false, right: false });
     const buzzMuted = useBuzzMuted();
 const [phase, setPhase] = useState<Phase>("select");
-  const [hud, setHud] = useState<Hud>({ score: 0, lives: 3, level: 0, wide: false, slow: false, balls: 1, brickLeft: 0, brickTotal: 0, progress: 0, combo: 0, bestCombo: 0 });
+  const [hud, setHud] = useState<Hud>({ score: 0, lives: 3, level: 0, wide: false, slow: false, balls: 1, brickLeft: 0, brickTotal: 0, progress: 0, combo: 0, bestCombo: 0, ballSpeed: 320, paddleW: 88 });
   const [record, setRecord] = useState(false);
   const [best] = useRecord("breakout", higher);
   const [unlocked] = useRecord("breakout-unlocked", higher);
@@ -357,6 +357,8 @@ const [phase, setPhase] = useState<Phase>("select");
       balls: g.balls.length,
       combo: g.combo,
       bestCombo: g.bestCombo,
+      ballSpeed: Math.round(ballSpeed(g)),
+      paddleW: Math.round(paddleW(g)),
       ...bs,
     });
   };
@@ -546,6 +548,12 @@ const [phase, setPhase] = useState<Phase>("select");
             <span>
               完成<b>{hud.progress}%</b>
             </span>
+            <span title="本关基础球速（受减速道具影响）">
+              球速<b>{hud.ballSpeed}</b>
+            </span>
+            <span title="当前拍宽（关卡越高越短；加宽道具×1.5）">
+              拍宽<b className={hud.wide ? "game-tip--alert" : undefined}>{hud.paddleW}</b>
+            </span>
           </>
         )}
         {(hud.wide || hud.slow) && (
@@ -572,10 +580,10 @@ const [phase, setPhase] = useState<Phase>("select");
       {(phase === "running" || phase === "aim" || phase === "paused") && (
         <p className={hud.brickLeft <= 3 && hud.brickLeft > 0 ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">
           {hud.lives <= 1
-            ? `残命 ${hud.lives} · 连击 ${hud.combo}（峰 ${hud.bestCombo}）· 多球×${hud.balls} · 完成 ${hud.progress}%`
+            ? `残命 ${hud.lives} · 球速 ${hud.ballSpeed} · 拍宽 ${hud.paddleW} · 连击 ${hud.combo}`
             : hud.brickLeft <= 3 && hud.brickLeft > 0
-              ? `残局：还剩 ${hud.brickLeft} 块 · 连击 ${hud.combo} · 完成度 ${hud.progress}%${hud.balls > 1 ? ` · 多球×${hud.balls}` : ""}`
-              : `第 ${hud.level + 1} 关 · 连击 ${hud.combo}（峰 ${hud.bestCombo}）· 生命 ${hud.lives}/3 · 完成 ${hud.progress}% · 球速约 ${Math.round(baseSpeed(hud.level))}${hud.wide ? " · 加宽" : ""}`}
+              ? `残局：还剩 ${hud.brickLeft} 块 · 球速 ${hud.ballSpeed}/拍宽 ${hud.paddleW} · 连击 ${hud.combo}`
+              : `第 ${hud.level + 1} 关 · 球速 ${hud.ballSpeed} · 拍宽 ${hud.paddleW}${hud.wide ? "(加宽)" : ""}${hud.slow ? "(减速)" : ""} · 连击 ${hud.combo}（峰 ${hud.bestCombo}）`}
         </p>
       )}
       {(phase === "running" || phase === "aim" || phase === "paused" || phase === "select") && (

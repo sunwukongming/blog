@@ -1,0 +1,35 @@
+---
+title: TypeScript satisfies：既要校验又要收窄字面量
+date: "2026-10-24"
+category: frontend
+summary: as 会强行断言，注解会放宽推断；satisfies 在满足类型的同时保留更精确的字面量类型，适合路由表与主题配置。
+---
+
+写配置对象时常两难：写成 `Route[]` 会丢具体 `path` 字面量；写成 `as const` 又不校验是否符合接口。
+
+## 用法
+
+```ts
+type Route = { path: string; auth: boolean };
+
+const routes = [
+  { path: "/lab", auth: true },
+  { path: "/games", auth: false },
+] as const satisfies readonly Route[];
+
+// routes[0].path 仍是 "/lab"，且每项都符合 Route
+```
+
+- **`satisfies T`**：检查可赋给 `T`，保留左侧推断。  
+- **`: T`**：结果类型就是 `T`，字面量被拓宽。  
+- **`as T`**：不检查，最危险。
+
+## 适合场景
+
+- 主题色板、feature flag、i18n 字典  
+- 满足接口又要 `keyof typeof` 精确补全  
+- 与 `as const` 组合固定只读结构
+
+## 注意
+
+`satisfies` 不生成运行时检查；复杂条件类型报错信息可能偏长，可拆小对象再组合。

@@ -304,11 +304,19 @@ export default function Poker() {
             <p className="game-tip game-tip--alert pk-odds" aria-live="polite">
               跟注 {rules.toCall} · 底池 {pot}
               （打平约需 {Math.min(99, Math.round((rules.toCall / (pot + rules.toCall)) * 100))}% 胜率）
+              {table.players.some((pl) => pl.allIn && !pl.out)
+                ? " · 同屏：已有全下，跟注只进你可参与的主池/边池"
+                : ""}
             </p>
           )}
-          {started && !gameOver && !victory && !result && table.players.some((pl) => pl.allIn && !pl.out) && (
+          {started && !gameOver && !victory && !result && table.players.some((pl) => pl.allIn && !pl.out) && !(myTurn && rules && !rules.canCheck && rules.toCall > 0 && pot > 0) && (
             <p className="game-tip pk-sidepot game-tip--alert" aria-live="polite">
-              边池触发：未跟满→<strong>主池</strong>，超额→<strong>边池</strong>；与顶部盲注 tip 同屏（结果标「主池 / 边池 n」）
+              边池触发：未跟满→<strong>主池</strong>，超额→<strong>边池</strong>；与盲注 tip 同屏
+            </p>
+          )}
+          {started && !gameOver && !victory && !result && table.players.some((pl) => pl.allIn && !pl.out) && myTurn && rules && !rules.canCheck && rules.toCall > 0 && pot > 0 && (
+            <p className="game-tip pk-sidepot" aria-live="polite">
+              跟注胜率（上）+边池规则同屏：只能赢你有资格的那些池
             </p>
           )}
           <p className="pk-msg" aria-live="polite">

@@ -1,0 +1,38 @@
+---
+title: Go context.WithValue：别把请求袋当成依赖注入
+date: "2026-10-24"
+category: backend
+summary: WithValue 只适合请求级隐式数据（trace id、租户）；不要塞 DB/配置/可选参数。取消语义见另一篇，本文只谈值传递的误用。
+---
+
+`context.WithValue` 很方便，也最容易被滥用。和 **取消/超时**（见 `go-context-cancellation`）是两条线：这边讲的是 **往 Context 里塞什么**。
+
+## 适合放的
+
+- 请求 ID、trace/span、已认证的用户/租户标识  
+- 中间件在边界写入、业务只读的 **元数据**
+
+键用私有类型，避免字符串碰撞：
+
+```go
+type ctxKey int
+const keyUser ctxKey = 1
+ctx = context.WithValue(ctx, keyUser, u)
+```
+
+## 不要放的
+
+| 反例 | 为什么 |
+|---|---|
+| `*sql.DB` / 客户端 | 依赖应显式注入，便于测 |
+| 配置大结构体 | 隐式全局，难追来源 |
+| 可选业务参数 | 函数签名说不清，调用方易漏 |
+| 可变指针当「黑板」 | 竞态与生命周期噩梦 |
+
+## 经验法则
+
+1. 问：没有这个值，函数还能不能测？不能 → 改成参数。  
+2. 读值失败要有明确降级或错误，别静默 `nil`。  
+3. 文档写清「谁写入、谁读取」；跨包尽量只在 `internal/middleware` 写。
+
+取消、deadline 仍用 `WithCancel` / `WithTimeout`；**别用 Value 模拟取消标志**。

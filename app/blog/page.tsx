@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import PostFilter from "@/components/PostFilter";
 import { getAllPosts } from "@/lib/posts";
+import { SITE, SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "文章",
@@ -19,8 +20,25 @@ export const metadata: Metadata = {
 
 export default async function BlogIndex() {
   const posts = await getAllPosts();
+  const itemListLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: `${SITE.name} 文章`,
+    description: "GM Lab 文章列表",
+    numberOfItems: posts.length,
+    itemListElement: posts.slice(0, 50).map((p, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      url: SITE_URL ? `${SITE_URL}/blog/${p.slug}` : `/blog/${p.slug}`,
+      name: p.title,
+    })),
+  };
   return (
     <main data-world="ring" className="page">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }}
+      />
       <div className="hero">
         <p className="eyebrow">{posts.length} 篇文章</p>
         <h1 className="display">每一篇都是一张卡片</h1>

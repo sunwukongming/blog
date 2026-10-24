@@ -1,0 +1,31 @@
+---
+title: OpenTelemetry：Span Event 和 Attribute 怎么分工
+date: "2026-10-24"
+category: cloud
+summary: Attribute 描述「这个 span 是什么」；Event 记录「期间发生了什么」。别把时间序列塞进属性，也别用 Event 代替稳定维度。
+---
+
+排障时常见两种噪音：属性爆炸，或把整段日志打成 Event。和 **baggage**（跨进程传递业务标签）不同，本文只谈 **单个 span 内部** 的 Event vs Attribute。
+
+## Attribute
+
+- 低基数、可索引的维度：`http.route`、`db.system`、`feature_flag`  
+- 在 span 生命周期内相对稳定；用于过滤与聚合  
+- 高基数 ID（用户 UUID）慎放，或按规范进约定字段
+
+## Event
+
+- 带时间戳的「发生过」：重试一次、收到 chunk、业务断点  
+- 可附少量属性，但不要把整份 payload 塞进去  
+- 异常常用 `recordException`（本质也是特殊 Event）
+
+## 对照
+
+| 问题 | 更合适 |
+|---|---|
+| 这条请求的路由？ | Attribute |
+| 第 3 次重试在何时？ | Event |
+| 租户要传到下游？ | Baggage（另文） |
+| 成功/失败结果？ | Attribute + status |
+
+先定「查询时按什么切」，再决定属性；时间线细节用 Event。采样策略仍决定你看不看得到它们。

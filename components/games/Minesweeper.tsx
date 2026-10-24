@@ -771,6 +771,28 @@ export default function Minesweeper() {
               }}
             />
           </span>
+          <span
+            className="mine-safe-remain-ratio-bar"
+            data-low={safeTotal > 0 && (safeTotal - safeOpen) / safeTotal <= 0.2 || undefined}
+            data-high={safeTotal > 0 && (safeTotal - safeOpen) / safeTotal >= 0.75 && seconds >= 15 || undefined}
+            title={
+              safeTotal > 0
+                ? `安全格剩余 ${safeTotal - safeOpen}/${safeTotal}`
+                : "安全格剩余 —"
+            }
+            aria-label={`安全格剩余 ${safeTotal - safeOpen}，共 ${safeTotal}`}
+          >
+            <i
+              className="mine-safe-remain-ratio-bar__fill"
+              style={{
+                width: `${
+                  safeTotal > 0
+                    ? Math.min(100, Math.round(((safeTotal - safeOpen) / safeTotal) * 100))
+                    : 0
+                }%`,
+              }}
+            />
+          </span>
           {best != null && phase === "playing" && best > 0 ? (
             <>
               <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>

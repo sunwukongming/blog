@@ -659,6 +659,32 @@ export default function Memory() {
               }}
             />
           </span>
+          <span
+            className="memory-match-pace-bar"
+            data-hot={seconds > 0 && matchedCount / seconds >= 0.25 || undefined}
+            data-slow={seconds >= 25 && matchedCount / Math.max(1, seconds) < 0.06 || undefined}
+            title={
+              seconds > 0
+                ? `配对配速 ${Math.round((matchedCount / seconds) * 100) / 100}/s（满刻度按 0.3/s）`
+                : "配对配速 —"
+            }
+            aria-label={
+              seconds > 0
+                ? `每秒约配对 ${Math.round((matchedCount / seconds) * 100) / 100} 对`
+                : "配对配速未知"
+            }
+          >
+            <i
+              className="memory-match-pace-bar__fill"
+              style={{
+                width: `${
+                  seconds > 0
+                    ? Math.min(100, Math.round((matchedCount / seconds / 0.3) * 100))
+                    : 0
+                }%`,
+              }}
+            />
+          </span>
         </span>
       </div>
       <p className={endgame || streak >= 2 ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">

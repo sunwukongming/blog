@@ -874,6 +874,20 @@ export default function Tetris() {
                 }}
               />
             </span>
+            <span
+              className="tetris-level-done-bar"
+              data-near={stats.linesToLevel <= 2 || undefined}
+              data-fresh={stats.linesToLevel >= 8 || undefined}
+              title={`本级进度 ${Math.max(0, 10 - stats.linesToLevel)}/10 行`}
+              aria-label={`本级已消约 ${Math.max(0, 10 - stats.linesToLevel)} 行`}
+            >
+              <i
+                className="tetris-level-done-bar__fill"
+                style={{
+                  width: `${Math.min(100, Math.round((Math.max(0, 10 - stats.linesToLevel) / 10) * 100))}%`,
+                }}
+              />
+            </span>
             {stats.comboPeak > 1 ? (
               <small style={{ marginLeft: 4, opacity: 0.7 }} title={`本局连消峰值 ×${stats.comboPeak}`}>
                 峰{stats.comboPeak}

@@ -1,0 +1,31 @@
+---
+title: "Redis SCAN：游标遍历与生产注意点"
+date: "2026-10-25"
+category: backend
+summary: "站内写过 lazyfree 与 maxmemory-policy。这篇谈 SCAN / HSCAN / ZSCAN：用游标增量遍历，避开 KEYS 堵主线程。"
+---
+
+生产上对大库执行 **`KEYS *`** 会一次性扫描，延迟尖刺明显。**`SCAN`**（及 `HSCAN` / `SSCAN` / `ZSCAN`）用**游标**分批返回，更适合后台对账、迁移与清理。
+
+## 形状
+
+```text
+SCAN cursor [MATCH pattern] [COUNT hint]
+HSCAN key cursor [MATCH pattern] [COUNT hint]
+```
+
+客户端循环：从 `0` 开始，直到返回游标再次为 `0`。`COUNT` 是**提示**而非硬保证条数。
+
+## 边界
+
+- **不保证无重复、不保证即时全景**：遍历期间键的增删会导致重见或漏见；对账逻辑要幂等。  
+- `MATCH` 在服务端过滤前仍可能内部走访许多槽；极端模式不如业务侧维护索引。  
+- 集群：要对**每个节点**分别 SCAN（或用支持的集群扫描 API），不能假设单游标覆盖全部槽。  
+- 与 **lazyfree / eviction** 正交：SCAN 只读遍历；删大键仍走 UNLINK / 策略文。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| SCAN 游标 | 本文 |
+| lazyfree / maxmemory-policy | 站内 redis-* 文 |

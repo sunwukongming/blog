@@ -3980,3 +3980,76 @@ html:has(.page--game) { overscroll-behavior: none; }
 .pk-matched-bar[data-cold] > i {
   background: linear-gradient(90deg, #93c5fd, #3b82f6);
 }
+
+/* batch77: memory-match-pace-bar / mine-safe-remain-ratio-bar / tetris-level-done-bar */
+.memory-match-pace-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.memory-match-pace-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #a5b4fc, #6366f1);
+  transition: width 100ms ease-out;
+}
+.memory-match-pace-bar[data-hot] .memory-match-pace-bar__fill {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+.memory-match-pace-bar[data-slow] .memory-match-pace-bar__fill {
+  background: linear-gradient(90deg, #93c5fd, #3b82f6);
+}
+
+.mine-safe-remain-ratio-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.mine-safe-remain-ratio-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+  transition: width 100ms ease-out;
+}
+.mine-safe-remain-ratio-bar[data-low] .mine-safe-remain-ratio-bar__fill {
+  background: linear-gradient(90deg, #86efac, #22c55e);
+}
+.mine-safe-remain-ratio-bar[data-high] .mine-safe-remain-ratio-bar__fill {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+}
+
+.tetris-level-done-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.tetris-level-done-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #86efac, #22c55e);
+  transition: width 100ms ease-out;
+}
+.tetris-level-done-bar[data-near] .tetris-level-done-bar__fill {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+.tetris-level-done-bar[data-fresh] .tetris-level-done-bar__fill {
+  background: linear-gradient(90deg, #93c5fd, #3b82f6);
+}

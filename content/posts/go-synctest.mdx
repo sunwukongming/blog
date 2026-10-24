@@ -1,0 +1,28 @@
+---
+title: "Go testing：synctest 与假时钟"
+date: "2026-10-25"
+category: backend
+summary: "站内写过 Deadline / Helper。这篇谈 synctest（实验/新测试原语方向）：用可控时钟跑定时器与 select，少 sleep、少 flake。"
+---
+
+依赖 `time.After`、`Ticker`、deadline 的并发代码，真墙钟测试又慢又脆。Go 测试生态里的 **synctest** 思路是：在隔离的「气泡」里推进**假时间**，让定时器与 channel 按逻辑时刻触发，而不是 `time.Sleep` 赌运气。
+
+## 何时考虑
+
+- 测「超时后取消 / 重试退避 / 心跳」这类时间语义。  
+- 想断言「推进 30s 后必达某状态」，而不是墙钟等 30s。  
+- 与 `t.Parallel()`、`-timeout` 正交：假时钟不替代进程级 Deadline。
+
+## 边界
+
+- **版本与 API 以你用的 Go 为准**：实验特性名称、导入路径、稳定度会变；升级前对照 release notes。  
+- 假时钟管不到真实 I/O 与外部进程；网络仍用 fake / httptest 一类替身。
+- 别在气泡外混用墙钟 `time.Now()` 做断言，否则「逻辑时」与「墙钟」会拧巴。  
+- 与站内 **Deadline** 文互补：一个管整测预算，一个管被测时间语义。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| synctest / 假时钟 | 本文 |
+| t.Deadline | 站内 go-testing-deadline |

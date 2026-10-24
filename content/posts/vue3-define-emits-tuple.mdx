@@ -1,0 +1,34 @@
+---
+title: "Vue 3 defineEmits：元组写法与载荷类型"
+date: "2026-10-25"
+category: frontend
+summary: "站内写过 withDefaults 与泛型组件。这篇谈 defineEmits 的类型元组写法：事件名到载荷的对应，以及和调用方的类型收窄。"
+---
+
+在 `<script setup lang="ts">` 里，**`defineEmits`** 可用**类型元组**声明每个事件的载荷，避免 `emit('foo', ...)` 传错参数：
+
+```ts
+const emit = defineEmits<{
+  change: [value: string];
+  submit: [id: number, draft: boolean];
+  close: [];
+}>();
+
+emit("change", "ok");
+emit("submit", 1, true);
+emit("close");
+```
+
+## 边界
+
+- 元组里写**参数列表**；无载荷用空元组 `[]`。  
+- 与 **运行时** `defineEmits(['change','submit'])` 相比，类型版不生成运行时校验，只服务 TS / `vue-tsc`。  
+- 可与 **泛型组件** 组合：载荷类型吃进 `T`（见站内 vue3-generic-component）。  
+- `defineModel` 覆盖的双向绑定不必再手写 `update:xxx`；其余自定义事件仍用 `defineEmits`。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| defineEmits 元组 | 本文 |
+| 泛型组件 / withDefaults | 站内 vue3-* 文 |

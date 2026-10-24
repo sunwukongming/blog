@@ -199,13 +199,17 @@ export default function Poker() {
     if (gameOver) return "筹码输光了。";
     if (victory) return "三个电脑都出局了，你赢下了整张桌子！";
     if (result) {
-      return result.pots
-        .map((p, i) => {
-          const names = p.winners.map((w) => table.players[w].name).join("、");
-          const label = result.pots.length > 1 ? (i === 0 ? "主池" : `边池 ${i}`) : "底池";
-          return `${names}${p.handName ? `以${p.handName}` : ""}赢得${label} ${p.amount}`;
-        })
-        .join("；");
+      const multi = result.pots.length > 1;
+      return (
+        (multi ? `本手拆 ${result.pots.length} 个池（主池+边池）：` : "") +
+        result.pots
+          .map((p, i) => {
+            const names = p.winners.map((w) => table.players[w].name).join("、");
+            const label = multi ? (i === 0 ? "主池" : `边池 ${i}`) : "底池";
+            return `${names}${p.handName ? `以${p.handName}` : ""}赢得${label} ${p.amount}`;
+          })
+          .join("；")
+      );
     }
     if (table.runout) return "全下了，发完剩下的公共牌……";
     if (myTurn) return rules!.canCheck ? "轮到你了" : `轮到你了，跟注需要 ${rules!.toCall}`;
@@ -287,6 +291,11 @@ export default function Poker() {
             <p className="game-tip game-tip--alert pk-odds" aria-live="polite">
               跟注 {rules.toCall} · 底池 {pot}
               （打平约需 {Math.min(99, Math.round((rules.toCall / (pot + rules.toCall)) * 100))}% 胜率）
+            </p>
+          )}
+          {started && !gameOver && !victory && !result && table.players.some((pl) => pl.allIn && !pl.out) && (
+            <p className="game-tip pk-sidepot" aria-live="polite">
+              边池说明：有人全下后，未跟满的筹码进<strong>主池</strong>，超额部分拆成<strong>边池</strong>；摊牌时按参与资格分别结算（结果条会标「主池 / 边池 n」）。
             </p>
           )}
           <p className="pk-msg" aria-live="polite">

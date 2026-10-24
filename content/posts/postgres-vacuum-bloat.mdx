@@ -1,0 +1,26 @@
+---
+title: Postgres VACUUM 与膨胀：先看可见性，再谈疯狂加磁盘
+date: "2026-10-24"
+category: backend
+summary: 更新删除留下的死元组靠 VACUUM 回收。膨胀常见于长事务挡视野、autovacuum 跟不上，或 fillfactor 与更新模式不匹配——不是「再买一块盘」就能根治。
+---
+
+表越来越大、索引扫得越来越慢，有时不是业务真的翻倍，而是 **死元组与索引膨胀**。VACUUM（含自动）负责标死、回收，并把空间还给映射；不包治「盘满了就扩容」。
+
+## 先看什么
+
+1. `pg_stat_user_tables`：`n_dead_tup`、上次 vacuum/analyze 时间。  
+2. 长事务 / 复制槽：挡住 xmin，VACUUM 清不掉。  
+3. 索引体积是否远大于表预期；必要时 `REINDEX`（注意锁与版本）。
+
+`VACUUM (VERBOSE, ANALYZE)` 在维护窗对可疑表跑；日常靠 autovacuum 参数与表级覆盖，而不是手工天天全库。
+
+## 常见误判
+
+| 现象 | 别急着 | 更可能 |
+|---|---|---|
+| 磁盘涨 | 只加 volume | 死元组 + 索引 bloat + WAL |
+| autovacuum 看着在跑 | 关自动改手工 | scale factor 过大或被长查询挡住 |
+| 刚大批 UPDATE | 立刻 CLUSTER | 先确认事务结束并 vacuum |
+
+与 `postgres-index-choices`、`postgres-explain-analyze` 连读：计划变差有时是膨胀与统计共同造成的。先让真空追得上写入，再谈奇异索引。

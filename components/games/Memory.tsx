@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { buzz, lower, useKeys, useRecord } from "./input";
+import { buzz, lower, useKeys, useRecord, useRecordList } from "./input";
 
 type Diff = { key: string; label: string; cols: number; rows: number };
 type Card = { id: number; pair: number; flipped: boolean; matched: boolean };
@@ -54,6 +54,13 @@ export default function Memory() {
   // 兼容第一批只写过 memory 键的普通难度纪录
   const [legacy] = useRecord("memory", lower);
   const shownBest = best ?? (diff.key === "normal" ? legacy : null);
+  const allDiffKeys = DIFFS.map((d) => recordKey(d));
+  const allDiffRaw = useRecordList(allDiffKeys);
+  const allDiffBests = DIFFS.map((d, i) => {
+    const v = allDiffRaw[i];
+    const n = d.key === "normal" ? (v ?? legacy) : v;
+    return { label: d.label, best: n };
+  });
   const reported = useRef(false);
   const cardRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
@@ -219,6 +226,16 @@ export default function Memory() {
           残局：还剩 {leftPairs} 对 · 步数 {moves} · 少翻错更能刷新纪录
         </p>
       )}
+      <p className="game-tip" aria-live="polite">
+        各难度最少步数：
+        {allDiffBests.map((x, i) => (
+          <span key={DIFFS[i].key}>
+            {i > 0 ? " · " : ""}
+            {x.label}{" "}
+            <b className={DIFFS[i].key === diff.key ? "game-tip--alert" : undefined}>{x.best ?? "—"}</b>
+          </span>
+        ))}
+      </p>
       <div
         className="memory"
         role="grid"

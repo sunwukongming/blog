@@ -1,0 +1,34 @@
+---
+title: React useEffectEvent：事件逻辑从 Effect 依赖里挪出去
+date: "2026-10-24"
+category: frontend
+summary: Effect 需要「始终读到最新 props/state」又不想因它们重订阅读时，用 useEffectEvent 包一层。别拿它当随便跳过依赖的万能钥匙。
+---
+
+`useEffect` 的依赖列表在逼你诚实：用到的值要么列入，要么证明安全。实战里常有「订阅只要挂一次，但回调里要最新值」——以前靠 ref 手写，现在可以用 **`useEffectEvent`**（按你所用 React 版本确认稳定性）。
+
+## 适用形状
+
+```tsx
+const onTick = useEffectEvent(() => {
+  // 这里读最新 count / props，不必进下面 Effect 的 deps
+  save(count);
+});
+
+useEffect(() => {
+  const id = setInterval(() => onTick(), 1000);
+  return () => clearInterval(id);
+}, []); // 只关心订阅寿命
+```
+
+事件函数 **不参与** 触发 Effect 重跑；Effect 仍负责挂载与清理。
+
+## 不要做什么
+
+| 反模式 | 为何 |
+|---|---|
+| 一切逻辑都塞进 EffectEvent | 又变回隐式依赖，难测 |
+| 用它「关掉」eslint 对真实依赖的警告 | 该列的 props 仍该列 |
+| 在服务端组件里用 | 这是客户端 hooks 故事 |
+
+与本仓库小游戏里的 `useEffectEvent`（如扫雷结束音、方块锁定）同一动机：**订阅寿命与渲染最新值解耦**。读官方 RFC/文档对齐你锁的 React 版本后再在业务大面积推广。

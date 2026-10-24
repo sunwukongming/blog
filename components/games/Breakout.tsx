@@ -519,8 +519,13 @@ const [phase, setPhase] = useState<Phase>("select");
             <span>
               分数<b>{hud.score}</b>
             </span>
-            <span>
-              生命<b>{"♥".repeat(Math.max(0, hud.lives)) || "0"}</b>
+            <span title="剩余生命（掉球扣一命）">
+              生命<b className={hud.lives <= 1 ? "game-tip--alert" : undefined}>{"♥".repeat(Math.max(0, hud.lives)) || "0"}</b>
+              <small style={{ marginLeft: 4, opacity: 0.7 }}>/3</small>
+            </span>
+            <span title="场上球数；多球道具可叠加">
+              球<b className={hud.balls > 1 ? "game-tip--alert" : undefined}>{hud.balls}</b>
+              {hud.balls > 1 ? <small style={{ marginLeft: 4, opacity: 0.85 }}>多球</small> : null}
             </span>
             <span title="可打碎砖剩余 / 本关总数">
               剩余砖<b>{hud.brickLeft}/{hud.brickTotal}</b>
@@ -553,9 +558,11 @@ const [phase, setPhase] = useState<Phase>("select");
       </div>
       {(phase === "running" || phase === "aim" || phase === "paused") && (
         <p className={hud.brickLeft <= 3 && hud.brickLeft > 0 ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">
-          {hud.brickLeft <= 3 && hud.brickLeft > 0
-            ? `残局：还剩 ${hud.brickLeft} 块可打碎砖 · 完成度 ${hud.progress}%`
-            : `第 ${hud.level + 1} 关 · 完成 ${hud.progress}%（剩 ${hud.brickLeft}/${hud.brickTotal}）· 球速约 ${Math.round(baseSpeed(hud.level))} · 拍宽 ${Math.round(Math.max(64, 88 - hud.level * 3))}${hud.wide ? "（已加宽）" : ""}${hud.balls > 1 ? ` · 多球×${hud.balls}` : ""}`}
+          {hud.lives <= 1
+            ? `残命 ${hud.lives} · 多球×${hud.balls} · 完成 ${hud.progress}%（剩 ${hud.brickLeft}/${hud.brickTotal}）`
+            : hud.brickLeft <= 3 && hud.brickLeft > 0
+              ? `残局：还剩 ${hud.brickLeft} 块可打碎砖 · 完成度 ${hud.progress}%${hud.balls > 1 ? ` · 多球×${hud.balls}` : ""}`
+              : `第 ${hud.level + 1} 关 · 生命 ${hud.lives}/3 · 球×${hud.balls} · 完成 ${hud.progress}%（剩 ${hud.brickLeft}/${hud.brickTotal}）· 球速约 ${Math.round(baseSpeed(hud.level))}${hud.wide ? " · 加宽" : ""}`}
         </p>
       )}
       <div

@@ -50,14 +50,14 @@ summary: 一句话摘要
 
 ## 内容进度
 
-本地持续 enrichment。第十二批：Redis Streams vs Kafka、Go slog、Next PPR、Tetris T-Spin / Snake 穿墙 HUD。第十三批：CSS Anchor、EXPLAIN ANALYZE、errgroup；Breakout/Poker/Memory HUD。第十四批：HTTP 再验证、表驱动夹具、Vue Suspense；扫雷/2048 HUD。第十五批：OTel baggage、CSS scroll-driven、NetworkPolicy；Tetris B2B/连消、Snake 加速档；首页 description 对齐与 feed lastBuildDate。
+本地持续 enrichment。第十二批：Redis Streams vs Kafka、Go slog、Next PPR、Tetris T-Spin / Snake 穿墙 HUD。第十三批：CSS Anchor、EXPLAIN ANALYZE、errgroup；Breakout/Poker/Memory HUD。第十四批：HTTP 再验证、表驱动夹具、Vue Suspense；扫雷/2048 HUD。第十五批：OTel baggage、CSS scroll-driven、NetworkPolicy；Tetris B2B/连消、Snake 加速档；首页 description 对齐与 feed lastBuildDate。 第十六批：pnpm workspace、Postgres VACUUM/膨胀、React useEffectEvent；Breakout 生命/多球状态条、Poker 边池说明、Memory 各难度最佳步对比；分类页 OG 与 robots host。
 
 ## SEO 与订阅
 
 - `/feed.xml`：RSS（author、CDATA 摘要、channel lastBuildDate）
 - `/archive`：按年折叠归档，带 SEO description
 - `/sitemap.xml`、`/robots.txt`：给搜索引擎（文章 lastmod 用发布日，列表页用最新文章日）
-- 首页、分类、文章列表与游戏列表页带 description；游戏详情 OG/Twitter 摘要
+- 首页、分类（含分类详情）、文章列表与游戏列表页带 description；分类与游戏详情 OG/Twitter 摘要；robots 含 host（在配置了 SITE_URL 时）
 - 可玩游戏路由 sitemap lastmod 使用 `GAMES_UPDATED`
 - 每篇文章自动生成 1200×630 的分享图（`app/blog/[slug]/opengraph-image.tsx`），中文字体在构建时从 Google Fonts 按需下载
 

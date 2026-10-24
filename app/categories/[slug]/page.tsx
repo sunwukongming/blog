@@ -12,7 +12,15 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: PageProps<"/categories/[slug]">): Promise<Metadata> {
   const category = getCategory((await params).slug);
-  return category ? { title: category.name, description: category.blurb } : {};
+  if (!category) return {};
+  const title = category.name;
+  const description = category.blurb;
+  return {
+    title,
+    description,
+    openGraph: { title, description, type: "website" },
+    twitter: { card: "summary", title, description },
+  };
 }
 
 export default function CategoryPage({ params }: PageProps<"/categories/[slug]">) {

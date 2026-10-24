@@ -1,0 +1,29 @@
+---
+title: pnpm workspace 单体仓：协议依赖与过滤命令比「再套一层 lerna」先有用
+date: "2026-10-24"
+category: tools
+summary: pnpm-workspace.yaml 划包边界，workspace: 协议钉本地版本，pnpm --filter 跑子集。先把这三件事稳住，再谈远程缓存与变更集。
+---
+
+多包仓库最容易烂在：有人 `npm link`、有人相对路径 `file:`、CI 全量 `install` 再全量 `build`。pnpm workspace 把边界写进配置，默认就少很多漂移。
+
+## 最小骨架
+
+1. 根目录 `pnpm-workspace.yaml` 列出 `packages/*`（或 apps/packages）。  
+2. 包之间用 `"foo": "workspace:^"`，发布前再换成真实版本。  
+3. 脚本用 `pnpm --filter @acme/web build` / `--filter "./packages/**"`，别靠根目录巨型 `&&` 链碰运气。
+
+`pnpm install` 在根执行一次；锁文件只有一份。与「每个包各自 lock」的旧习惯相反，这是刻意的。
+
+## 常见坑
+
+| 坑 | 更好的做法 |
+|---|---|
+| 子包又去 registry 装自己的兄弟包 | `workspace:` 协议 |
+| 根 `devDependencies` 塞满业务工具 | 放到真正用它的包 |
+| CI 无 filter 全构建 | 按变更路径或 Turborepo/Nx 再加速 |
+| peer 对不上 | 在根对齐 React 等单例 peer |
+
+## 和本站的关系
+
+本博客是单包 Next 应用，不需要 workspace。但 GM Lab 若拆 `games` 原型包或 MDX 工具包，优先 pnpm workspace，而不是先上重型 monorepo 框架。协议与 filter 熟练了，远程缓存只是下一层。

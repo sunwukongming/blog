@@ -335,6 +335,20 @@ export default function Memory() {
             }
           >
             步数<b>{moves}</b>
+            <span
+              className="memory-moves-budget-bar"
+              data-over={pairs > 0 && moves > pairs * 3 || undefined}
+              data-tight={pairs > 0 && moves > pairs * 2 && moves <= pairs * 3 || undefined}
+              title={`步数预算 ${moves}/${Math.max(1, pairs * 3)}（软上限 3×对数）`}
+              aria-label={`步数预算 ${moves} / ${Math.max(1, pairs * 3)}`}
+            >
+              <i
+                className="memory-moves-budget-bar__fill"
+                style={{
+                  width: `${Math.min(100, Math.round((moves / Math.max(1, pairs * 3)) * 100))}%`,
+                }}
+              />
+            </span>
             {shownBest != null && moves > 0 ? (
               <small className="memory-moves-delta__diff" style={{ marginLeft: 4 }}>
                 步差{moves - shownBest >= 0 ? "+" : ""}

@@ -1,0 +1,41 @@
+---
+title: OTel Exemplars 采样：何时挂上 exemplars、如何控量
+date: "2026-10-25"
+category: cloud
+summary: 站内 metric exemplars 文讲「指标点上挂轨迹」。这篇只谈采样策略：AlwaysOn 会炸量、如何与 trace 采样对齐、以及后端存储的取舍。
+---
+
+Exemplars 把 **度量点** 和 **某次 trace/span** 钉在一起。机制见站内 exemplars 文；这里只谈 **采多少、何时采**。
+
+## 三种常见策略
+
+| 策略 | 行为 | 风险 |
+|---|---|---|
+| AlwaysOn | 每个数据点都挂 | 基数与导出带宽爆炸 |
+| 与 Trace 对齐 | 仅当该请求已被 trace 采样时挂 | 推荐默认；和头采样决策一致 |
+| 桶/分位过滤 | 只对高延迟桶、错误计数挂 | 省流量，适合 SLO 告警下钻 |
+
+```text
+# 直觉：metric 导出频率 × 维度基数 × exemplar 比率 ≈ 存储写入
+# 先保证 trace 头采样合理，再开 exemplar，避免「指标全量 + 轨迹全量」双重税
+```
+
+## 对齐 Trace 采样
+
+1. **头采样已丢弃**的请求：exemplar 也别硬挂，否则链到不存在的 trace。  
+2. **尾采样**场景：exemplar 可能指向稍后才决定保留的 span——后端要能容忍短暂悬挂或延迟关联。  
+3. 直方图：优先在 **溢出桶 / 高分位** 挂，比每个 bucket 都挂更值钱。
+
+## 控量清单
+
+- 维度已很高的计数器：先降标签，再谈 exemplar。  
+- 导出前看 SDK 的 exemplar filter（如 `TraceBased`）。  
+- 后端（Prometheus / 厂商）确认 exemplar 存储配额与查询语法。
+
+## 和站内 exemplars 文
+
+「是什么、怎么读」见原文；**本文只谈采样与控量**。
+
+## 一句话
+
+**exemplar 跟着有效 trace 走**；AlwaysOn 只适合短时排障，不适合默认生产。

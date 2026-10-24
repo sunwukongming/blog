@@ -1,0 +1,33 @@
+---
+title: Go net/http CookieJar：客户端如何自动带上 Cookie
+date: "2026-10-25"
+category: backend
+summary: 测登录流或写爬虫式客户端时，用 cookiejar 让 Client 自动存/带 Cookie。这篇只谈 Jar 接口、cookiejar.New 与跨主机策略，不谈服务端 Set-Cookie 解析细节。
+---
+
+`http.Client` 默认 **不**持久化 Cookie。要实现浏览器式「登录一次后续自动带」，挂上 `CookieJar`。
+
+## 最小用法
+
+```go
+jar, err := cookiejar.New(nil) // nil 用公开后缀列表默认
+if err != nil { /* ... */ }
+client := &http.Client{Jar: jar}
+
+resp, err := client.PostForm(loginURL, data) // Set-Cookie 进 jar
+resp, err = client.Get(apiURL)               // 自动带上
+```
+
+- 同一 `Client` 复用同一 `jar`，才会跨请求累积。  
+- 单测可自造 `http.CookieJar`，断言 `SetCookies` / `Cookies`。
+
+## 注意
+
+1. **并发**：标准库 jar 可与 Client 共用；自研 Jar 要加锁。  
+2. **跨域**：按 scheme/host/path 规则匹配，测 SSO 时核对域名。  
+3. **过期**：尊重 Expires/Max-Age；测过期可改条目或注入假时钟。  
+4. 服务端 `http.SetCookie` 是另一回事——本文只谈 **客户端 Jar**。
+
+## 一句话
+
+**Client.Jar = cookiejar** 才能自动记住登录 Cookie；别假设默认 Client 会帮你存。

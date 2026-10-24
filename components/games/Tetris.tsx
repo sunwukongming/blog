@@ -707,6 +707,15 @@ export default function Tetris() {
         </span>
         <span>
           等级<b>{stats.level}</b>
+          <span
+            className="tetris-level-bar"
+            data-hot={stats.level >= 10 || undefined}
+            data-huge={stats.level >= 15 || undefined}
+            title={`等级 ${stats.level}（满刻度按 15）`}
+            aria-label={`等级 ${stats.level}`}
+          >
+            <i style={{ width: `${Math.min(100, Math.round((stats.level / 15) * 100))}%` }} />
+          </span>
         </span>
         {(phase === "running" || phase === "paused") ? (
           <span

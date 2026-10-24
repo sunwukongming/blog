@@ -29,6 +29,7 @@ export default async function BlogIndex() {
   const posts = await getAllPosts();
   // batch46: ItemList 复核 numberOfItems + 前 50 条 ListItem；与 feed 条目同源 getAllPosts
   // batch50: 再核 ItemListOrderDescending + slice(0,50)；OG/Twitter images 仍同源 icon.svg
+  // batch53: 再核 numberOfItems=posts.length + inLanguage；与 archive ItemList / feed 同源 getAllPosts
   const itemListLd = {
     "@context": "https://schema.org",
     "@type": "ItemList",
@@ -36,6 +37,7 @@ export default async function BlogIndex() {
     name: `${SITE.name} 文章`,
     description: "GM Lab 文章列表：Go / 云原生 / 可观测 / 前端笔记",
     numberOfItems: posts.length,
+    inLanguage: "zh-CN",
     itemListElement: posts.slice(0, 50).map((p, i) => ({
       "@type": "ListItem",
       position: i + 1,

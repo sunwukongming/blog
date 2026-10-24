@@ -530,6 +530,22 @@ export default function Minesweeper() {
           <small className="mine-timer__seg">
             {seconds < 30 ? "前段" : seconds < 60 ? "中段" : seconds < 120 ? "后段" : "超时"}
           </small>
+          <span
+            className="mine-timer-seg-bar"
+            data-seg={seconds < 30 ? "early" : seconds < 60 ? "mid" : seconds < 120 ? "late" : "over"}
+            title={`段内进度 ${seconds < 120 ? seconds % 30 : Math.min(30, seconds - 120)}/30s（当前${seconds < 30 ? "前段" : seconds < 60 ? "中段" : seconds < 120 ? "后段" : "超时"}）`}
+            aria-label={`计时段内进度`}
+          >
+            <i
+              className="mine-timer-seg-bar__fill"
+              style={{
+                width: `${Math.min(
+                  100,
+                  Math.round(((seconds < 120 ? seconds % 30 : Math.min(30, seconds - 120)) / 30) * 100),
+                )}%`,
+              }}
+            />
+          </span>
           {best != null && phase === "playing" && best > 0 ? (
             <>
               <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>

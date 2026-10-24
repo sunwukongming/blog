@@ -1,0 +1,35 @@
+---
+title: Redis Cuckoo vs Bloom：什么时候选谁
+date: "2026-10-25"
+category: backend
+summary: 站内已有 Bloom、Cuckoo 与概率结构综述。这篇只做选型对比：能否删除、误判表现、内存与 CPU，直接回答「这个键用哪一种」。
+---
+
+Bloom 与 Cuckoo 都是 **近似成员查询**。单篇用法见站内 Bloom / Cuckoo；这里只 **对比选型**。
+
+## 对照表
+
+| 维度 | Bloom | Cuckoo |
+|---|---|---|
+| 删除 | 经典 Bloom **不能**可靠删（counting 另说） | **支持**删除 |
+| 误判 | 假阳性；无假阴性（未满/按设计） | 假阳性；插入在极端负载可能失败（需扩容/重试） |
+| 内存 | error_rate×capacity 公式清晰 | 指纹 + 桶，常更省，但参数更绕 |
+| CPU | 多哈希、位探测，简单 | 踢出/重定位路径，插入偶发更贵 |
+| Redis 模块 | `BF.*` | `CF.*` |
+
+## 怎么选
+
+1. **只要「可能存在？」、几乎不删** → Bloom（缓存穿透、已见 URL）。  
+2. **要删、或集合会收缩** → Cuckoo（会话黑名单可解除、短期 token）。  
+3. **要基数估计** → 都不是，去 HyperLogLog。  
+4. **要精确** → Set / 外部权威存储；概率结构只做初筛。
+
+## 别混用的点
+
+- Bloom 假阳性用下游 DB 兜底；别在 Bloom 上「删掉」指望变准。  
+- Cuckoo 插入失败要处理（扩容或降载），不是静默变 bloom 式只增误判。  
+- 误判率调参细节见站内 Bloom FP 文；Cuckoo 看 bucket size / max iterations。
+
+## 一句话
+
+**不删用 Bloom，要删用 Cuckoo**；精确与基数另请高明。

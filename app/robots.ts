@@ -7,6 +7,7 @@ import { SITE_URL } from "@/lib/site";
 // batch42: 游戏列表 Twitter images 与 OG 对齐；sitemap 仍用 GAMES_UPDATED 作 /games lastmod
 // batch45: 复核 host + sitemap/feed 双挂；与首页 WebSite JSON-LD（sameAs/hasPart/SearchAction）对齐
 // batch48: 再核 host + sitemap.xml/feed.xml 双挂；与 GAMES_UPDATED/sitemap 游戏 lastmod 注释对齐
+// batch53: 再核 host 解析自 SITE_URL；sitemap 仍双挂 xml+feed，与博客列表 ItemList 同源
 export default function robots(): MetadataRoute.Robots {
   let host: string | undefined;
   try {

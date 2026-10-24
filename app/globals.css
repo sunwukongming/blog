@@ -704,3 +704,16 @@ html:has(.page--game) { overscroll-behavior: none; }
 .toc--collapsible summary.toc__title::-webkit-details-marker { display: none; }
 .toc a { color: color-mix(in oklab, var(--muted) 55%, var(--fg)); }
 .tetris-next[data-dim="true"] { opacity: 0.55; }
+
+.archive-year details { margin: 0; }
+.archive-year__summary {
+  cursor: pointer; list-style: none; display: flex; align-items: baseline;
+  justify-content: space-between; gap: 12px; user-select: none;
+  font: 600 18px/1.3 var(--font-display), system-ui, sans-serif;
+}
+.archive-year__summary::-webkit-details-marker { display: none; }
+.archive-year__count { font: 400 12.5px var(--font-mono), monospace; color: var(--muted); }
+.archive-year__summary + * { margin-top: 10px; }
+.tetris-next-queue { display: grid; gap: 6px; margin-bottom: 8px; }
+.tetris-next-queue .tetris-next { margin-bottom: 0; }
+.tetris-next-queue .tetris-next[data-queue="next"] { opacity: 0.72; transform: scale(0.92); transform-origin: top left; }

@@ -29,7 +29,7 @@ export const GAMES: GameItem[] = [
     slug: "tetris",
     title: "俄罗斯方块",
     status: "shipped",
-    summary: "经典消行：落点预览、Hold 暂存、7 袋随机，越往后越快。",
+    summary: "经典消行：落点预览、Hold、下三块预览、7 袋随机。",
     stack: ["Canvas", "React"],
     href: "/games/tetris",
     playable: true,
@@ -66,7 +66,7 @@ export const GAMES: GameItem[] = [
     stack: ["React", "CSS Grid"],
     href: "/games/minesweeper",
     playable: true,
-    controls: "左键翻开，右键或 F 插旗；方向键移动焦点，回车翻开。点已翻开的数字可一次翻开周围。",
+    controls: "方向键移动，回车翻开，空格/F 插旗，R 重开。第一下安全区。",
     touchControls: "轻点翻开，长按插旗（滑开会取消）；也可开插旗模式。点已翻开的数字可一次翻周围。",
   },
   {

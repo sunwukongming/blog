@@ -29,7 +29,7 @@ type Game = {
   clearFx: ClearFx | null;
   dropFx: DropFx | null;
 };
-type Stats = { score: number; lines: number; level: number; next: Kind; hold: Kind | null; canHold: boolean };
+type Stats = { score: number; lines: number; level: number; next: Kind[]; hold: Kind | null; canHold: boolean };
 
 const KINDS: Kind[] = ["I", "O", "T", "S", "Z", "J", "L"];
 // 每种方块在自己旋转框里的初始格子
@@ -288,7 +288,7 @@ export default function Tetris() {
   const [initial] = useState(newGame);
   const game = useRef<Game>(initial);
   const [phase, setPhase] = useState<Phase>("ready");
-  const [stats, setStats] = useState<Stats>({ score: 0, lines: 0, level: 1, next: initial.bag[0], hold: null, canHold: true });
+  const [stats, setStats] = useState<Stats>({ score: 0, lines: 0, level: 1, next: initial.bag.slice(0, 3), hold: null, canHold: true });
   const [record, setRecord] = useState(false);
   const [best, submitBest] = useRecord("tetris", (next, prev) => next > prev);
   const repeat = useRef<number | null>(null);
@@ -300,7 +300,7 @@ export default function Tetris() {
 
   const sync = () => {
     const g = game.current;
-    setStats({ score: g.score, lines: g.lines, level: g.level, next: g.bag[0], hold: g.hold, canHold: g.canHold });
+    setStats({ score: g.score, lines: g.lines, level: g.level, next: g.bag.slice(0, 3), hold: g.hold, canHold: g.canHold });
   };
 
   useEffect(() => {
@@ -555,11 +555,15 @@ export default function Tetris() {
             })}
           </div>
           <span>下一个</span>
-          <div className="tetris-next" aria-label={`下一个是 ${stats.next} 形`}>
-            {Array.from({ length: 8 }, (_, i) => {
-              const on = SHAPES[stats.next].some(([x, y]) => x === i % 4 && y === Math.floor(i / 4));
-              return <i key={i} style={on ? { background: COLORS[stats.next] } : undefined} />;
-            })}
+          <div className="tetris-next-queue" aria-label={`下一个：${stats.next.join("、")}`}>
+            {stats.next.map((kind, qi) => (
+              <div key={`${kind}-${qi}`} className="tetris-next" data-queue={qi === 0 ? "primary" : "next"}>
+                {Array.from({ length: 8 }, (_, i) => {
+                  const on = SHAPES[kind].some(([x, y]) => x === i % 4 && y === Math.floor(i / 4));
+                  return <i key={i} style={on ? { background: COLORS[kind] } : undefined} />;
+                })}
+              </div>
+            ))}
           </div>
           <span>最高</span>
           <b>{best ?? 0}</b>

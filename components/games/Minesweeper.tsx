@@ -259,11 +259,11 @@ export default function Minesweeper() {
       setFocus((f) => (f - w + n) % n);
       return true;
     }
-    if (key === "Enter" || key === " ") {
+    if (key === "Enter") {
       openAt(focus);
       return true;
     }
-    if (key.toLowerCase() === "f") {
+    if (key === " " || key.toLowerCase() === "f") {
       setGame((g) => toggleFlag(g, focus));
       buzz(12);
       return true;
@@ -354,12 +354,12 @@ export default function Minesweeper() {
               <>
                 <span className="when-mouse">
                   {best !== null
-                    ? `${level.label}最快 ${best} 秒。方向键移动，回车翻开，F 插旗。`
-                    : "方向键移动焦点，回车翻开，F 插旗。第一下不会踩雷。"}
+                    ? `${level.label}最快 ${best} 秒。方向键移动，回车翻开，空格或 F 插旗。`
+                    : "方向键移动焦点，回车翻开，空格或 F 插旗。第一下安全区不会踩雷。"}
                 </span>
                 <span className="when-touch">
                   {best !== null ? `${level.label}最快 ${best} 秒。` : ""}
-                  轻点翻开，长按插旗（滑开会取消）；也可用插旗模式。第一下不会踩雷。
+                  轻点翻开，长按插旗（滑开取消）；插旗模式可快速标雷。第一下安全区不会踩雷。
                 </span>
               </>
             )}

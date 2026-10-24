@@ -1,0 +1,37 @@
+---
+title: "Redis lazyfree：大键异步释放"
+date: "2026-10-25"
+category: backend
+summary: "UNLINK / FLUSH * ASYNC 把释放丢给后台线程，降低大键删除堵主线程的风险。这篇写 lazyfree 配置、与 DEL 的取舍，以及何时仍会同步。"
+---
+
+删除百万字段的 hash / 大流 / 大 zset 时，同步 **`DEL`** 可能让主线程卡在释放内存上。**lazyfree** 路径（如 **`UNLINK`**、按配置的异步释放）把工作放到后台，尽快回到事件循环。
+
+## 常用口令
+
+```text
+UNLINK bigkey
+FLUSHDB ASYNC
+FLUSHALL ASYNC
+```
+
+相关配置（版本与默认值以你部署为准）：
+
+- `lazyfree-lazy-eviction`
+- `lazyfree-lazy-expire`
+- `lazyfree-lazy-server-del`
+- `lazyfree-lazy-user-del` / `lazyfree-lazy-user-flush`
+
+## 边界
+
+- **异步 ≠ 立刻可复用同名键的旧内存语义**：命令很快返回，但内存回收滞后；监控 `used_memory` 与 `lazyfreed_objects`。  
+- 复制与 AOF：以你用的版本语义为准；大键删除策略变更前先在从库/预发验证。  
+- 小键上 `UNLINK` 与 `DEL` 差异可忽略；约定「可能很大就 UNLINK」更省心。  
+- 与 keyspace 通知、过期淘汰正交；本文不展开 pub/sub 通知族。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| lazyfree / UNLINK | 本文 |
+| keyspace notifications | 站内既有文 |

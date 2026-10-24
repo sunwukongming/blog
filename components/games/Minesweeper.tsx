@@ -749,6 +749,28 @@ export default function Minesweeper() {
               }}
             />
           </span>
+          <span
+            className="mine-clear-ratio-bar"
+            data-hot={safeTotal > 0 && safeOpen / safeTotal >= 0.85 || undefined}
+            data-low={safeTotal > 0 && safeOpen / safeTotal <= 0.15 && seconds >= 20 || undefined}
+            title={
+              safeTotal > 0
+                ? `安全格进度 ${safeOpen}/${safeTotal}`
+                : "安全格进度 —"
+            }
+            aria-label={`安全格已开 ${safeOpen}，共 ${safeTotal}`}
+          >
+            <i
+              className="mine-clear-ratio-bar__fill"
+              style={{
+                width: `${
+                  safeTotal > 0
+                    ? Math.min(100, Math.round((safeOpen / safeTotal) * 100))
+                    : 0
+                }%`,
+              }}
+            />
+          </span>
           {best != null && phase === "playing" && best > 0 ? (
             <>
               <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>

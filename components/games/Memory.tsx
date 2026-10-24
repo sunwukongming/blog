@@ -637,6 +637,28 @@ export default function Memory() {
               }}
             />
           </span>
+          <span
+            className="memory-done-ratio-bar"
+            data-hot={pairs > 0 && matchedCount / pairs >= 0.85 || undefined}
+            data-low={pairs > 0 && matchedCount / pairs <= 0.2 && seconds >= 20 || undefined}
+            title={
+              pairs > 0
+                ? `已配对 ${matchedCount}/${pairs}`
+                : "已配对 —"
+            }
+            aria-label={`已配对 ${matchedCount} 对，共 ${pairs}`}
+          >
+            <i
+              className="memory-done-ratio-bar__fill"
+              style={{
+                width: `${
+                  pairs > 0
+                    ? Math.min(100, Math.round((matchedCount / pairs) * 100))
+                    : 0
+                }%`,
+              }}
+            />
+          </span>
         </span>
       </div>
       <p className={endgame || streak >= 2 ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">

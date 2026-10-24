@@ -1,0 +1,35 @@
+---
+title: "Vue 3 withDefaults：给 defineProps 补默认值"
+date: "2026-10-25"
+category: frontend
+summary: "script setup + 类型版 defineProps 时，用 withDefaults 声明默认值。这篇写泛型组件场景、可选属性，以及和运行时 props 对象写法的分工。"
+---
+
+在 `<script setup lang="ts">` 里用**纯类型**声明 props 时，默认值不能写在类型里，需要 **`withDefaults`**：
+
+```ts
+const props = withDefaults(
+  defineProps<{
+    size?: "sm" | "md" | "lg";
+    label?: string;
+  }>(),
+  {
+    size: "md",
+    label: "",
+  },
+);
+```
+
+## 边界
+
+- 仅对**可选**属性给默认值；必填项放进类型且不要出现在 defaults 对象。  
+- 对象/数组默认值不要共享可变引用——工厂函数形式按当前 Vue 文档来。  
+- 与 **`defineModel`**、**`defineOptions`** 互补：一个管 v-model，一个管组件选项，本文只管 props 默认。  
+- 运行时 `defineProps({ size: { default: "md" } })` 仍可用；类型版 + `withDefaults` 更贴 TS 工作流。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| withDefaults | 本文 |
+| defineOptions / defineModel | 站内 vue3-* 文 |

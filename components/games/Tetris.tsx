@@ -860,6 +860,20 @@ export default function Tetris() {
                 }}
               />
             </span>
+            <span
+              className="tetris-level-remain-bar"
+              data-near={stats.linesToLevel <= 2 || undefined}
+              data-fresh={stats.linesToLevel >= 8 || undefined}
+              title={`距升级还剩 ${stats.linesToLevel} 行（满刻度 10）`}
+              aria-label={`距升级还剩 ${stats.linesToLevel} 行`}
+            >
+              <i
+                className="tetris-level-remain-bar__fill"
+                style={{
+                  width: `${Math.min(100, Math.round((stats.linesToLevel / 10) * 100))}%`,
+                }}
+              />
+            </span>
             {stats.comboPeak > 1 ? (
               <small style={{ marginLeft: 4, opacity: 0.7 }} title={`本局连消峰值 ×${stats.comboPeak}`}>
                 峰{stats.comboPeak}

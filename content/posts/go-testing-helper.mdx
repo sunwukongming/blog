@@ -1,0 +1,41 @@
+---
+title: "Go testing：t.Helper 与失败行定位"
+date: "2026-10-25"
+category: backend
+summary: "站内已有 Cleanup / TempDir / Parallel。这篇写 t.Helper()：把断言挪进辅助函数后，失败栈如何仍指回测试调用点。"
+---
+
+测试里常把「相等 / 含有 / 错误」抽成 `assertXxx(t, …)`。若不标 **`t.Helper()`**，失败行会停在 helper 内部，审 diff 时要多跳一层。
+
+## 写法
+
+```go
+func assertEq[T comparable](t *testing.T, got, want T) {
+	t.Helper()
+	if got != want {
+		t.Fatalf("got %v, want %v", got, want)
+	}
+}
+
+func TestParse(t *testing.T) {
+	got, err := Parse("x")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertEq(t, got, 42) // 失败时行号在这里
+}
+```
+
+## 边界
+
+- **每个**会调用 `t.Fatal` / `t.Error` 的辅助函数都要 `Helper()`；嵌套 helper 层层标。  
+- 与 **`t.Cleanup`**、**`t.TempDir`** 正交：一个管定位，一个管收尾与临时目录（见站内既有文）。  
+- `t.Helper()` 不影响并行；`t.Parallel()` 规则不变。  
+- 第三方 assert 库通常已处理；自研薄封装时最容易漏。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| t.Helper | 本文 |
+| Cleanup / TempDir | 站内 go-testing-* 文 |

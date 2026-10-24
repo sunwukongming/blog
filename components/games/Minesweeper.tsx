@@ -378,11 +378,15 @@ export default function Minesweeper() {
           </button>
         ))}
       </div>
-      {phase === "playing" && (
+      {(phase === "ready" || phase === "playing") && (
         <p className={lateClear ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">
-          {lateClear
-            ? `收官：还剩 ${safeLeft} 格安全区未开 · 开图 ${safeProgress}% · 剩余雷标记 ${level.mines - flags}`
-            : `开图 ${safeProgress}%（安全格 ${safeOpen}/${safeTotal}）· 旗 ${flags}/${level.mines}`}
+          {phase === "ready"
+            ? "首击安全区：第一下落点及其周围不会埋雷，可放心开图。"
+            : lateClear
+              ? `收官：还剩 ${safeLeft} 格安全区未开 · 开图 ${safeProgress}% · 剩余雷标记 ${level.mines - flags}`
+              : safeOpen === 0
+                ? `首击安全区已生效 · 开图 0%（安全格 0/${safeTotal}）· 旗 ${flags}/${level.mines}`
+                : `开图 ${safeProgress}%（安全格 ${safeOpen}/${safeTotal}）· 旗 ${flags}/${level.mines}`}
         </p>
       )}
       <div className="game-bar">

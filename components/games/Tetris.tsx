@@ -698,6 +698,15 @@ export default function Tetris() {
           {stats.clearTip}
         </p>
       )}
+      {phase === "running" && !stats.clearTip && (
+        <p className="game-tip" aria-live="polite">
+          预览 {stats.next.join("→")}
+          {stats.hold ? ` · 暂存 ${stats.hold}` : " · 暂存空"}
+          {stats.canHold === false ? "（本块已用过 Hold）" : " · 可 Hold"}
+          {stats.b2b ? " · B2B 就绪" : ""}
+          {stats.combo > 1 ? ` · 连消×${stats.combo}` : ""}
+        </p>
+      )}
       <div className="tetris">
         <div className="game-stage tetris-board" {...swipe}>
           <canvas ref={canvas} aria-label={`俄罗斯方块，${stats.score} 分`} />
@@ -735,7 +744,7 @@ export default function Tetris() {
           )}
         </div>
         <div className="tetris-side">
-          <span>暂存</span>
+          <span title="C / Shift：与当前块交换；落地前每块限一次">暂存</span>
           <div
             className="tetris-next"
             data-dim={stats.canHold === false ? "true" : undefined}
@@ -747,7 +756,7 @@ export default function Tetris() {
               return <i key={i} style={on && kind ? { background: COLORS[kind] } : undefined} />;
             })}
           </div>
-          <span>下一个</span>
+          <span title="预览队列前 3 个（来自 7-bag）">下一个</span>
           <div className="tetris-next-queue" aria-label={`下一个：${stats.next.join("、")}`}>
             {stats.next.map((kind, qi) => (
               <div key={`${kind}-${qi}`} className="tetris-next" data-queue={qi === 0 ? "primary" : "next"}>
@@ -788,7 +797,7 @@ export default function Tetris() {
           {phase === "paused" ? "继续" : "暂停"}
         </button>
       </div>
-      <p className="game-hint when-mouse">连续消行有连消加成；Tetris / T-Spin 可累积 Back-to-Back。旋转卡住 T 形再消行可 T-Spin。</p>
+      <p className="game-hint when-mouse">右侧看下一个与暂存；连续消行有连消加成；Tetris / T-Spin 可累积 Back-to-Back。旋转卡住 T 形再消行可 T-Spin。</p>
       <p className="game-hint when-touch">棋盘滑动：左右移动，上滑旋转，下滑落底；下方 Hold 暂存，↓ 加速，可点暂停。消行与 T-Spin 有顶部提示。</p>
     </div>
   );

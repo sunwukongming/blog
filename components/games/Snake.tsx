@@ -531,17 +531,19 @@ export default function Snake() {
       {(phase === "running" || phase === "paused") && (
         <p
           className={
-            (hud.wrap && hud.edgeHint?.includes("将从")) || hud.speedTier === "极速" || hud.speedTier === "很快"
+            hud.wrap || hud.speedTier === "极速" || hud.speedTier === "很快"
               ? "game-tip game-tip--alert"
               : "game-tip"
           }
           aria-live="polite"
         >
           {hud.wrap && hud.edgeHint
-            ? `${hud.edgeHint} · 速度${hud.speedTier}（${hud.speedMs}ms）`
-            : level
-              ? `第 ${levelNo} 关·${level.name}：目标 ${Math.min(hud.eaten, level.goal)}/${level.goal}${level.bonus ? " · 有金色食物" : ""} · 加速档 ${hud.speedTier}（${hud.speedMs}ms）`
-              : `无尽模式 · 加速档 ${hud.speedTier}（${hud.speedMs}ms）· 越高分越快`}
+            ? `穿墙+加速：${hud.edgeHint} · 档位 ${hud.speedTier}（${hud.speedMs}ms）`
+            : hud.wrap
+              ? `穿墙模式 · 加速档 ${hud.speedTier}（${hud.speedMs}ms）${level ? ` · 目标 ${Math.min(hud.eaten, level.goal)}/${level.goal}` : " · 无尽"}`
+              : level
+                ? `第 ${levelNo} 关·${level.name}：目标 ${Math.min(hud.eaten, level.goal)}/${level.goal}${level.bonus ? " · 有金色食物" : ""} · 加速档 ${hud.speedTier}（${hud.speedMs}ms）`
+                : `无尽模式 · 加速档 ${hud.speedTier}（${hud.speedMs}ms）· 越高分越快`}
         </p>
       )}
       <div className="game-stage" {...swipe}>

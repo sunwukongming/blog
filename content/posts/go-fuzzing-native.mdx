@@ -1,0 +1,33 @@
+---
+title: Go 原生 fuzz：把随机输入当成回归的一部分
+date: "2026-10-24"
+category: backend
+summary: testing.F 与 FuzzXxx 把语料与失败用例留在 testdata。先钉住编解码与解析边界，再谈覆盖率数字。
+---
+
+从 Go 1.18 起，`go test -fuzz` 是标准库故事：种子进 `f.Add`，失败自动落盘，CI 可只跑种子、本地再长时间 fuzz。
+
+## 最小形状
+
+```go
+func FuzzParse(f *testing.F) {
+  f.Add([]byte(`{"ok":true}`))
+  f.Fuzz(func(t *testing.T, in []byte) {
+    _, err := Parse(in)
+    if err != nil {
+      return // 拒绝合法；panic / 不一致才是 bug
+    }
+  })
+}
+```
+
+关注点：同一输入两次结果一致、不 panic、错误可预期。别在 fuzz 里打真实网络。
+
+## 何时值得
+
+| 适合 | 不太适合 |
+|---|---|
+| 解析器、编解码、状态机 | 强依赖时钟/外部 IO |
+| 曾被奇怪输入打过的边界 | 只想刷覆盖率仪表盘 |
+
+与 `go-test-htable-fixtures` 互补：表驱动钉已知用例，fuzz 挖未知边角。语料进版本库，失败种子当回归。

@@ -1,0 +1,29 @@
+---
+title: CSS View Transitions：同一文档内的过渡，先于再上动画库
+date: "2026-10-24"
+category: frontend
+summary: document.startViewTransition 把 DOM 更新包进前后快照。列表重排、主题切换常用；注意可访问性与不支持时的降级。
+---
+
+View Transitions API 让浏览器拍「旧树 / 新树」快照并插值。同文档导航或一次 React/Vue 状态提交，都可比手写 FLIP 少很多样板。
+
+## 用法轮廓
+
+```js
+document.startViewTransition?.(() => {
+  // 同步改 DOM / 触发框架提交
+  root.dataset.theme = next;
+});
+```
+
+用 `view-transition-name` 标记共享元素；`::view-transition-old/new` 调时长与缓动。不支持时直接执行回调，无动画也要正确。
+
+## 注意
+
+| 点 | 建议 |
+|---|---|
+| `prefers-reduced-motion` | 缩短或跳过过渡 |
+| 大列表全量 name | 只标关键行，避免层爆炸 |
+| SPA 路由 | 与框架官方集成对齐，勿双开两套 |
+
+与 `css-scroll-driven-animations`、`css-anchor-positioning` 同属「少 JS 的交互」。先在主题切换或卡片展开验证，再铺到全站路由。

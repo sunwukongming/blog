@@ -1,0 +1,26 @@
+---
+title: Kubernetes PDB：自愿中断时至少留几份可用
+date: "2026-10-24"
+category: cloud
+summary: PodDisruptionBudget 限制 eviction / drain 一次能拿走多少 Pod。和 replicas、HPA、拓扑约束一起看，单独设了不等于高可用。
+---
+
+集群升级、节点排水、部分自动缩容会走 **自愿中断**。PDB 用 `minAvailable` 或 `maxUnavailable` 挡住「一次撤光」；塞不进预算的 eviction 会失败或排队。
+
+## 怎么设
+
+1. 无状态且 `replicas >= 2`：常见 `maxUnavailable: 1` 或 `minAvailable: 50%`。  
+2. 单副本又必须常驻：PDB 帮不上忙——先加副本或接受中断。  
+3. 与 Pod 反亲和 / topology spread 一起看，避免预算满足但全挂同一故障域。
+
+`kubectl drain` 会尊重 PDB；强制删除另论。和 `k8s-graceful-drain`、`k8s-probes-resources` 连读：探针过严会让「预算内」的滚动也抖。
+
+## 误区
+
+| 误区 | 更好 |
+|---|---|
+| PDB = 不宕机 | 只约束自愿中断，不管节点挂掉 |
+| maxUnavailable 100% | 等于没预算 |
+| 只给 Deployment 忽视 PDB | 排水脚本会卡死在 eviction |
+
+先保证副本与分散，再写 PDB；数字要和发布窗口、HPA 下限一致。

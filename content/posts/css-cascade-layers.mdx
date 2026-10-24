@@ -1,0 +1,50 @@
+---
+title: CSS Cascade Layers：用 @layer 管住覆盖顺序
+date: "2026-10-24"
+category: frontend
+summary: @layer 把样式分成 reset / tokens / components / utilities，同层比特异性、跨层比图层顺序。减少 !important 战争，也避开「后写的类永远赢」的意外。
+---
+
+特异性算不清、工具类与组件样式互殴时，**Cascade Layers**（`@layer`）给层一个显式优先级：后声明的层压前层，**与选择器特异性无关**（层间比较时）。
+
+## 骨架
+
+```css
+@layer reset, tokens, components, utilities;
+
+@layer reset {
+  *, *::before, *::after { box-sizing: border-box; }
+}
+
+@layer components {
+  .card { padding: 1rem; background: var(--surface); }
+}
+
+@layer utilities {
+  .p-0 { padding: 0; }
+}
+```
+
+`utilities` 在列表最后 → 即便 `.card` 特异性更高，`.p-0` 仍可覆盖 padding（同属性时）。
+
+## 心智模型
+
+1. **先比层，再比特异性，再比源序**（简化说法；动画/过渡等另论）。  
+2. **未分层样式** 默认高于任何层——第三方或遗留 CSS 仍可能「砸穿」。迁入时逐步 `@import` 进层。  
+3. **`!important` 在层内仍粗暴**；层不能消灭它，只能减少你需要它的次数。
+
+## 和 CSS Modules / Tailwind
+
+- Modules：每个文件可 ` @layer components { ... }`，或构建时注入层名。  
+- Tailwind v3+：预留 layers（base/components/utilities）；自定义组件进 `components`，工具类保持最强。  
+- 设计代币进 `tokens`，避免组件里写死色值后又被工具类盖掉却找不到来源。
+
+## 实践注意
+
+| 味道 | 更好 |
+|---|---|
+| 全局裸选择器不分层 | 迁入 `reset`/`components` |
+| 用 `!important` 压工具类 | 检查层顺序是否反了 |
+| 第三方 CSS 后加载 | 明确 `@layer` 包住或提高自己层 |
+
+站内已有 container queries、`:has`、subgrid 等文；图层是 **架构级** 手段，和那些「局部能力」互补。先定层序，再谈选择器技巧。

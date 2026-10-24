@@ -53,6 +53,8 @@ type Stats = {
   b2b: boolean;
   /** ghost soft-drop distance in cells */
   ghost: number;
+  /** lines until next level (10-line steps) */
+  linesToLevel: number;
 };
 
 const KINDS: Kind[] = ["I", "O", "T", "S", "Z", "J", "L"];
@@ -399,6 +401,7 @@ export default function Tetris() {
     combo: 0,
     b2b: false,
     ghost: 0,
+    linesToLevel: 10,
   });
   const [record, setRecord] = useState(false);
   const [best, submitBest] = useRecord("tetris", (next, prev) => next > prev);
@@ -422,6 +425,7 @@ export default function Tetris() {
       combo: g.combo,
       b2b: g.b2bArmed,
       ghost: dropDistance(g),
+      linesToLevel: 10 - (g.lines % 10),
     });
   };
 
@@ -684,14 +688,14 @@ export default function Tetris() {
           <span
             className={
               stats.canHold === false
-                ? "tetris-hold-hud tetris-combo-hold tetris-hold-preview tetris-hold-hud--cool"
-                : "tetris-hold-hud tetris-combo-hold tetris-hold-preview game-tip--alert"
+                ? "tetris-hold-hud tetris-combo-hold tetris-hold-preview tetris-level-eta-host tetris-hold-hud--cool"
+                : "tetris-hold-hud tetris-combo-hold tetris-hold-preview tetris-level-eta-host game-tip--alert"
             }
             data-ready={stats.canHold || undefined}
             data-cool={stats.canHold === false || undefined}
             data-combo={stats.combo > 1 || undefined}
             data-preview={stats.next[0] || undefined}
-            title={`连消|Hold：连消 ×${stats.combo} · B2B ${stats.b2b ? "就绪" : "—"} · Hold ${stats.canHold === false ? "冷却" : "可用"}${stats.hold ? `/${stats.hold}` : "/空"} · 预览 ${stats.next[0] ?? "—"} · 幽灵 ${stats.ghost} 格`}
+            title={`连消|Hold：连消 ×${stats.combo} · B2B ${stats.b2b ? "就绪" : "—"} · Hold ${stats.canHold === false ? "冷却" : "可用"}${stats.hold ? `/${stats.hold}` : "/空"} · 距升级 ${stats.linesToLevel} · 预览 ${stats.next[0] ?? "—"} · 幽灵 ${stats.ghost} 格`}
           >
             连消<b className={stats.combo > 1 ? "game-tip--alert" : undefined}>×{stats.combo}</b>
             <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
@@ -709,6 +713,10 @@ export default function Tetris() {
             </b>
             <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
             幽灵<b>{stats.ghost}</b>
+            <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
+            <span className="tetris-level-eta" data-near={stats.linesToLevel <= 2 || undefined}>
+              距升级<b className={stats.linesToLevel <= 2 ? "game-tip--alert" : undefined}>{stats.linesToLevel}</b>
+            </span>
           </span>
         ) : (
           <span title="连消与 B2B 同屏：连续消行累加；Tetris/T-Spin 武装 B2B">
@@ -735,6 +743,7 @@ export default function Tetris() {
           {" · 幽灵 "}
           {stats.ghost}
           {" 格"}
+          {` · 距升级 ${stats.linesToLevel} 行`}
         </p>
       )}
       <div className="tetris">

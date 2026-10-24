@@ -21,7 +21,15 @@ export async function generateMetadata({ params }: PageProps<"/categories/[slug]
     title,
     description,
     alternates: url ? { canonical: url } : undefined,
-    openGraph: { title, description, type: "website", url, siteName: SITE.name, locale: "zh_CN" },
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      url,
+      siteName: SITE.name,
+      locale: "zh_CN",
+      images: SITE_URL ? [{ url: `${SITE_URL}/icon.svg`, alt: title }] : undefined,
+    },
     twitter: { card: "summary", title, description },
   };
 }

@@ -26,11 +26,12 @@ async function buildFeed(base: string) {
       <category>${escape(getCategory(p.category)?.name ?? p.category)}</category>
       <description><![CDATA[${summary}]]></description>
       <enclosure url="${base}/icon.svg" length="0" type="image/svg+xml" />
+      <media:content url="${base}/icon.svg" medium="image" type="image/svg+xml" />
     </item>`;
     })
     .join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:media="http://search.yahoo.com/mrss/">
   <channel>
     <title>${escape(SITE.name)}</title>
     <link>${base}</link>

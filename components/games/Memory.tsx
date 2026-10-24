@@ -211,14 +211,11 @@ export default function Memory() {
           </button>
         ))}
         <span className="spacer" />
-        <span>
-          步数<b>{moves}</b>
-        </span>
         <span
           className={
             endgame || streak >= 2
-              ? "memory-end-combo memory-endgame memory-combo game-tip--alert"
-              : "memory-end-combo memory-endgame memory-combo"
+              ? "memory-end-combo memory-endgame memory-combo memory-moves-delta-host game-tip--alert"
+              : "memory-end-combo memory-endgame memory-combo memory-moves-delta-host"
           }
           data-endgame={endgame || undefined}
           data-combo={streak >= 2 || undefined}
@@ -255,6 +252,25 @@ export default function Memory() {
           />
           <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
           最少<b className={shownBest != null && moves > 0 && moves <= shownBest ? "game-tip--alert" : undefined}>{shownBest ?? "—"}</b>
+          <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
+          <span
+            className="memory-moves-delta"
+            data-over={shownBest != null && moves > shownBest ? true : undefined}
+            data-under={shownBest != null && moves > 0 && moves <= shownBest ? true : undefined}
+            title={
+              shownBest != null && moves > 0
+                ? `本局 ${moves} 步 · 最少 ${shownBest} · 步差 ${moves - shownBest >= 0 ? "+" : ""}${moves - shownBest}`
+                : `本局 ${moves} 步`
+            }
+          >
+            步数<b>{moves}</b>
+            {shownBest != null && moves > 0 ? (
+              <small className="memory-moves-delta__diff" style={{ marginLeft: 4 }}>
+                步差{moves - shownBest >= 0 ? "+" : ""}
+                <b className={moves > shownBest ? "game-tip--alert" : undefined}>{moves - shownBest}</b>
+              </small>
+            ) : null}
+          </span>
         </span>
         <span>
           时间<b>{seconds}</b>
@@ -272,6 +288,9 @@ export default function Memory() {
               : `本局连击 ${streak}${bestStreak > 1 ? `（本档峰 ${bestStreak}）` : ""}`}
         {" · "}
         最少 <b>{shownBest ?? "—"}</b> 步
+        {shownBest != null && moves > 0
+          ? ` · 步差 ${moves - shownBest >= 0 ? "+" : ""}${moves - shownBest}`
+          : ` · 本局 ${moves} 步`}
         {" · "}
         各档：
         {allDiffBests.map((x, i) => (

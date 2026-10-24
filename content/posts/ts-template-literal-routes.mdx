@@ -1,0 +1,61 @@
+---
+title: TypeScript 模板字面量路由：把路径写成类型
+date: "2026-10-24"
+category: frontend
+summary: 用模板字面量类型表达 /users/:id 与查询串，联动参数提取与跳转 API。比字符串常量多一层编译期检查，也标出何时别过度造类型。
+---
+
+路由字符串是运行时的，但 TypeScript 的 **模板字面量类型** 能把模式写成类型，从而在 `navigate`、`Link`、loader 参数上得到补全与报错。
+
+## 参数提取
+
+```ts
+type ExtractParams<T extends string> =
+  T extends `${string}:${infer P}/${infer Rest}`
+    ? { [K in P | keyof ExtractParams<`/${Rest}`>]: string }
+    : T extends `${string}:${infer P}`
+      ? { [K in P]: string }
+      : {};
+
+type UserParams = ExtractParams<"/users/:id/posts/:postId">;
+// { id: string; postId: string }
+```
+
+真实项目多用现成路由库的推导；自己写时注意递归深度与可选段（`?`）、通配 `*`。
+
+## 跳转签名
+
+```ts
+type Routes = {
+  "/": void;
+  "/users/:id": { id: string };
+  "/search": { q?: string };
+};
+
+function go<R extends keyof Routes>(
+  path: R,
+  ...args: Routes[R] extends void ? [] : [Routes[R]]
+) {
+  /* 拼 URL */
+}
+
+go("/");
+go("/users/:id", { id: "42" });
+// go("/users/:id"); // 编译期错误
+```
+
+把「该不该带参」从约定变成类型。
+
+## 和文件路由 / RSC
+
+- Next App Router、Vue Router 已有官方或社区的类型生成（扫描 `app/`、`pages/`）。优先生成，而不是手写巨型 `Routes`。  
+- 动态段与 `generateStaticParams` 对齐时，类型是文档也是护栏。  
+- 查询串：可用 `?q=string&page=number` 风格的字面量解析，但复杂度陡增——简单项目用 `URLSearchParams` + 窄化即可。
+
+## 何时别造轮子
+
+- 只有三五条路径：常量联合 `as const` 足够。  
+- 路径完全由 CMS 下发：运行时校验（zod）重于编译期模板。  
+- 团队不熟高级类型：生成器 + 薄封装，避免「类型体操」阻塞业务。
+
+模板字面量适合 **边界 API**（路由表、事件名、i18n key）；业务对象仍用 interface/zod。和站内 Vue/TS 治理文一样：类型是契约，不是炫耀。

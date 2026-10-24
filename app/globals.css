@@ -1047,3 +1047,25 @@ html:has(.page--game) { overscroll-behavior: none; }
 .pk-stack-bb[data-critical] b {
   color: #ff8a7a;
 }
+
+/* batch35: Memory 步差, Mines 可翻, Tetris 距升级 */
+.memory-moves-delta-host .memory-moves-delta[data-over] {
+  box-shadow: 0 0 0 1px color-mix(in oklab, #ff8a7a 50%, transparent);
+  border-radius: 6px;
+  padding-inline: 4px;
+}
+.memory-moves-delta-host .memory-moves-delta[data-under] {
+  box-shadow: 0 0 0 1px color-mix(in oklab, #7af5c0 45%, transparent);
+  border-radius: 6px;
+  padding-inline: 4px;
+}
+.mine-chord-openable .mine-chord[data-openable] {
+  box-shadow: 0 0 0 1px color-mix(in oklab, #7af5c0 55%, transparent);
+  border-radius: 6px;
+  padding-inline: 4px;
+}
+.tetris-level-eta-host .tetris-level-eta[data-near] {
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--accent) 50%, transparent);
+  border-radius: 6px;
+  padding-inline: 4px;
+}

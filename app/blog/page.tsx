@@ -10,7 +10,12 @@ export const metadata: Metadata = {
     title: "文章",
     description: "GM Lab 文章列表：Go / 云原生 / OpenTelemetry / 前端与数据层笔记；支持搜索与分类筛选，卡片环一页一景。",
     type: "website",
+    siteName: SITE.name,
+    locale: "zh_CN",
+    url: SITE_URL ? `${SITE_URL}/blog` : undefined,
+    images: SITE_URL ? [{ url: `${SITE_URL}/icon.svg`, alt: SITE.name }] : undefined,
   },
+  alternates: SITE_URL ? { canonical: "/blog" } : undefined,
   twitter: {
     card: "summary",
     title: "文章",

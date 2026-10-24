@@ -1,0 +1,50 @@
+---
+title: Kubernetes Topology Spread：把副本按拓扑摊匀
+date: "2026-10-24"
+category: cloud
+summary: TopologySpreadConstraints 按 zone/node 控制倾斜，比反亲和更声明式。讲清 maxSkew、whenUnsatisfiable 与常见排空失败原因。
+---
+
+多副本只写 `replicas: 3` 时，调度器仍可能把它们塞进同一可用区。**Topology Spread Constraints** 用「最大倾斜」语言约束分布，比一堆反亲和规则更易读。
+
+## 最小例子
+
+```yaml
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: topology.kubernetes.io/zone
+    whenUnsatisfiable: DoNotSchedule
+    labelSelector:
+      matchLabels:
+        app: api
+```
+
+含义：按 zone 标签分组，任意两组之间的副本数差 ≤ `maxSkew`；不满足则 **不调度**（`DoNotSchedule`）。
+
+## 关键旋钮
+
+| 字段 | 作用 |
+|---|---|
+| `topologyKey` | 按哪个节点标签摊（zone、hostname、自建机架标签） |
+| `maxSkew` | 允许的最大份数差 |
+| `whenUnsatisfiable` | `DoNotSchedule` 硬约束 / `ScheduleAnyway` 尽量摊 |
+| `labelSelector` | 统计哪些 Pod 计入倾斜（通常等于自己的 workload 标签） |
+| `minDomains`（较新） | 至少覆盖多少个拓扑域才开摊 |
+
+可叠多条：先 zone 再 hostname，分别设 skew。
+
+## 和反亲和
+
+- **反亲和**：表达「不要和谁在一起」。  
+- **Spread**：表达「整体差多少」。  
+
+扩缩容、滚动更新时 Spread 更稳；硬反亲和容易在小集群把 Pod 卡成 Pending。
+
+## 排空清单
+
+1. 节点缺 `topologyKey` 标签 → 约束失效或行为怪异。  
+2. `labelSelector` 漏选/多选 → 统计集合错，看着「明明不均却不调」。  
+3. 域太少（两 zone 却要 skew=1 且副本很多）+ `DoNotSchedule` → Pending。可改 `ScheduleAnyway` 或加域。  
+4. 与 PDB、资源请求、污点共存时，先看 `kubectl describe pod` 的调度事件。
+
+把「别挤在一块」写成 skew，而不是一串难维护的亲和表达式。和站内 Sidecar、资源配额文一起看，形成调度层的完整清单。

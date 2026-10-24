@@ -14,6 +14,7 @@ export const metadata: Metadata = {
     siteName: SITE.name,
     locale: "zh_CN",
     url: SITE_URL ? `${SITE_URL}/categories` : undefined,
+    images: SITE_URL ? [{ url: `${SITE_URL}/icon.svg`, alt: SITE.name }] : undefined,
   },
   alternates: SITE_URL ? { canonical: "/categories" } : undefined,
   twitter: {

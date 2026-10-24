@@ -21,6 +21,7 @@ export const metadata: Metadata = {
     card: "summary",
     title: "分类",
     description: "按前端、后端、云与可观测、工具与随笔浏览 GM Lab 文章；每颗行星是一个分类，点进 CollectionPage 续读。",
+    images: SITE_URL ? [`${SITE_URL}/icon.svg`] : undefined,
   },
 };
 

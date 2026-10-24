@@ -723,8 +723,18 @@ export default function Tetris() {
             <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
             幽灵<b>{stats.ghost}</b>
             <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
-            <span className="tetris-level-eta" data-near={stats.linesToLevel <= 2 || undefined}>
+            <span
+              className="tetris-level-eta tetris-level-eta--tier"
+              data-near={stats.linesToLevel <= 2 || undefined}
+              data-tier={
+                stats.linesToLevel <= 2 ? "near" : stats.linesToLevel <= 5 ? "mid" : "far"
+              }
+              title={`距升级色阶：还差 ${stats.linesToLevel} 行（near≤2 / mid≤5 / far>5）`}
+            >
               距升级<b className={stats.linesToLevel <= 2 ? "game-tip--alert" : undefined}>{stats.linesToLevel}</b>
+              <small className="tetris-level-eta__tier" style={{ marginLeft: 4, opacity: 0.75 }}>
+                {stats.linesToLevel <= 2 ? "near" : stats.linesToLevel <= 5 ? "mid" : "far"}
+              </small>
             </span>
           </span>
         ) : (
@@ -752,7 +762,7 @@ export default function Tetris() {
           {" · 幽灵 "}
           {stats.ghost}
           {" 格"}
-          {` · 距升级 ${stats.linesToLevel} 行`}
+          {` · 距升级色阶 ${stats.linesToLevel} 行（${stats.linesToLevel <= 2 ? "near" : stats.linesToLevel <= 5 ? "mid" : "far"}）`}
         </p>
       )}
       <div className="tetris">

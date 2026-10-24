@@ -1,0 +1,50 @@
+---
+title: React Activity：隐藏 UI 时保留状态
+date: "2026-10-25"
+category: frontend
+summary: 用 Activity（原 Offscreen 思路）在「可见 / 隐藏」间切换子树：隐藏时少干活、再显示时状态还在。对比 conditional render、display:none 与 transition。
+---
+
+列表详情、多 Tab、预渲染下一页时，常在「卸载丢状态」和「挂着费 CPU」之间摆。React 的 **Activity** 组件把子树标成可见或隐藏：隐藏时跳过大部分工作，再次可见时 **state / DOM 还在**。
+
+## 用法示意
+
+```tsx
+import { Activity } from "react";
+
+function Tabs({ id }: { id: string }) {
+  return (
+    <>
+      <Activity mode={id === "a" ? "visible" : "hidden"}>
+        <PanelA />
+      </Activity>
+      <Activity mode={id === "b" ? "visible" : "hidden"}>
+        <PanelB />
+      </Activity>
+    </>
+  );
+}
+```
+
+`mode="hidden"` 时子树保留，但更新与 effect 会被降优先级或跳过（以当前 React 大版本文档为准）；切回 `visible` 不必从零拉数。
+
+## 对比
+
+| 手法 | 状态 | 成本 |
+| --- | --- | --- |
+| `{cond && <X/>}` | 卸载即丢 | 最低，重挂贵 |
+| `display: none` | 保留 | 仍参与部分协调 |
+| Activity | 保留 | 隐藏时明确少做 |
+| `useTransition` | 不负责保活 | 管紧急度 |
+
+## 注意
+
+- 核对你锁定的 React 版本导出名与稳定性（实验 → 稳定可能改名）。
+- 隐藏面板里的网络请求、订阅仍要自己取消或幂等，别假设「完全冻住」。
+- 无障碍：隐藏内容勿留在 tab 序里可聚焦；配合 `inert` / aria 更稳。
+
+## 小结
+
+- 多面板保状态用 Activity；真不需要状态就条件渲染。
+- 与 transition 互补：一个保活，一个管紧急。
+- 上线前对 effect / 订阅做隐藏态审计。

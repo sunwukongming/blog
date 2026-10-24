@@ -282,7 +282,23 @@ export default function Memory() {
               </small>
             ) : null}
             <span
-              className="memory-moves-delta__bar"
+              className={
+                shownBest != null && moves > 0 && moves - shownBest > 2
+                  ? "memory-moves-delta__bar memory-moves-delta__bar--pulse"
+                  : "memory-moves-delta__bar"
+              }
+              data-pulse={shownBest != null && moves > 0 && moves - shownBest > 2 ? true : undefined}
+              data-tier={
+                shownBest == null || moves <= 0
+                  ? undefined
+                  : moves <= shownBest
+                    ? "good"
+                    : moves - shownBest <= 2
+                      ? "ok"
+                      : moves - shownBest <= 5
+                        ? "warn"
+                        : "bad"
+              }
               aria-hidden="true"
               style={
                 {
@@ -315,7 +331,7 @@ export default function Memory() {
         {shownBest != null && moves > 0
           ? ` · 步差色 ${moves - shownBest >= 0 ? "+" : ""}${moves - shownBest}（${
               moves <= shownBest ? "good" : moves - shownBest <= 2 ? "ok" : moves - shownBest <= 5 ? "warn" : "bad"
-            }）`
+            }）${moves - shownBest > 2 ? " · 条脉冲" : ""}`
           : ` · 本局 ${moves} 步`}
         {" · "}
         各档：

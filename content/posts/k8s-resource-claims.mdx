@@ -1,0 +1,52 @@
+---
+title: K8s Resource Claims：动态设备与工作负载解耦
+date: "2026-10-25"
+category: cloud
+summary: Dynamic Resource Allocation（ResourceClaim / DeviceClass）让 Pod 声明「我要这类设备」，由驱动分配。对比巨页/扩展资源名，讲清生命周期与调度时机。
+---
+
+GPU、NIC、FPGA 等不再只靠 `nvidia.com/gpu: 1` 这种扩展资源名硬编码。**ResourceClaim** 让工作负载说「我需要满足某 DeviceClass 的设备」，调度与驱动再绑定具体实例。
+
+## 角色
+
+- **DeviceClass**：集群里一类设备的选择规则（驱动、属性过滤）。
+- **ResourceClaim / Template**：工作负载要的那份声明；可模板化进 Pod。
+- **ResourceClaimStatus**：分配结果、设备句柄，供运行时注入。
+
+```yaml
+apiVersion: resource.k8s.io/v1
+kind: ResourceClaimTemplate
+metadata:
+  name: gpu-claim
+spec:
+  spec:
+    devices:
+      requests:
+        - name: gpu
+          exactly:
+            deviceClassName: gpu.example.com
+```
+
+Pod `spec.resourceClaims` 引用模板；调度器在节点与可用设备上匹配。
+
+## 和扩展资源
+
+| | 扩展资源 | ResourceClaim |
+| --- | --- | --- |
+| 表达 | 整数配额 | 带属性的设备请求 |
+| 分享/MIG 等 | 难 | 驱动可描述更细 |
+| 移植 | 名称各异 | Class 抽象厂商差异 |
+
+扩展资源仍适合简单计数；要拓扑、内存档位、共享模式时走 DRA。
+
+## 运维注意
+
+- 驱动与 kubelet 插件版本要对齐；Claim 长期 Pending 先看 DeviceClass 与节点资源切片。
+- Claim 生命周期可随 Pod 或更长；误用长期 Claim 会占住设备。
+- RBAC：谁能建 Claim / Class 要收紧。
+
+## 小结
+
+- 设备需求用 Claim + Class 声明，少把厂商资源名写死进业务 YAML。
+- 简单计数继续扩展资源；复杂设备走 DRA。
+- Pending 时查驱动、Class 过滤与 Claim 释放策略。

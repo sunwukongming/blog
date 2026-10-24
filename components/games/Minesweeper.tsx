@@ -164,6 +164,7 @@ export default function Minesweeper() {
   // 开局时的最快纪录，赢了以后和这局用时比，判断是不是新纪录
   const [bestAtStart, setBestAtStart] = useState<number | null>(null);
   const [focus, setFocus] = useState(0);
+  const [peakMeta, setPeakMeta] = useState({ key: LEVELS[0].key, n: 0 });
   const [best, submitBest] = useRecord(`minesweeper-${game.level.key}`, (next, prev) => next < prev);
   const press = useRef<{ timer: number; fired: boolean; touch: boolean; x: number; y: number; i: number } | null>(null);
   const [holding, setHolding] = useState<number | null>(null);
@@ -186,6 +187,16 @@ export default function Minesweeper() {
   const seconds = Math.floor(
     phase === "playing" ? Math.max(0, now - game.startedAt) / 1000 : phase === "ready" ? 0 : (game.endedAt - game.startedAt) / 1000,
   );
+
+  if (phase === "ready" || peakMeta.key !== level.key) {
+    if (peakMeta.n !== 0 || peakMeta.key !== level.key) {
+      setPeakMeta({ key: level.key, n: 0 });
+    }
+  } else if (phase === "playing" && chordOpenable > peakMeta.n) {
+    setPeakMeta({ key: level.key, n: chordOpenable });
+  }
+  const peakOpenable =
+    phase === "ready" || peakMeta.key !== level.key ? 0 : Math.max(peakMeta.n, chordOpenable);
 
   useEffect(() => {
     if (phase !== "playing") return;
@@ -379,7 +390,7 @@ export default function Minesweeper() {
                     ? "late"
                     : "high"
           }
-          title={`Chord|开图：开图 ${safeProgress}%（${safeOpen}/${safeTotal}）· Chord×${chordReady}${chordReady > 0 ? ` 可点 · 可翻${chordOpenable}` : ""}${lateClear && chordOpenable > 0 ? " · 收官可翻" : ""} · 旗 ${flags}/${level.mines}${flagDense ? " · 旗密" : ""}`}
+          title={`Chord|开图：开图 ${safeProgress}%（${safeOpen}/${safeTotal}）· Chord×${chordReady}${chordReady > 0 ? ` 可点 · 可翻${chordOpenable}` : ""}${peakOpenable > 0 ? ` · 可翻峰${peakOpenable}` : ""}${lateClear && chordOpenable > 0 ? " · 收官可翻" : ""} · 旗 ${flags}/${level.mines}${flagDense ? " · 旗密" : ""}`}
         >
           开图<b>{safeProgress}%</b>
           <small>
@@ -405,10 +416,15 @@ export default function Minesweeper() {
           <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
           <span className="mine-chord" data-ready={chordReady > 0 || undefined} data-openable={chordOpenable > 0 || undefined}>
             Chord<b className={chordReady > 0 ? "game-tip--alert" : undefined}>{chordReady}</b>
-            {chordOpenable > 0 ? (
-              <small style={{ marginLeft: 4, opacity: 0.85 }} data-late-open={lateClear || undefined}>
-                {lateClear ? "收官可翻" : "可翻"}
-                <b className="game-tip--alert">{chordOpenable}</b>
+            {chordOpenable > 0 || peakOpenable > 0 ? (
+              <small style={{ marginLeft: 4, opacity: 0.85 }} data-late-open={lateClear || undefined} data-peak={peakOpenable > 0 || undefined}>
+                {chordOpenable > 0 ? (lateClear ? "收官可翻" : "可翻") : "可翻峰"}
+                {chordOpenable > 0 ? <b className="game-tip--alert">{chordOpenable}</b> : null}
+                {peakOpenable > 0 ? (
+                  <small className="mine-chord-peak" style={{ marginLeft: 4, opacity: 0.75 }} title={`本局 Chord 可翻峰值 ${peakOpenable}`}>
+                    峰<b>{peakOpenable}</b>
+                  </small>
+                ) : null}
               </small>
             ) : null}
           </span>
@@ -485,7 +501,7 @@ export default function Minesweeper() {
           {phase === "ready"
             ? "首击安全区：第一下落点及其周围不会埋雷，可放心开图。"
             : chordReady > 0
-              ? `Chord|开图同条：Chord×${chordReady} 可点 · 可翻 ${chordOpenable} · 开图 ${safeProgress}% · 旗 ${flags}/${level.mines} · 中键/双击翻周围`
+              ? `Chord|开图同条：Chord×${chordReady} 可点 · 可翻 ${chordOpenable}${peakOpenable > 0 ? `（峰${peakOpenable}）` : ""} · 开图 ${safeProgress}% · 旗 ${flags}/${level.mines} · 中键/双击翻周围`
               : lateClear
                 ? `收官可翻：还剩 ${safeLeft} 格 · 可翻 ${chordOpenable} · Chord×${chordReady} · 开图 ${safeProgress}% · 旗位对齐后 chord`
                 : phase === "playing" && level.mines - flags <= 3 && level.mines - flags > 0

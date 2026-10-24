@@ -1,0 +1,50 @@
+---
+title: Postgres Skip Scan：多列索引也能「跳着」用
+date: "2026-10-25"
+category: backend
+summary: 理解 Index Skip Scan / Loose Index Scan 思路：前缀列选择性差时，用递归 CTE 或新版规划器跳过重复前缀，避免全表。何时建索引、何时不如直扫。
+---
+
+复合索引 `(status, created_at)` 上只写 `WHERE created_at > $1`，旧规划器常觉得「前缀没用」而改序扫或 seqscan。**Skip Scan**（松散索引扫描）按「取出一个 distinct 前缀 → 在该前缀下探后列 → 跳到下一个前缀」推进。
+
+## 直觉
+
+对每个出现过的 `status`，在索引里做一次「该 status + created_at 条件」的范围探查，而不是从索引叶子从头缠到尾。前缀基数低（状态就几个）、后缀条件很挑时最赚。
+
+## 手写近似（递归 CTE）
+
+```sql
+WITH RECURSIVE s AS (
+  SELECT min(status) AS status FROM orders
+  UNION ALL
+  SELECT (SELECT min(status) FROM orders WHERE status > s.status)
+  FROM s WHERE s.status IS NOT NULL
+)
+SELECT o.*
+FROM s
+JOIN LATERAL (
+  SELECT * FROM orders
+  WHERE status = s.status AND created_at > :ts
+  ORDER BY created_at
+  LIMIT 50
+) o ON true
+WHERE s.status IS NOT NULL;
+```
+
+这是「Loose Index Scan」经典写法；PG 新版本对部分场景能自行考虑 skip 风格路径，但仍依赖统计信息与索引形态。
+
+## 何时有效
+
+| 条件 | 建议 |
+| --- | --- |
+| 前缀基数很低、后缀很过滤 | 值得试 skip / 调整索引列序 |
+| 前缀几乎唯一 | 普通范围扫即可 |
+| 需要严格 `ORDER BY created_at` 全局序 | skip 按前缀分段，可能要再合并排序 |
+
+也可以把索引改成 `(created_at, status)` 或加部分索引，从根上减少「错前缀」。
+
+## 小结
+
+- Skip Scan 解决「复合索引前缀对不上等值」的探查浪费。
+- 低基数前缀 + 强后缀过滤时收益大；先 `EXPLAIN (ANALYZE, BUFFERS)`。
+- 索引列序与业务谓词对齐，往往比炫技 CTE 更稳。

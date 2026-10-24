@@ -1,0 +1,51 @@
+---
+title: CSS scroll-snap-stop：强制停靠与路过
+date: "2026-10-25"
+category: frontend
+summary: 站内 scroll-snap-patterns 讲对齐与类型。这篇专写 scroll-snap-stop：normal 可路过、always 强制停，以及和 scroll-snap-type、触控惯性的配合。
+---
+
+站内 **css-scroll-snap-patterns** 已覆盖轴、`mandatory`/`proximity` 与对齐。本文只谈 **`scroll-snap-stop`**：惯性滚动时子项是「可被路过」还是「必须停一下」。
+
+## 两个值
+
+```css
+.scroller {
+  scroll-snap-type: x mandatory;
+  overflow-x: auto;
+}
+.card {
+  scroll-snap-align: start;
+  scroll-snap-stop: normal; /* 默认：快滑可跳过中间卡 */
+}
+.card--must {
+  scroll-snap-stop: always; /* 经过时强制停靠，不能一次甩过 */
+}
+```
+
+| 值 | 行为 |
+|---|---|
+| `normal` | 允许在一次手势里越过该 snap 点，停在更远的目标 |
+| `always` | 滚动经过该点时必须停靠，适合「章节封面」「付费墙卡」等不能跳过的停靠 |
+
+它作用在 **snap 子项** 上，不是容器。容器仍靠 `scroll-snap-type` 决定强不强对齐。
+
+## 和 mandatory / proximity
+
+- `mandatory` + 子项 `always`：强对齐且中间点不易被惯性甩过，轮播更「一页一页」。  
+- `proximity` + `always`：仍可能因距离不够而不吸住，但一旦经过该点意图是停。  
+- 只给首尾卡 `always`、中间 `normal`，可做出「两端咬死、中间可快滑」的目录条。
+
+## 边界
+
+- 桌面滚轮、触控板、触控惯性实现不一；`always` 在部分浏览器对「精确滚轮一步」几乎无感，要以真机为准。  
+- 与 `scroll-margin` / `scroll-padding` 一起用时，停靠视觉中心可能偏，先调 padding 再谈 stop。  
+- 无障碍：强制多停可能增加翻页次数；长列表不要每个子项都 `always`。  
+- 和 JS `scrollTo({ behavior: "smooth" })` 混用时，中途 stop 点可能打断动画预期，需测目标浏览器。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| scroll-snap-stop | 本文 |
+| snap 模式与对齐 | css-scroll-snap-patterns |

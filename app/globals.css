@@ -3103,3 +3103,76 @@ html:has(.page--game) { overscroll-behavior: none; }
 .pk-fold-bar[data-heavy] > i {
   background: linear-gradient(90deg, #f87171, #ef4444);
 }
+
+/* batch65: memory-flip-rate-bar / mine-open-pace-bar / tetris-eff-bar */
+.memory-flip-rate-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.memory-flip-rate-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+  transition: width 100ms ease-out;
+}
+.memory-flip-rate-bar[data-hot] .memory-flip-rate-bar__fill {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+}
+.memory-flip-rate-bar[data-slow] .memory-flip-rate-bar__fill {
+  background: linear-gradient(90deg, #93c5fd, #3b82f6);
+}
+
+.mine-open-pace-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.mine-open-pace-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #86efac, #22c55e);
+  transition: width 100ms ease-out;
+}
+.mine-open-pace-bar[data-hot] .mine-open-pace-bar__fill {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+.mine-open-pace-bar[data-slow] .mine-open-pace-bar__fill {
+  background: linear-gradient(90deg, #93c5fd, #3b82f6);
+}
+
+.tetris-eff-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.tetris-eff-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #c4b5fd, #8b5cf6);
+  transition: width 100ms ease-out;
+}
+.tetris-eff-bar[data-hot] .tetris-eff-bar__fill {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+}
+.tetris-eff-bar[data-low] .tetris-eff-bar__fill {
+  background: linear-gradient(90deg, #93c5fd, #3b82f6);
+}

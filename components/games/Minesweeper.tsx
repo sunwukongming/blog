@@ -632,6 +632,32 @@ export default function Minesweeper() {
               }}
             />
           </span>
+          <span
+            className="mine-open-pace-bar"
+            data-hot={seconds > 0 && safeOpen / seconds >= 2 || undefined}
+            data-slow={seconds >= 30 && safeOpen / Math.max(1, seconds) < 0.4 || undefined}
+            title={
+              seconds > 0
+                ? `开图配速 ${Math.round((safeOpen / seconds) * 10) / 10}/s（满刻度按 3/s）`
+                : "开图配速 —"
+            }
+            aria-label={
+              seconds > 0
+                ? `每秒约开 ${Math.round((safeOpen / seconds) * 10) / 10} 格`
+                : "开图配速未知"
+            }
+          >
+            <i
+              className="mine-open-pace-bar__fill"
+              style={{
+                width: `${
+                  seconds > 0
+                    ? Math.min(100, Math.round((safeOpen / seconds / 3) * 100))
+                    : 0
+                }%`,
+              }}
+            />
+          </span>
           {best != null && phase === "playing" && best > 0 ? (
             <>
               <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>

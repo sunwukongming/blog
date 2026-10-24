@@ -1,0 +1,51 @@
+---
+title: Go errgroup.SetLimit：并发上限与队列语义
+date: "2026-10-25"
+category: backend
+summary: 站内 errgroup-limits / vs-WaitGroup 已讲取消与对比。这篇专写 SetLimit：令牌如何卡住 Go、和信号量差异、以及限到 1 时的串行陷阱。
+---
+
+站内 **go-errgroup-limits**、**go-errgroup-vs-waitgroup** 覆盖了超时取消与选型。本文只展开 **`SetLimit(n)`**：它如何限制飞行中的 `Go`，以及和「自己拿 semaphore」的差别。
+
+## 基本用法
+
+```go
+g, ctx := errgroup.WithContext(parent)
+g.SetLimit(8) // 最多 8 个 goroutine 同时跑
+
+for _, item := range items {
+    item := item
+    g.Go(func() error {
+        return handle(ctx, item)
+    })
+}
+return g.Wait()
+```
+
+`SetLimit` 必须在 **第一次 `Go` 之前** 调用。`n <= 0` 表示不限制。`Go` 在已达上限时会 **阻塞调用方**，直到有名额空出——它不是把任务丢进无界队列再返回。
+
+## 和加权信号量
+
+| | `SetLimit` | `semaphore.Weighted` |
+|---|---|---|
+| 粒度 | 每个 `Go` 占 1 个槽 | 可按权重占多槽 |
+| 取消 | 跟 errgroup 的 ctx 绑定在任务里 | 需自己 `Acquire(ctx)` |
+| 阻塞点 | `g.Go(...)` 调用处 | `Acquire` 处 |
+| 失败 | 任一错误取消 ctx，其余应尽快退出 | 无内建「首错取消」 |
+
+`SetLimit` 适合「同类短任务、只要并发封顶」。任务轻重差很多、或要在获取名额前可取消，用加权信号量更清晰。
+
+## 边界
+
+- `SetLimit(1)` 会把 `Go` 串行化，且提交循环本身会被槽位堵住——大列表时注意别假设「已经全部投递」。  
+- 限流不能替代 **任务内** 听 `ctx.Done()`；槽位空出靠已运行任务返回。  
+- 与 `WithContext` 组合：首错取消后，已阻塞在 `Go` 上的调用会在名额释放后进入并立刻看到取消——`handle` 应检查 ctx。  
+- 不要在多个 goroutine 里并发调 `SetLimit`；文档假定单线程配置。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| SetLimit 语义 | 本文 |
+| errgroup 上限总览 | go-errgroup-limits |
+| vs WaitGroup | go-errgroup-vs-waitgroup |

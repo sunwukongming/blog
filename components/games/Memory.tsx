@@ -511,6 +511,32 @@ export default function Memory() {
               }}
             />
           </span>
+          <span
+            className="memory-flip-rate-bar"
+            data-hot={seconds > 0 && moves / seconds >= 0.7 || undefined}
+            data-slow={seconds >= 20 && moves / Math.max(1, seconds) < 0.25 || undefined}
+            title={
+              seconds > 0
+                ? `翻步速率 ${Math.round((moves / seconds) * 60)}/min（满刻度按 40/min）`
+                : "翻步速率 —"
+            }
+            aria-label={
+              seconds > 0
+                ? `每分钟约 ${Math.round((moves / seconds) * 60)} 步`
+                : "翻步速率未知"
+            }
+          >
+            <i
+              className="memory-flip-rate-bar__fill"
+              style={{
+                width: `${
+                  seconds > 0
+                    ? Math.min(100, Math.round(((moves / seconds) * 60 / 40) * 100))
+                    : 0
+                }%`,
+              }}
+            />
+          </span>
         </span>
       </div>
       <p className={endgame || streak >= 2 ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">

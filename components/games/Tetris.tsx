@@ -772,6 +772,32 @@ export default function Tetris() {
                 }}
               />
             </span>
+            <span
+              className="tetris-eff-bar"
+              data-hot={stats.lines > 0 && stats.score / stats.lines >= 300 || undefined}
+              data-low={stats.lines >= 5 && stats.score / Math.max(1, stats.lines) < 80 || undefined}
+              title={
+                stats.lines > 0
+                  ? `行均分 ${Math.round(stats.score / stats.lines)}（满刻度按 400）`
+                  : "行均分 —"
+              }
+              aria-label={
+                stats.lines > 0
+                  ? `每行约 ${Math.round(stats.score / stats.lines)} 分`
+                  : "行均分未知"
+              }
+            >
+              <i
+                className="tetris-eff-bar__fill"
+                style={{
+                  width: `${
+                    stats.lines > 0
+                      ? Math.min(100, Math.round((stats.score / stats.lines / 400) * 100))
+                      : 0
+                  }%`,
+                }}
+              />
+            </span>
             {stats.comboPeak > 1 ? (
               <small style={{ marginLeft: 4, opacity: 0.7 }} title={`本局连消峰值 ×${stats.comboPeak}`}>
                 峰{stats.comboPeak}

@@ -528,6 +528,15 @@ export default function Snake() {
             </span>
             <span>
               时间<b>{hud.seconds}s</b>
+              <span
+                className="snake-time-bar"
+                data-long={hud.seconds >= 60 || undefined}
+                data-over={hud.seconds >= 120 || undefined}
+                title={`用时 ${hud.seconds}s（满刻度 120s）`}
+                aria-label={`用时 ${hud.seconds} 秒`}
+              >
+                <i style={{ width: `${Math.min(100, Math.round((hud.seconds / 120) * 100))}%` }} />
+              </span>
             </span>
             <span title={`蛇长 ${hud.len} 格（满刻度按 40）`}>
               长度<b>{hud.len}</b>

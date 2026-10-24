@@ -1,0 +1,38 @@
+---
+title: Vue3 defineOptions：在 script setup 里声明 name 与继承
+date: "2026-10-25"
+category: frontend
+summary: script setup 没有传统 export default。用 defineOptions 声明 name、inheritAttrs 等，和 defineProps/defineEmits 并列，别再包一层多余的 script。
+---
+
+`<script setup>` 默认不暴露组件选项。需要 **显式 `name`（devtools / keep-alive include）** 或关掉属性继承时，用编译宏 `defineOptions`。
+
+## 写法
+
+```vue
+<script setup lang="ts">
+defineOptions({
+  name: "UserCard",
+  inheritAttrs: false,
+})
+
+const props = defineProps<{ title: string }>()
+</script>
+```
+
+- 与 `defineProps` / `defineEmits` / `defineModel` 一样是 **编译期宏**，不会出现在运行时 import。  
+- 适合放 keep-alive 的 `include`、递归组件自引用名、以及 `inheritAttrs: false` + `useAttrs()` 手动挂载。
+
+## 和「再写一个 script」
+
+以前常见两个 `<script>`：一个 setup、一个 `export default { name }`。`defineOptions` 把选项收进同一块 setup，少一层心智负担。
+
+## 注意
+
+1. **不要**把 `props`/`emits` 塞进 `defineOptions`——仍走专用宏。  
+2. `name` 对 Tree-shaking / 文件名推断不总是必须；为调试与 keep-alive 白名单时再写。  
+3. 宏需足够新的 Vue / volar；旧脚手架可能要插件。
+
+## 一句话
+
+**选项宏只管 name / inheritAttrs 等组件选项**；props 与事件继续用专用 define*。

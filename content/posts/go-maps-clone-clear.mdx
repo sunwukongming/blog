@@ -1,0 +1,38 @@
+---
+title: Go maps.Clone 与 maps.Clear：拷贝与腾空
+date: "2026-10-25"
+category: backend
+summary: 标准库 maps 提供 Clone、Clear 等辅助。这篇只谈浅拷贝语义、Clear 与重新 make 的取舍，以及并发下仍然不能共用一个 map。
+---
+
+`maps`（`go1.21+`）补了日常 map 操作。这里只看 **Clone** 与 **Clear**。
+
+## Clone：浅拷贝
+
+```go
+import "maps"
+
+dst := maps.Clone(src) // 同类型新 map；src 为 nil 则 dst 为 nil
+```
+
+- 只复制 **键值本身**；值若是指针/切片/另一 map，两边仍共享底层数据。  
+- 需要深拷贝时自己递归或用专用结构。  
+- 比手写 `make` + `range` 短，语义清晰。
+
+## Clear：腾空但留桶
+
+```go
+maps.Clear(m) // 删光所有键；m 本身非 nil
+```
+
+- 等价于删完所有 key，**保留**已分配的底层桶，适合「同容量反复填」。  
+- `m = make(map[K]V)` / `m = nil` 则换新或丢引用，旧桶交给 GC。  
+- 热路径上 Clear 可减少重复分配；只偶尔用的大 map 不如换新或令其 nil。
+
+## 仍不是并发安全
+
+`Clone`/`Clear` **不**提供同步。多 goroutine 读写同一 map 仍要 mutex，或改为并发安全结构。Clone 出的副本可交给单 writer，但克隆过程本身也要在无并发写时做。
+
+## 一句话
+
+**Clone 浅拷贝、Clear 复用桶**；深拷贝与并发保护还是你的责任。

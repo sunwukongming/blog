@@ -35,6 +35,7 @@ export default async function Home() {
   const posts = await getAllPosts();
   const playable = GAMES.filter((g) => g.playable).slice(0, 6);
   // batch45: WebSite JSON-LD 复核 sameAs / hasPart / SearchAction；与 robots host、sitemap 列表 lastmod 同源 SITE_URL
+  // batch52: 再核 hasPart 含分类页 + inLanguage；SearchAction 仍指向 /blog?q=
   const websiteLd = {
     "@context": "https://schema.org",
     "@type": "WebSite",
@@ -48,6 +49,7 @@ export default async function Home() {
     hasPart: SITE_URL
       ? [
           { "@type": "CollectionPage", name: "文章", url: `${SITE_URL}/blog` },
+          { "@type": "CollectionPage", name: "分类", url: `${SITE_URL}/categories` },
           { "@type": "CollectionPage", name: "游戏", url: `${SITE_URL}/games` },
           { "@type": "CollectionPage", name: "归档", url: `${SITE_URL}/archive` },
         ]

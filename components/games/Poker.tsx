@@ -397,6 +397,19 @@ export default function Poker() {
                 title={`跟注 ${rules.toCall} ≈ ${Math.max(0, Math.round((rules.toCall / table.bb) * 10) / 10)} BB`}
               >
                 {" "}· 跟{Math.max(0, Math.round((rules.toCall / table.bb) * 10) / 10)}BB
+                <span
+                  className="pk-call-bb-bar"
+                  data-big={rules.toCall / table.bb >= 5 || undefined}
+                  data-huge={rules.toCall / table.bb >= 10 || undefined}
+                  title={`跟注 ${Math.max(0, Math.round((rules.toCall / table.bb) * 10) / 10)} BB（满刻度按 10BB）`}
+                  aria-label={`跟注约 ${Math.max(0, Math.round((rules.toCall / table.bb) * 10) / 10)} 个大盲`}
+                >
+                  <i
+                    style={{
+                      width: `${Math.min(100, Math.round((rules.toCall / table.bb / 10) * 100))}%`,
+                    }}
+                  />
+                </span>
               </small>
             ) : null}
             {myTurn && rules && !rules.canCheck && rules.toCall > 0 && pot > 0 ? (

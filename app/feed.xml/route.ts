@@ -30,6 +30,7 @@ async function buildFeed(base: string) {
       <!-- batch41: thumbnail 与 enclosure/media:content/channel.image 同源 -->
       <!-- batch46: media:* 仍指向 icon.svg；文章 OG 图未进 RSS 以免体积膨胀 -->
       <!-- batch48: 复核 media/enclosure 仍同源 icon；不把文章 OG 塞进 RSS -->
+      <!-- batch52: 再核 media:content + media:thumbnail + enclosure 三同源 icon.svg -->
       <media:thumbnail url="${base}/icon.svg" />
     </item>`;
     })

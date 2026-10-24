@@ -549,6 +549,15 @@ const [phase, setPhase] = useState<Phase>("select");
               <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
               球<b className={hud.balls > 1 ? "game-tip--alert" : undefined}>{hud.balls}</b>
               {hud.balls > 1 ? <small style={{ marginLeft: 4, opacity: 0.85 }}>多球</small> : null}
+              <span
+                className="breakout-balls-bar"
+                data-multi={hud.balls > 1 || undefined}
+                data-many={hud.balls >= 3 || undefined}
+                title={`场上球 ${hud.balls}（满刻度按 5）`}
+                aria-label={`球数 ${hud.balls}`}
+              >
+                <i style={{ width: `${Math.min(100, Math.round((hud.balls / 5) * 100))}%` }} />
+              </span>
               <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
               速<b className={hud.lives <= 1 || hud.slow ? "game-tip--alert" : undefined}>{hud.ballSpeed}</b>
               <span

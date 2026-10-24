@@ -2165,3 +2165,74 @@ html:has(.page--game) { overscroll-behavior: none; }
 .tetris-score-bar[data-huge] > i {
   background: linear-gradient(90deg, #f87171, #ef4444);
 }
+
+/* batch52: snake-time-bar / breakout-balls-bar / pk-call-bb-bar */
+.snake-time-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.snake-time-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #67e8f9, #22d3ee);
+  transition: width 120ms ease-out;
+}
+.snake-time-bar[data-long] > i {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+.snake-time-bar[data-over] > i {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+}
+.breakout-balls-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 36px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.breakout-balls-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #93c5fd, #60a5fa);
+  transition: width 100ms ease-out;
+}
+.breakout-balls-bar[data-multi] > i {
+  background: linear-gradient(90deg, #34d399, #2dd4bf);
+}
+.breakout-balls-bar[data-many] > i {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+.pk-call-bb-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 36px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.pk-call-bb-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #fda4af, #fb7185);
+  transition: width 100ms ease-out;
+}
+.pk-call-bb-bar[data-big] > i {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+.pk-call-bb-bar[data-huge] > i {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+}

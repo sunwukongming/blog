@@ -3542,3 +3542,76 @@ html:has(.page--game) { overscroll-behavior: none; }
   background: linear-gradient(90deg, #f87171, #ef4444);
 }
 
+
+/* batch71: memory-accuracy-bar / mine-touch-ratio-bar / tetris-score-level-bar */
+.memory-accuracy-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.memory-accuracy-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #93c5fd, #3b82f6);
+  transition: width 100ms ease-out;
+}
+.memory-accuracy-bar[data-hot] .memory-accuracy-bar__fill {
+  background: linear-gradient(90deg, #86efac, #22c55e);
+}
+.memory-accuracy-bar[data-cold] .memory-accuracy-bar__fill {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+}
+
+.mine-touch-ratio-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.mine-touch-ratio-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #a5b4fc, #6366f1);
+  transition: width 100ms ease-out;
+}
+.mine-touch-ratio-bar[data-hot] .mine-touch-ratio-bar__fill {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+.mine-touch-ratio-bar[data-cold] .mine-touch-ratio-bar__fill {
+  background: linear-gradient(90deg, #93c5fd, #3b82f6);
+}
+
+.tetris-score-level-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.tetris-score-level-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #c4b5fd, #8b5cf6);
+  transition: width 100ms ease-out;
+}
+.tetris-score-level-bar[data-hot] .tetris-score-level-bar__fill {
+  background: linear-gradient(90deg, #86efac, #22c55e);
+}
+.tetris-score-level-bar[data-cold] .tetris-score-level-bar__fill {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+}

@@ -702,6 +702,27 @@ export default function Minesweeper() {
               }}
             />
           </span>
+          <span
+            className="mine-touch-ratio-bar"
+            data-hot={(safeOpen + flags) / Math.max(1, cells.length) >= 0.7 || undefined}
+            data-cold={
+              phase === "playing" &&
+              seconds >= 20 &&
+              (safeOpen + flags) / Math.max(1, cells.length) < 0.15 || undefined
+            }
+            title={`已触碰约 ${safeOpen + flags}/${cells.length}（开格+旗）`}
+            aria-label={`已触碰 ${safeOpen + flags} 格，共 ${cells.length}`}
+          >
+            <i
+              className="mine-touch-ratio-bar__fill"
+              style={{
+                width: `${Math.min(
+                  100,
+                  Math.round(((safeOpen + flags) / Math.max(1, cells.length)) * 100),
+                )}%`,
+              }}
+            />
+          </span>
           {best != null && phase === "playing" && best > 0 ? (
             <>
               <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>

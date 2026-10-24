@@ -1,0 +1,37 @@
+---
+title: Postgres BRIN：与 INCLUDE 式覆盖的边界
+date: "2026-10-25"
+category: backend
+summary: 站内已有 minmax / bloom / minmax_multi。这篇不复述那些 opclass，只谈 BRIN 不能像 B-tree 那样 INCLUDE 覆盖列时该怎么取舍。
+---
+
+B-tree 可用 **`INCLUDE`** 把非键列塞进叶页做覆盖索引。**BRIN** 存的是页组摘要，不是每行指针列表——没有对等的 `INCLUDE (col)` 覆盖语义。
+
+## 取舍
+
+| 需求 | 更合适 |
+|---|---|
+| 按时间/序列粗剪枝再回表 | BRIN（站内既有 opclass 文） |
+| 索引内满足查询、避免回表 | B-tree / 覆盖索引（`INCLUDE`） |
+| 很宽的追加表、可接受回表 | BRIN + 堆填满局部性 |
+
+```sql
+-- B-tree 覆盖示例（对照，不是 BRIN）
+CREATE INDEX ON events (ts) INCLUDE (user_id);
+
+-- BRIN 仍只摘要键列（或表达式）
+CREATE INDEX ON events USING brin (ts);
+```
+
+## 边界
+
+- 不要指望「BRIN + 多列」自动变成覆盖索引；多列 BRIN 是多份摘要，仍要回表取其它列。  
+- 选 opclass、假阳性/离群值等见站内 bloom / minmax / minmax_multi 文，本文不展开。  
+- 用 `EXPLAIN (ANALYZE, BUFFERS)` 看是否值得为覆盖改走 B-tree。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| BRIN 与 INCLUDE 边界 | 本文 |
+| bloom / minmax / multi | 站内既有 BRIN 文 |

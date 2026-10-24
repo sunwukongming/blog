@@ -1,0 +1,38 @@
+---
+title: HTTP Accept-Ranges：声明可分段
+date: "2026-10-25"
+category: frontend
+summary: 站内已有 Range/206 与 If-Range。这篇写 Accept-Ranges：bytes / none、HEAD 探测、以及和 CDN 缓存的配合边界。
+---
+
+站内 **http-range-requests**、**http-if-range** 覆盖客户端怎么要一段。**`Accept-Ranges`** 是服务器侧声明：「你可以按这个单位切」。
+
+## 常见值
+
+```http
+HTTP/1.1 200 OK
+Accept-Ranges: bytes
+Content-Length: 10485760
+```
+
+| 值 | 含义 |
+|---|---|
+| `bytes` | 支持字节 Range，客户端可续传/跳播 |
+| `none` | 明确不支持；有的实现省略头表示未知 |
+
+`HEAD` 常用来探测：看 `Accept-Ranges` 与 `Content-Length` 再决定是否发 `Range`。
+
+## 边界
+
+- 声明了 `bytes` 却对有效 Range 回整份 `200`，播放器会抖动——配置与源站要一致。  
+- `none` 时应忽略客户端 `Range`（或统一 200），不要偶发 206。  
+- CDN：边缘若剥离或改写该头，会导致「源站可分段、边缘不可」的错觉。  
+- 与鉴权正交：未授权仍应 401/403，而不是靠拒 Range 凑合。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| Accept-Ranges | 本文 |
+| Range / 206 | http-range-requests |
+| If-Range | http-if-range |

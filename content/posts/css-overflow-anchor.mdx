@@ -1,0 +1,35 @@
+---
+title: CSS overflow-anchor：滚动锚定
+date: "2026-10-25"
+category: frontend
+summary: 上方插入内容时视口常被顶走。这篇写 overflow-anchor：auto / none、与无限滚动/聊天流的配合，以及何时关掉锚定。
+---
+
+浏览器的 **滚动锚定（overflow anchoring）** 会在布局变化时尽量保住你正在看的那一块。CSS **`overflow-anchor`** 让你可以按元素退出或保留该行为。
+
+## 写法
+
+```css
+.feed { overflow-anchor: auto; }   /* 默认：参与锚定 */
+.ticker { overflow-anchor: none; } /* 频繁变高的广告/计数器退出锚定 */
+```
+
+| 场景 | 建议 |
+|---|---|
+| 聊天/时间线顶部插入历史 | 依赖锚定，少让通知条抢锚 |
+| 轮播高度跳动 | 跳动节点 `overflow-anchor: none` |
+| 自己用 JS 锁 `scrollTop` | 可对容器 `none`，避免和脚本抢 |
+
+## 边界
+
+- 只影响「可能触发锚定」的滚动容器后代；不是通用 `position`。  
+- 与 `scrollbar-gutter` / 布局偏移是不同层问题：一个保视口，一个保槽位。  
+- 支持度以当前引擎为准；不支持时行为退回「插入即顶走」。  
+- 无限滚动：哨兵与骨架屏高度突变时，优先稳定占位再谈锚定。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| overflow-anchor | 本文 |
+| scrollbar-gutter | css-scrollbar-gutter |

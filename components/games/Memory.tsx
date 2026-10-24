@@ -589,6 +589,32 @@ export default function Memory() {
               }}
             />
           </span>
+          <span
+            className="memory-accuracy-bar"
+            data-hot={moves > 0 && (matchedCount * 2) / moves >= 0.85 || undefined}
+            data-cold={moves >= 8 && (matchedCount * 2) / Math.max(1, moves) < 0.45 || undefined}
+            title={
+              moves > 0
+                ? `翻牌命中率 ${Math.round(((matchedCount * 2) / moves) * 100)}%（理想 100%）`
+                : "翻牌命中率 —"
+            }
+            aria-label={
+              moves > 0
+                ? `翻牌命中率 ${Math.round(((matchedCount * 2) / moves) * 100)}%`
+                : "翻牌命中率未知"
+            }
+          >
+            <i
+              className="memory-accuracy-bar__fill"
+              style={{
+                width: `${
+                  moves > 0
+                    ? Math.min(100, Math.round(((matchedCount * 2) / moves) * 100))
+                    : 0
+                }%`,
+              }}
+            />
+          </span>
         </span>
       </div>
       <p className={endgame || streak >= 2 ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">

@@ -34,6 +34,7 @@ export default async function Categories() {
   // batch65: 再核分类 ItemList + inLanguage；与 sitemap GAMES_UPDATED 再核对齐
   // batch67: 再核分类 ItemList + inLanguage；与 sitemap GAMES_UPDATED 再核对齐
   // batch69: 再核分类 ItemList + inLanguage；与 sitemap GAMES_UPDATED 再核对齐
+  // batch71: 再核分类 ItemList + inLanguage；与 sitemap GAMES_UPDATED 再核对齐
   const itemListLd = {
     "@context": "https://schema.org",
     "@type": "ItemList",

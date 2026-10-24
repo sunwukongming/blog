@@ -826,6 +826,23 @@ export default function Tetris() {
                 }}
               />
             </span>
+            <span
+              className="tetris-score-level-bar"
+              data-hot={stats.score / Math.max(1, stats.level) >= 2000 || undefined}
+              data-cold={stats.level >= 3 && stats.score / Math.max(1, stats.level) < 600 || undefined}
+              title={`级均分 ${Math.round(stats.score / Math.max(1, stats.level))}（满刻度 3000）`}
+              aria-label={`级均分 ${Math.round(stats.score / Math.max(1, stats.level))}`}
+            >
+              <i
+                className="tetris-score-level-bar__fill"
+                style={{
+                  width: `${Math.min(
+                    100,
+                    Math.round((stats.score / Math.max(1, stats.level) / 3000) * 100),
+                  )}%`,
+                }}
+              />
+            </span>
             {stats.comboPeak > 1 ? (
               <small style={{ marginLeft: 4, opacity: 0.7 }} title={`本局连消峰值 ×${stats.comboPeak}`}>
                 峰{stats.comboPeak}

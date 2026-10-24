@@ -506,12 +506,25 @@ export default function Snake() {
             <span>
               时间<b>{hud.seconds}s</b>
             </span>
-            <span title={hud.goldLeft != null ? `速度档 ${hud.speedTier} · 金食 ${hud.goldLeft.toFixed(1)}s（一个顶三个）` : hud.nextSpeed ? `步进 ${hud.speedMs}ms · ${hud.nextSpeed}` : `步进 ${hud.speedMs}ms · 已达极速`}>
+            <span
+              className={hud.goldLeft != null ? "snake-speed-gold" : undefined}
+              data-gold={hud.goldLeft != null || undefined}
+              data-urgent={(hud.goldLeft != null && hud.goldLeft <= 2) || undefined}
+              data-fast={hud.speedTier === "极速" || hud.speedTier === "很快" || undefined}
+              title={
+                hud.goldLeft != null
+                  ? `速度 ${hud.speedTier}（${hud.speedMs}ms）${hud.nextSpeed ? ` · ${hud.nextSpeed}` : " · 已达极速"} · 金食 ${hud.goldLeft.toFixed(1)}s（×3）`
+                  : hud.nextSpeed
+                    ? `步进 ${hud.speedMs}ms · ${hud.nextSpeed}`
+                    : `步进 ${hud.speedMs}ms · 已达极速`
+              }
+            >
               速度<b className={hud.speedTier === "极速" || hud.speedTier === "很快" ? "game-tip--alert" : undefined}>{hud.speedTier}</b>
               {hud.goldLeft != null && (
                 <>
                   <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
                   金食<b className={hud.goldLeft <= 2 ? "game-tip--alert" : undefined}>{hud.goldLeft.toFixed(1)}s</b>
+                  {hud.nextSpeed ? <small style={{ marginLeft: 4, opacity: 0.7 }}>{hud.nextSpeed}</small> : <small style={{ marginLeft: 4, opacity: 0.55 }}>极速</small>}
                 </>
               )}
             </span>
@@ -542,15 +555,24 @@ export default function Snake() {
               最高<b>{best ?? 0}</b>
             </span>
             <span
-              className={hud.goldLeft != null ? "snake-gold-timer" : undefined}
+              className={hud.goldLeft != null ? "snake-speed-gold snake-gold-timer" : undefined}
+              data-gold={hud.goldLeft != null || undefined}
               data-urgent={(hud.goldLeft != null && hud.goldLeft <= 2) || undefined}
-              title={hud.goldLeft != null ? `速度档 ${hud.speedTier} · 金食 ${hud.goldLeft.toFixed(1)}s（一个顶三个）` : hud.nextSpeed ? `步进 ${hud.speedMs}ms · ${hud.nextSpeed}` : `步进 ${hud.speedMs}ms · 已达极速`}
+              data-fast={hud.speedTier === "极速" || hud.speedTier === "很快" || undefined}
+              title={
+                hud.goldLeft != null
+                  ? `速度 ${hud.speedTier}（${hud.speedMs}ms）${hud.nextSpeed ? ` · ${hud.nextSpeed}` : " · 已达极速"} · 金食 ${hud.goldLeft.toFixed(1)}s（×3）`
+                  : hud.nextSpeed
+                    ? `步进 ${hud.speedMs}ms · ${hud.nextSpeed}`
+                    : `步进 ${hud.speedMs}ms · 已达极速`
+              }
             >
               速度<b className={hud.speedTier === "极速" || hud.speedTier === "很快" ? "game-tip--alert" : undefined}>{hud.speedTier}</b>
               {hud.goldLeft != null && (
                 <>
                   <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
                   金食<b className={hud.goldLeft <= 2 ? "game-tip--alert" : undefined}>{hud.goldLeft.toFixed(1)}s</b>
+                  {hud.nextSpeed ? <small style={{ marginLeft: 4, opacity: 0.7 }}>{hud.nextSpeed}</small> : <small style={{ marginLeft: 4, opacity: 0.55 }}>极速</small>}
                 </>
               )}
             </span>

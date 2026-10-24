@@ -1,0 +1,39 @@
+---
+title: Go HTTP Client 的 Transport：连接池、超时与自定义拨号
+date: "2026-10-24"
+category: backend
+summary: 默认 Client 够用到你开始踩连接泄漏与尾延迟。把 Transport 的池、TLS、Proxy、ExpectContinue 配清楚，并和 context 截止时间分工。
+---
+
+`http.Client` 的超时是整次请求的粗粒度上限；**连接复用、拨号、TLS 握手**在 `http.Transport`。生产里复用共享 Client/Transport，避免每次 `http.Get` 新建。
+
+## 该动的旋钮
+
+```go
+tr := &http.Transport{
+  Proxy:                 http.ProxyFromEnvironment,
+  MaxIdleConns:          100,
+  MaxIdleConnsPerHost:   10,
+  MaxConnsPerHost:       0, // 0=无额外限制；下游脆弱时再收
+  IdleConnTimeout:       90 * time.Second,
+  TLSHandshakeTimeout:   10 * time.Second,
+  ExpectContinueTimeout: 1 * time.Second,
+  ForceAttemptHTTP2:     true,
+}
+client := &http.Client{Transport: tr, Timeout: 15 * time.Second}
+```
+
+- **Timeout（Client）**：含正文读取；与 `context.WithTimeout` 叠加时取先触发者。  
+- **Idle 池**：过小 → 反复握手；过大 → 闲连接占文件描述符。  
+- 自定义 `DialContext`：注入解析器、双栈、或测试用 listener。
+
+## 实践
+
+1. **进程级单例** Client，按下游拆多个 Transport（不同池与 TLS）。  
+2. 不要忽略 `resp.Body.Close()`——不关就占着连接，池形同虚设。  
+3. 重试只对幂等与可安全重放的请求；换 Transport 不能代替幂等键。  
+4. 和站内 context Timeout 文分工：Transport 管连接层，context 管业务预算。
+
+## 小结
+
+把 HTTP 客户端当成有状态连接池来运维：共享、限额、关 Body、看尾延迟。出问题时先看是「新建连接过多」还是「响应体没关」，再动超时数字。

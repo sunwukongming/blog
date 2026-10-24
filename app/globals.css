@@ -945,3 +945,23 @@ html:has(.page--game) { overscroll-behavior: none; }
   border-radius: 6px;
   padding-inline: 4px;
 }
+
+/* batch30: Snake speed+gold, Breakout item timer, Poker odds tiers */
+.snake-speed-gold[data-gold] {
+  box-shadow: 0 0 0 1px color-mix(in oklab, #ffe066 55%, transparent);
+  border-radius: 6px;
+  padding-inline: 4px;
+}
+.snake-speed-gold[data-urgent] {
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--accent) 65%, transparent);
+}
+.snake-speed-gold[data-fast] b { color: var(--accent); }
+.breakout-item-timer {
+  display: inline-flex;
+  align-items: center;
+  font-variant-numeric: tabular-nums;
+}
+.pk-odds-hud[data-tier="low"] b { color: #7af5c0; }
+.pk-odds-hud[data-tier="mid"] b { color: #ffb86b; }
+.pk-odds-hud[data-tier="high"] b { color: var(--accent); }
+.pk-odds-hud__tier { opacity: 0.85; }

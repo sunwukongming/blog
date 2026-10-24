@@ -1,0 +1,41 @@
+---
+title: Postgres 覆盖索引：INCLUDE 少回表
+date: "2026-10-24"
+category: backend
+summary: 与选型总览、BRIN、部分索引分开：专讲 Index Only Scan、INCLUDE 非键列、visibility map，以及别把覆盖索引当成宽表替代品。
+---
+
+B-tree 选对列之后，若查询还要回堆取多余列，IO 仍贵。**覆盖索引**让索引叶子带上查询所需列，规划器才可能走出 `Index Only Scan`。
+
+## INCLUDE 与键列
+
+```sql
+CREATE INDEX ON orders (status, created_at)
+  INCLUDE (customer_id, total);
+
+SELECT customer_id, total
+FROM orders
+WHERE status = 'open' AND created_at > now() - interval '1 day';
+```
+
+- **键列**参与排序与查找；`INCLUDE` 列只存放，不进排序比较。  
+- 比把 `customer_id` 塞进键更合适：键更瘦，INCLUDE 满足 SELECT 列表。  
+- 和部分索引可叠：`WHERE status = 'open' … INCLUDE (…)`.
+
+## Index Only Scan 的隐藏条件
+
+即使索引「盖住」了列，还要 **visibility map** 说堆页全可见，否则仍会 heap fetch。长期 `VACUUM` 不足时，`EXPLAIN (ANALYZE, BUFFERS)` 里 `Heap Fetches` 会很高——覆盖索引「看起来用了」却不快。
+
+## 何时不该盖
+
+| 适合 | 不适合 |
+|---|---|
+| 高频、列集稳定的读路径 | SELECT * 或列集天天变 |
+| 已用 EXPLAIN 证实大量回表 | 写极多、INCLUDE 列很宽 |
+| 与 BRIN/分区裁剪互补的热查询 | 想靠一个巨无霸索引吃天下 |
+
+写入要维护 INCLUDE 列；宽文本、JSONB 大字段进 INCLUDE 会迅速反噬。
+
+## 小结
+
+覆盖索引是 **读路径的最后一公里**：键负责找，INCLUDE 负责免回表，VACUUM 负责 Index Only 名副其实。和站内 BRIN、部分索引文一起看，按访问模式选型，而不是叠越多越好。

@@ -5,16 +5,20 @@ import { SITE, SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "归档",
-  description: "GM Lab 文章归档：按年份折叠浏览后端、前端、云原生与随笔笔记，当前年默认展开。",
+  description: "GM Lab 文章归档：按年份折叠浏览 Go / 前端 / 云原生 / 可观测与随笔；当前年默认展开，可跳进卡片环续读。",
   openGraph: {
     title: "归档",
-    description: "GM Lab 文章归档：按年份折叠浏览后端、前端、云原生与随笔笔记，当前年默认展开。",
+    description: "GM Lab 文章归档：按年份折叠浏览 Go / 前端 / 云原生 / 可观测与随笔；当前年默认展开，可跳进卡片环续读。",
     type: "website",
+    siteName: SITE.name,
+    locale: "zh_CN",
+    url: SITE_URL ? `${SITE_URL}/archive` : undefined,
   },
+  alternates: SITE_URL ? { canonical: "/archive" } : undefined,
   twitter: {
     card: "summary",
     title: "归档",
-    description: "GM Lab 文章归档：按年份折叠浏览后端、前端、云原生与随笔笔记，当前年默认展开。",
+    description: "GM Lab 文章归档：按年份折叠浏览 Go / 前端 / 云原生 / 可观测与随笔；当前年默认展开，可跳进卡片环续读。",
   },
 };
 
@@ -27,7 +31,7 @@ export default async function Archive() {
     "@context": "https://schema.org",
     "@type": "ItemList",
     name: `${SITE.name} 文章归档`,
-    description: "按年份归档的 GM Lab 笔记",
+    description: "按年份归档的 GM Lab 笔记（Go / 前端 / 云原生 / 可观测）",
     numberOfItems: posts.length,
     itemListElement: posts.slice(0, 50).map((p, i) => ({
       "@type": "ListItem",

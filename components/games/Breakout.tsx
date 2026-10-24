@@ -50,7 +50,7 @@ type Game = {
   combo: number;
   bestCombo: number;
 };
-type Hud = { score: number; lives: number; level: number; wide: boolean; slow: boolean; balls: number; brickLeft: number; brickTotal: number; progress: number; combo: number; bestCombo: number; ballSpeed: number; paddleW: number };
+type Hud = { score: number; lives: number; level: number; wide: boolean; slow: boolean; wideLeft: number; slowLeft: number; balls: number; brickLeft: number; brickTotal: number; progress: number; combo: number; bestCombo: number; ballSpeed: number; paddleW: number };
 
 
 /** breakable bricks still alive (metal ignored) */
@@ -340,7 +340,7 @@ export default function Breakout() {
   const held = useRef({ left: false, right: false });
     const buzzMuted = useBuzzMuted();
 const [phase, setPhase] = useState<Phase>("select");
-  const [hud, setHud] = useState<Hud>({ score: 0, lives: 3, level: 0, wide: false, slow: false, balls: 1, brickLeft: 0, brickTotal: 0, progress: 0, combo: 0, bestCombo: 0, ballSpeed: 320, paddleW: 88 });
+  const [hud, setHud] = useState<Hud>({ score: 0, lives: 3, level: 0, wide: false, slow: false, wideLeft: 0, slowLeft: 0, balls: 1, brickLeft: 0, brickTotal: 0, progress: 0, combo: 0, bestCombo: 0, ballSpeed: 320, paddleW: 88 });
   const [record, setRecord] = useState(false);
   const [best] = useRecord("breakout", higher);
   const [unlocked] = useRecord("breakout-unlocked", higher);
@@ -354,6 +354,8 @@ const [phase, setPhase] = useState<Phase>("select");
       level: g.level,
       wide: g.time < g.wideUntil,
       slow: g.time < g.slowUntil,
+      wideLeft: Math.max(0, g.wideUntil - g.time),
+      slowLeft: Math.max(0, g.slowUntil - g.time),
       balls: g.balls.length,
       combo: g.combo,
       bestCombo: g.bestCombo,
@@ -565,9 +567,28 @@ const [phase, setPhase] = useState<Phase>("select");
           </>
         )}
         {(hud.wide || hud.slow) && (
-          <span>
-            {hud.wide && <b style={{ color: ITEM_LOOK.W.color }}>宽</b>}
-            {hud.slow && <b style={{ color: ITEM_LOOK.S.color }}>慢</b>}
+          <span
+            className="breakout-item-timer"
+            title={[
+              hud.wide ? `加宽剩余 ${hud.wideLeft.toFixed(1)}s` : "",
+              hud.slow ? `减速剩余 ${hud.slowLeft.toFixed(1)}s` : "",
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          >
+            {hud.wide && (
+              <>
+                <b style={{ color: ITEM_LOOK.W.color }}>宽</b>
+                <small style={{ marginLeft: 2, color: ITEM_LOOK.W.color }}>{hud.wideLeft.toFixed(1)}s</small>
+              </>
+            )}
+            {hud.wide && hud.slow ? <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small> : null}
+            {hud.slow && (
+              <>
+                <b style={{ color: ITEM_LOOK.S.color }}>慢</b>
+                <small style={{ marginLeft: 2, color: ITEM_LOOK.S.color }}>{hud.slowLeft.toFixed(1)}s</small>
+              </>
+            )}
           </span>
         )}
         <span className="spacer" />
@@ -606,7 +627,7 @@ const [phase, setPhase] = useState<Phase>("select");
           <b style={{ color: ITEM_LOOK.L.color }}>命</b>多一命 ·
           <b style={{ color: ITEM_LOOK.M.color }}>多</b>分裂多球
           {hud.wide || hud.slow || hud.balls > 1
-            ? ` · 当前${hud.wide ? "加宽" : ""}${hud.wide && hud.slow ? "/" : ""}${hud.slow ? "减速" : ""}${hud.balls > 1 ? `${hud.wide || hud.slow ? "/" : ""}多球×${hud.balls}` : ""}`
+            ? ` · 当前${hud.wide ? `加宽${hud.wideLeft.toFixed(1)}s` : ""}${hud.wide && hud.slow ? "/" : ""}${hud.slow ? `减速${hud.slowLeft.toFixed(1)}s` : ""}${hud.balls > 1 ? `${hud.wide || hud.slow ? "/" : ""}多球×${hud.balls}` : ""}`
             : " · 打碎带标记的砖后用挡板接住"}
         </p>
       )}

@@ -1,0 +1,42 @@
+---
+title: CSS :has() 实用模式：父级根据子级变样
+date: "2026-10-24"
+category: frontend
+summary: :has() 让父选择器根据后代/兄弟状态改样式，少写 JS 切换 class。卡片校验、表单错误、空状态与网格高亮是高频用法，也要注意性能与回退。
+---
+
+「子元素有 `.error` 时卡片描边」从前要 JS。现在：
+
+```css
+.card:has(.field.is-invalid) {
+  border-color: var(--danger);
+}
+.form-row:has(input:focus-visible) label {
+  color: var(--accent);
+}
+.grid:has(> .tile[data-selected]) {
+  outline: 1px dashed var(--accent);
+}
+```
+
+## 高频模式
+
+| 模式 | 例子 |
+|---|---|
+| 父随子 | 容器内有 `img` 才加媒体边距 |
+| 空态 | `.list:not(:has(.item))::before { content: "暂无" }` |
+| 校验 | `fieldset:has(:invalid)` 显示提示区 |
+| 互斥 UI | 侧栏 `:has([aria-expanded="true"])` 拉开宽度 |
+
+和站内 `:anchor` / scroll-driven 文一样：能纯 CSS 表达的状态机，少一层 React/Vue class 同步。
+
+## 注意
+
+1. **性能**：避免 `:has(*)` 或极深通配；把右侧重写具体 class。  
+2. **特异度**比想象中高，覆盖时要算清楚。  
+3. 旧浏览器无 `:has` 时给关键路径 class 回退，或 `@supports selector(:has(*))`。  
+4. 无障碍：样式变化不要替代 `aria-*` 状态。
+
+## 小结
+
+`:has()` 是父子契约的样式版。用在卡片、表单、空列表最划算；复杂交互仍交给组件状态，CSS 只镜像已经正确的 DOM。

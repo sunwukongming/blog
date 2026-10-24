@@ -236,14 +236,28 @@ export default function Poker() {
         {myTurn && rules && !rules.canCheck && rules.toCall > 0 && pot > 0 && (
           <span
             className="pk-odds-hud"
-            title="跟注打平所需胜率（跟注/(底池+跟注)）"
+            data-tier={
+              Math.round((rules.toCall / (pot + rules.toCall)) * 100) <= 25
+                ? "low"
+                : Math.round((rules.toCall / (pot + rules.toCall)) * 100) <= 40
+                  ? "mid"
+                  : "high"
+            }
+            title={`跟注打平需胜率 ${Math.min(99, Math.round((rules.toCall / (pot + rules.toCall)) * 100))}%（跟注/(底池+跟注)）· 色阶 低≤25 / 中≤40 / 高>40`}
           >
             需胜率
-            <b className="game-tip--alert">
+            <b>
               {Math.min(99, Math.round((rules.toCall / (pot + rules.toCall)) * 100))}%
             </b>
             <small style={{ marginLeft: 4, opacity: 0.75 }}>
               跟{rules.toCall}
+            </small>
+            <small className="pk-odds-hud__tier" style={{ marginLeft: 6 }}>
+              {Math.round((rules.toCall / (pot + rules.toCall)) * 100) <= 25
+                ? "偏便宜"
+                : Math.round((rules.toCall / (pot + rules.toCall)) * 100) <= 40
+                  ? "中性"
+                  : "偏贵"}
             </small>
           </span>
         )}
@@ -364,9 +378,14 @@ export default function Poker() {
               打平需{" "}
               <b>{Math.min(99, Math.round((rules.toCall / (pot + rules.toCall)) * 100))}%</b>
               {" 胜率"}
+              {Math.round((rules.toCall / (pot + rules.toCall)) * 100) <= 25
+                ? " · 色阶偏低（偏便宜）"
+                : Math.round((rules.toCall / (pot + rules.toCall)) * 100) <= 40
+                  ? " · 色阶中性"
+                  : " · 色阶偏高（偏贵）"}
               {table.players.some((pl) => pl.allIn && !pl.out)
                 ? " · 全下中：只进你可参与的主池/边池"
-                : " · 顶栏同步显示需胜率"}
+                : " · 顶栏同步色阶"}
             </p>
           )}
           {started && !gameOver && !victory && !result && table.players.some((pl) => pl.allIn && !pl.out) && !(myTurn && rules && !rules.canCheck && rules.toCall > 0 && pot > 0) && (

@@ -324,6 +324,28 @@ export default function Poker() {
               }}
             />
           </span>
+          <span
+            className="pk-allin-bar"
+            data-any={table.players.some((p) => p.allIn && !p.out) || undefined}
+            data-many={table.players.filter((p) => p.allIn && !p.out).length >= 2 || undefined}
+            title={`全下 ${table.players.filter((p) => p.allIn && !p.out).length}/${table.players.length}`}
+            aria-label={`全下 ${table.players.filter((p) => p.allIn && !p.out).length} 人`}
+          >
+            <i
+              style={{
+                width: `${
+                  table.players.length
+                    ? Math.min(
+                        100,
+                        Math.round(
+                          (table.players.filter((p) => p.allIn && !p.out).length / table.players.length) * 100,
+                        ),
+                      )
+                    : 0
+                }%`,
+              }}
+            />
+          </span>
         </span>
         <span
           className={

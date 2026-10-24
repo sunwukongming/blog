@@ -1,0 +1,42 @@
+---
+title: HTTP If-None-Match：条件 GET 与 304
+date: "2026-10-25"
+category: frontend
+summary: 站内 ETag 文讲强弱语义。这篇只走 If-None-Match 请求头：多值比对、与 If-Modified-Since 并存、以及中间盒误剥头时的表现。
+---
+
+站内 **http-etag-weak-strong** 拆 ETag 本身。本文只谈请求侧的 **`If-None-Match`**：客户端怎样声明「这些版本我已有」，源站如何回 **304** 或完整 200。
+
+## 请求形态
+
+```http
+GET /api/feed HTTP/1.1
+If-None-Match: "v3", W/"v2"
+```
+
+| 情况 | 典型响应 |
+|---|---|
+| 当前表示与任一列出的标签匹配 | `304 Not Modified`（通常无体） |
+| 都不匹配 | `200` + 新体 + 新 `ETag` |
+| 带 `*` | 「任意现存表示」——少用于 GET，多见于不安全方法的前置条件 |
+
+比对规则跟 ETag 强弱有关，但调用方只要：**把上次响应的 ETag 原样带回**，不要自行剥 `W/` 或加引号。
+
+## 与 If-Modified-Since
+
+两者常一起出现。规范上若 **同时** 带 `If-None-Match` 与 `If-Modified-Since`，服务器应 **优先按 ETag** 判断，日期头作辅。只信 `Last-Modified` 的老缓存可能和 ETag 源站打架——CDN 规则要写清。
+
+## 边界
+
+- 304 响应仍可带新的缓存指令；别假设「没体 = 头也不能变」。  
+- 列表页若 `Vary` 不完整，A 用户的 ETag 被 B 用户的 `If-None-Match` 命中会串内容。  
+- 中间盒丢掉 `If-None-Match` 会把本可 304 的流量打成 200；抓包时同时看请求与响应。  
+- 写操作请看 `If-Match`，不要拿 `If-None-Match` 当乐观锁（语义相反场景更多）。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| If-None-Match / 304 | 本文 |
+| ETag 强弱 | http-etag-weak-strong |
+| 再验证总览 | http-cache-revalidation |

@@ -1,0 +1,49 @@
+---
+title: Go semaphore.Weighted：按权重限流
+date: "2026-10-25"
+category: backend
+summary: 站内 errgroup SetLimit 按「每个 Go 一槽」。这篇写 x/sync/semaphore 的加权Acquire：大任务多占、与 Context 取消、以及和 SetLimit 的分工。
+---
+
+站内 **go-errgroup-setlimit** 用固定槽位限制飞行中的 `Go`。本文写 **`golang.org/x/sync/semaphore.Weighted`**：按 **权重** 占名额，适合「有的请求吃 1、有的吃 8」的限流。
+
+## 基本用法
+
+```go
+sem := semaphore.NewWeighted(32)
+
+if err := sem.Acquire(ctx, cost); err != nil {
+    return err // ctx 取消或超时
+}
+defer sem.Release(cost)
+
+return doWork(ctx)
+```
+
+`NewWeighted(n)` 的 `n` 是总容量。`Acquire(ctx, w)` 在名额不足时阻塞，但 **可被 ctx 取消**；这点比卡在 `errgroup.Go` 上更适合「排队也可放弃」。
+
+## 和 SetLimit
+
+| | `semaphore.Weighted` | `errgroup.SetLimit` |
+|---|---|---|
+| 权重 | 任意 `w` | 每任务 1 |
+| 取消 | `Acquire(ctx)` | 任务内听 ctx；投递处阻塞 |
+| 首错取消 | 无内建 | `WithContext` 有 |
+| 适用 | 混合代价、可放弃排队 | 同类短任务 + 要首错取消 |
+
+常见组合：外层 errgroup 管取消与等待，内层 `Acquire` 管「这一类工作最多占多少资源」。
+
+## 边界
+
+- `w > 总容量` 时 `Acquire` 会永远等不到——调用前校验。  
+- `Release` 的权重必须与 `Acquire` 一致，否则容量泄漏或膨胀。  
+- 不要用它替代业务超时：ctx 取消后记得别再 `Release` 未拿到的名额（只有 Acquire 成功才 Release）。  
+- 公平性非严格 FIFO；高权重任务可能饿死低权重，需要时自行分层队列。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| Weighted 信号量 | 本文 |
+| SetLimit | go-errgroup-setlimit |
+| errgroup 总览 | go-errgroup-limits |

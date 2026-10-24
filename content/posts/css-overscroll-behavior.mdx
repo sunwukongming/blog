@@ -1,0 +1,49 @@
+---
+title: CSS overscroll-behavior：防滚动链与橡皮筋
+date: "2026-10-25"
+category: frontend
+summary: 站内 scroll-snap 文讲停靠。这篇写 overscroll-behavior：contain/none 如何打断滚动链、与弹层/抽屉的配合，以及和 touch-action 的边界。
+---
+
+站内 **css-scroll-snap-patterns** / **scroll-snap-stop** 管对齐。本文只谈 **`overscroll-behavior`**：滚动到边缘后，多余的滚动手势会不会传给父级（滚动链）或触发浏览器导航手势。
+
+## 取值
+
+```css
+.drawer {
+  overflow: auto;
+  overscroll-behavior: contain; /* 阻断滚动链，仍可有边界反馈 */
+}
+.modal-body {
+  overscroll-behavior: none; /* 进一步抑制边界效果 */
+}
+```
+
+| 值 | 含义 |
+|---|---|
+| `auto` | 默认：可把滚动传给祖先，也可触发导航/刷新类手势（依平台） |
+| `contain` | 不把滚动链给祖先；本盒内边界效果可保留 |
+| `none` | 类似 contain，并尽量去掉边界橡皮筋等效果 |
+
+可分轴：`overscroll-behavior-x` / `-y`。横滑轮播常只钉 `x`，竖向文档仍交给页面。
+
+## 典型场景
+
+- 抽屉 / 底 sheet / 模态：内容滚到底时，别带动背后的 `body`。  
+- 地图、设计稿画布：避免边缘继续滑触发浏览器「返回」。  
+- 与 `position: fixed` 弹层一起用时，比只锁 `body { overflow: hidden }` 更细——嵌套滚动盒各自声明。
+
+## 边界
+
+- 它不替代 `touch-action`：后者管指针能否滚/缩放；两者常一起设。  
+- iOS / Android / 桌面触控板表现不完全一致，弹层要真机看是否仍穿透。  
+- `none` 过强可能让用户失去「到顶了」的反馈；优先试 `contain`。  
+- 与 snap 容器同用时，先保证 overflow 与高度算对，再调 overscroll。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| overscroll-behavior | 本文 |
+| scroll-snap | css-scroll-snap-patterns |
+| snap-stop | css-scroll-snap-stop |

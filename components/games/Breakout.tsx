@@ -639,6 +639,23 @@ const [phase, setPhase] = useState<Phase>("select");
                   }}
                 />
               </span>
+              <span
+                className="breakout-remain-bar"
+                data-low={hud.brickLeft > 0 && hud.brickLeft <= 3 || undefined}
+                data-empty={hud.brickLeft === 0 || undefined}
+                title={`剩余砖 ${hud.brickLeft}/${hud.brickTotal}`}
+                aria-label={`剩余砖 ${hud.brickLeft}`}
+              >
+                <i
+                  style={{
+                    width: `${
+                      hud.brickTotal > 0
+                        ? Math.min(100, Math.round((hud.brickLeft / hud.brickTotal) * 100))
+                        : 0
+                    }%`,
+                  }}
+                />
+              </span>
               <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
               速<b className={hud.lives <= 1 || hud.slow ? "game-tip--alert" : undefined}>{hud.ballSpeed}</b>
               <span

@@ -1,0 +1,49 @@
+---
+title: Next.js "use cache"：指令级缓存边界
+date: "2026-10-25"
+category: frontend
+summary: unstable_cache 是函数包装，cacheLife/tag 是寿命与失效。这篇只谈 "use cache" 指令：哪些函数/组件进入缓存宇宙，以及和动态 API 的边界。
+---
+
+站内已有 **unstable_cache**、**cacheLife**、**tag 读/写路径**。**`"use cache"`** 是把一段 Server 代码标成 **可缓存单元** 的指令，而不是又一个 TTL 数字。
+
+## 它标的是边界
+
+```ts
+"use cache";
+
+export async function ProductCard({ id }: { id: string }) {
+  cacheLife("hours");
+  cacheTag(`product-${id}`);
+  const data = await db.product.get(id);
+  return <div>{data.title}</div>;
+}
+```
+
+- 指令以下的函数/模块成为缓存候选；参数参与键。  
+- **寿命**用 `cacheLife`；**失效**用 `cacheTag` + `revalidateTag`。  
+- 与 `unstable_cache(fn, keyParts, opts)` 比：少一层手写包装，更贴组件/函数语义。
+
+## 和动态 API
+
+缓存单元里 **不能** 无约束地读 `cookies()` / `headers()` / 未声明的动态数据——否则键不稳定或构建报错。需要差异就：
+
+1. 把动态值当 **参数传入** 缓存函数；或  
+2. 外层动态、内层 `"use cache"` 只吃纯输入。
+
+## 对照
+
+| 机制 | 角色 |
+|---|---|
+| `"use cache"` | 声明「这段是缓存单元」 |
+| `cacheLife` | 单元寿命档 |
+| `cacheTag` / `revalidateTag` | 失效 |
+| `unstable_cache` | 旧式/渐进：包任意 async 函数 |
+
+## 迁移提示
+
+从 `unstable_cache` 迁时：keyParts → 函数参数 + 指令；`tags` → `cacheTag`；`revalidate` 秒 → 合适的 `cacheLife` 或显式 tag。以你当前 Next 大版本文档为准（API 名仍可能微调）。
+
+## 小结
+
+先画清 **缓存边界（use cache）**，再填寿命与 tag。边界不清时，调 TTL 解决不了串数据。

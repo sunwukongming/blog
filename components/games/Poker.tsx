@@ -267,6 +267,19 @@ export default function Poker() {
               }}
             />
           </span>
+          <span
+            className="pk-board-bar"
+            data-river={table.board.length >= 5 || undefined}
+            data-turn={table.board.length === 4 || undefined}
+            title={`公共牌 ${table.board.length}/5`}
+            aria-label={`公共牌 ${table.board.length} 张`}
+          >
+            <i
+              style={{
+                width: `${Math.min(100, Math.round((table.board.length / 5) * 100))}%`,
+              }}
+            />
+          </span>
         </span>
         <span
           className={

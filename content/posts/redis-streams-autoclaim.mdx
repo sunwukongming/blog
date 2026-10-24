@@ -1,0 +1,54 @@
+---
+title: Redis Streams XAUTOCLAIM：轮询认领 Pending 的闭环
+date: "2026-10-25"
+category: backend
+summary: XCLAIM 文讲点名 id 与 FORCE/JUSTID。这篇只谈 XAUTOCLAIM：用游标扫 PEL、min-idle、COUNT，以及 worker 心跳里怎么跑成稳定循环。
+---
+
+站内《XCLAIM：把 Pending 认领做成可运维动作》覆盖单条认领参数。**`XAUTOCLAIM`** 面向另一场景：消费者挂了，活人 **按空闲时间批量扫 PEL**，而不是先 `XPENDING` 再逐个 `XCLAIM`。
+
+## 和 XCLAIM 文分工
+
+| 文 | 焦点 |
+|---|---|
+| redis-streams-claim | 点名 id、JUSTID/FORCE、防双消费 |
+| **本文** | **游标扫描、循环、COUNT、与心跳的配合** |
+
+## 命令形状
+
+```text
+XAUTOCLAIM key group consumer min-idle-time start [COUNT count] [JUSTID]
+```
+
+- **min-idle-time**：只领 idle 足够久的 pending。  
+- **start**：游标，首次常用 `0-0`；响应里带下一游标。  
+- **COUNT**：每轮最多多少条，避免一次打爆下游。
+
+## 心跳循环示意
+
+```text
+cursor = 0-0
+loop every N seconds:
+  next, entries = XAUTOCLAIM mystream mygroup me 60000 cursor COUNT 20
+  cursor = next
+  for each entry:
+    process idempotently
+    XACK ...
+  if next == 0-0 and entries empty:
+    # 本轮 PEL 扫完，可歇或去 XREADGROUP >
+```
+
+要点：
+
+1. **先幂等再 ACK**——认领只换主人，不保证别人没做过。  
+2. min-idle > 正常处理 P99，减少误抢活消费者。  
+3. 与 `XREADGROUP … >` 分工：AUTOCLAIM 清历史 pending，`>` 拉新消息；可同一进程两段逻辑。
+
+## 监控
+
+- 每轮 claim 条数、ACK 延迟、游标是否长期卡在非 `0-0`。  
+- 按 consumer 的 pending 数；某 consumer 只涨不降 → 处理失败或忘 ACK。
+
+## 小结
+
+`XAUTOCLAIM` 是 **PEL 清道夫的游标 API**。点名抢用 XCLAIM；周期性托管用本文的循环。两者都要 ACK 与幂等托底。

@@ -25,6 +25,7 @@ export const metadata: Metadata = {
     // batch42: 与 openGraph.images 对齐
     // batch50: 再核游戏列表 OG/Twitter images 同源 icon.svg；ItemList 仅 playable
     // batch55: ItemList 补 inLanguage=zh-CN；numberOfItems 仍=playable.length
+    // batch60: 再核 ItemList 仅 playable + inLanguage；与 categories/sitemap 注释对齐
     images: SITE_URL ? [`${SITE_URL}/icon.svg`] : undefined,
   },
 };

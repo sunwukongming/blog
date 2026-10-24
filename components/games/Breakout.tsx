@@ -588,6 +588,19 @@ const [phase, setPhase] = useState<Phase>("select");
               >
                 <i style={{ width: `${Math.min(100, Math.round((hud.balls / 5) * 100))}%` }} />
               </span>
+              <span
+                className="breakout-combo-now-bar"
+                data-hot={hud.combo >= 5 || undefined}
+                data-mid={hud.combo >= 3 && hud.combo < 5 || undefined}
+                title={`当前连击 ×${hud.combo}（满刻度按 10）`}
+                aria-label={`当前连击 ${hud.combo}`}
+              >
+                <i
+                  style={{
+                    width: `${Math.min(100, Math.round((hud.combo / 10) * 100))}%`,
+                  }}
+                />
+              </span>
               <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
               速<b className={hud.lives <= 1 || hud.slow ? "game-tip--alert" : undefined}>{hud.ballSpeed}</b>
               <span

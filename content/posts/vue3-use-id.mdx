@@ -1,0 +1,45 @@
+---
+title: Vue 3 useId：SSR 友好的稳定唯一 id
+date: "2026-10-25"
+category: frontend
+summary: 表单 label/input、aria-describedby 需要成对 id。useId 在 SSR/CSR 间生成稳定唯一值，避免水合 mismatch，也别再手写自增全局计数。
+---
+
+`label[for]` 与控件 `id`、以及 `aria-labelledby` / `aria-describedby`，都要 **文档内唯一且两端一致**。Vue 3.5+ 的 **`useId()`** 就是干这个的。
+
+## 为什么不用随机数
+
+```ts
+// 反例：服务端一个值、客户端再随机 → 水合报警
+const id = Math.random().toString(36).slice(2)
+```
+
+`useId` 由框架在应用实例里分配，**SSR 与客户端复用同一序列**，成对绑定不会对不上。
+
+## 用法
+
+```vue
+<script setup lang="ts">
+import { useId } from 'vue'
+const id = useId()
+const hintId = `${id}-hint`
+</script>
+
+<template>
+  <label :for="id">邮箱</label>
+  <input :id="id" :aria-describedby="hintId" />
+  <p :id="hintId">我们不会出售你的地址</p>
+</template>
+```
+
+一个组件里可调用多次 `useId()`，每次拿到不同后缀；需要派生时用字符串拼接，不要再套一层随机。
+
+## 边界
+
+- **不是** 业务主键，也别拿去当数据库 id。  
+- 列表里每一项若是子组件，让子组件自己 `useId()`，父级不要「循环一次拼一个全局计数」除非你清楚 SSR 顺序。  
+- 与 Vue 版本：确认项目已到支持 `useId` 的版本；旧项目可临时用官方推荐的兼容写法，但应规划升级。
+
+## 小结
+
+可访问性成对 id 用 **`useId`**；业务实体 id 用你的领域方案。两件事分开，水合与 a11y 都少踩坑。

@@ -1,0 +1,41 @@
+---
+title: slog LogValuer 常见坑：递归、分配与脱敏失效
+date: "2026-10-25"
+category: backend
+summary: 站内 LogValuer 专文讲怎么实现。这篇只列踩坑：LogValue 再包同一类型、热路径分配、指针接收者没挂上、以及 Group 里仍漏出密钥。
+---
+
+`LogValuer` 能让类型自己决定日志形状，但实现稍斜就会 **打爆栈、拖慢热路径、或脱敏看起来做了其实没有**。
+
+## 坑 1：递归
+
+```go
+func (u User) LogValue() slog.Value {
+    // 错：Any/AnyValue 可能再次走 LogValue
+    return slog.AnyValue(u)
+}
+```
+
+应返回 `GroupValue` / 标量，或先拆成已是基本类型的字段。包装器类型若内嵌同一 `LogValuer`，也要避免无出口委托。
+
+## 坑 2：指针 vs 值接收者
+
+`func (u User) LogValue()` 在 `*User` 经 `Any` 传入时通常仍能找到方法集；但若只写在指针接收者、却经常打 **值拷贝**，或接口里装的是别的包装类型，就会退回反射整结构——密钥字段又出现了。写单测：`slog.Any("u", u)` 与 `slog.Any("u", &u)` 各打一次看输出。
+
+## 坑 3：热路径分配
+
+每次日志 `make([]Attr, …)`、拼大 `string`、JSON marshal 再塞进 `LogValue`，等于把 Handler 的采样/级别判断成本浪费在已决定要格式化的值上。级别是否启用应在外层判断；`LogValue` 内保持轻量字段拷贝。
+
+## 坑 4：脱敏失效
+
+- 只挡 `Token`，忘了 `Authorization`、`Cookie`、嵌套 `meta["secret"]`。  
+- `ReplaceAttr` 与 `LogValuer` 各做一半，谁先谁后不清楚。  
+- 错误类型 `Unwrap` 链上的私有结构被默认 `%+v` 打出。
+
+## 和站内 LogValuer 文
+
+那篇讲最小实现与 Group；**本文只列翻车模式与检查清单**。
+
+## 一句话
+
+`LogValue` 要 **无递归、接收者覆盖值/指针、少分配、脱敏测全**；可疑时打一条 JSON Handler 对照。

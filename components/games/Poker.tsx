@@ -350,6 +350,18 @@ export default function Poker() {
               <small className="pk-pot-bb-together" title={`底池约 ${Math.max(0, Math.round((pot / table.bb) * 10) / 10)} BB · 你约 ${Math.max(0, Math.round((me.chips / table.bb) * 10) / 10)} BB`}>
                 {" "}· {Math.max(0, Math.round((pot / table.bb) * 10) / 10)}BB
                 <span className="pk-pot-bb-together__you"> / 你{Math.max(0, Math.round((me.chips / table.bb) * 10) / 10)}BB</span>
+                <span
+                  className="pk-pot-bb-bar"
+                  data-big={pot / table.bb >= 20 || undefined}
+                  title={`底池 ${Math.max(0, Math.round((pot / table.bb) * 10) / 10)} BB（满刻度按 40BB）`}
+                  aria-label={`底池约 ${Math.max(0, Math.round((pot / table.bb) * 10) / 10)} 个大盲`}
+                >
+                  <i
+                    style={{
+                      width: `${Math.min(100, Math.round((pot / table.bb / 40) * 100))}%`,
+                    }}
+                  />
+                </span>
               </small>
             ) : null}
             {me && pot > 0 ? (

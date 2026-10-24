@@ -1999,3 +1999,94 @@ html:has(.page--game) { overscroll-behavior: none; }
   background: linear-gradient(90deg, #f472b6, #a78bfa);
 }
 
+/* batch50: snake-unlock-bar */
+.snake-unlock-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 44px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.snake-unlock-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #67e8f9, #34d399);
+  transition: width 120ms ease-out;
+}
+.snake-unlock-bar[data-full] > i {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+
+/* batch50: snake-score-bar */
+.snake-score-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.snake-score-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #60a5fa, #818cf8);
+  transition: width 120ms ease-out;
+}
+.snake-score-bar[data-near] > i {
+  background: linear-gradient(90deg, #fbbf24, #fb923c);
+}
+.snake-score-bar[data-record] > i {
+  background: linear-gradient(90deg, #f472b6, #a78bfa);
+}
+
+/* batch50: breakout-paddle-bar */
+.breakout-paddle-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.breakout-paddle-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #94a3b8, #60a5fa);
+  transition: width 100ms ease-out;
+}
+.breakout-paddle-bar[data-wide] > i {
+  background: linear-gradient(90deg, #34d399, #2dd4bf);
+}
+
+/* batch50: pk-pot-bb-bar */
+.pk-pot-bb-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.pk-pot-bb-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+  transition: width 100ms ease-out;
+}
+.pk-pot-bb-bar[data-big] > i {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+}
+

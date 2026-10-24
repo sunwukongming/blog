@@ -617,6 +617,14 @@ const [phase, setPhase] = useState<Phase>("select");
               />
               <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
               拍宽<b className={hud.wide ? "game-tip--alert" : undefined}>{hud.paddleW}</b>
+              <span
+                className="breakout-paddle-bar"
+                data-wide={hud.wide || undefined}
+                title={`拍宽 ${hud.paddleW}（满刻度按 120）`}
+                aria-label={`拍宽 ${hud.paddleW}`}
+              >
+                <i style={{ width: `${Math.min(100, Math.round((hud.paddleW / 120) * 100))}%` }} />
+              </span>
               {(hud.dropsAir > 0 || hud.metalLeft > 0) && (
                 <>
                   <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>

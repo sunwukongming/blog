@@ -1,0 +1,42 @@
+---
+title: Postgres Skip Scan 何时失效：边界与误判
+date: "2026-10-25"
+category: backend
+summary: 站内 Skip Scan 文讲机制与写法。这篇只谈边界：前缀基数、版本/规划器、统计信息过期、以及何时递归 CTE 或换索引更稳。
+---
+
+Skip Scan / Loose Index Scan 能在「没写前缀列等式」时仍蹭上复合索引，但不是免费午餐。下面情况它会 **不选、选了更慢、或你以为在 skip 其实在乱序扫**。
+
+## 失效与变慢信号
+
+| 信号 | 原因 |
+|---|---|
+| 前缀 `distinct` 极高 | 「每个前缀跳一次」≈ 接近逐行；不如后列单独索引或 seqscan |
+| 前缀几乎单值 | 退化成普通范围扫，看不出 skip 优势 |
+| 统计过期 | 误估前缀基数，计划在 skip / bitmap / seq 间跳动 |
+| 版本过旧 | 无内建 skip 时只能靠递归 CTE 模拟，维护成本高 |
+| 排序/LIMIT 形状不匹配 | 仍要物化大量前缀才轮到你要的行 |
+
+```sql
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT ... FROM t WHERE created_at > $1 ORDER BY created_at
+-- 看是否真走预期索引、heap fetches 是否爆炸
+```
+
+## 和递归 CTE 模拟
+
+老版本用 `WITH RECURSIVE` 取 distinct 前缀再探：正确但 **易写错终止条件**，且参数化困难。能升版本用规划器能力就别长期靠 CTE 魔法。
+
+## 何时别指望 Skip Scan
+
+1. OLTP 点查：前缀等式 + 后列，老老实实写全或建匹配索引。  
+2. 前缀高基数字典（UUID、user_id）：为后列建独立索引或BRIN（时间列）往往更清晰。  
+3. 需要稳定延迟的路径：用扩展统计 / 固定索引形状，避免「有时 skip 有时全扫」。
+
+## 和站内 Skip Scan 文
+
+机制与适用直觉见原文；**本文只列边界与何时换策略**。
+
+## 一句话
+
+前缀 **中低基数 + 新统计 + 对的版本** 才谈 skip；高基数前缀请改索引，别硬辩计划树。

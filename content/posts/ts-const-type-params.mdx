@@ -1,0 +1,47 @@
+---
+title: TypeScript const 类型参数：字面量推理别再 as const 满天飞
+date: "2026-10-25"
+category: frontend
+summary: TS 5.0 的 const type parameters 让泛型默认按字面量推理。路由表、配置对象、satisfies 场景少写一层 as const，并知道何时不要用。
+---
+
+`function f<T>(x: T): T` 遇上对象/数组时，推理常被加宽成 `string` / `number`。以前靠实参 `as const` 或 `satisfies`。**`const` 类型参数**把「请按字面量来」写进泛型声明。
+
+## 写法
+
+```ts
+function tuple<const T extends readonly unknown[]>(xs: T): T {
+  return xs;
+}
+
+const t = tuple(["get", "post"]); // readonly ["get", "post"]
+
+function routes<const T extends Record<string, string>>(r: T): T {
+  return r;
+}
+
+const r = routes({ home: "/", blog: "/blog" });
+// r.home 是 "/"，不是 string
+```
+
+`const T` 近似「调用处自动 `as const`」，对嵌套对象/数组同样压到字面量。
+
+## 和 as const / satisfies
+
+| | `as const` | `satisfies` | `const` 类型参数 |
+|---|---|---|---|
+| 作用点 | 实参/断言 | 检查并保留推理 | 泛型声明侧 |
+| 库作者 | 难强制调用方 | 调用方自备 | API 一次声明，调用方省事 |
+| 可变意图 | 易锁死 | 灵活 | 别用在本当 `string` 的宽类型 |
+
+站内 branded / satisfies 文管身份与形状；本文只管 **推理宽度**。
+
+## 何时别用
+
+1. 你就是要接受任意 `string` 键/值（配置合并、用户输入）。  
+2. 需要可变数组方法（`const` 推成 `readonly`）。  
+3. 与重载搅在一起时先写测试用例，避免过窄字面量导致调用失败。
+
+## 一句话
+
+**库与工厂函数**用 `const` 类型参数收字面量；业务侧偶尔 `as const` 即可，不必两者叠满。

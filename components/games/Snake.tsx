@@ -496,6 +496,14 @@ export default function Snake() {
         {phase === "select" ? (
           <span>
             选择关卡<b>{unlocked ?? 1}/{SNAKE_LEVELS.length}</b>
+            <span
+              className="snake-unlock-bar"
+              data-full={(unlocked ?? 1) >= SNAKE_LEVELS.length || undefined}
+              title={`已解锁 ${unlocked ?? 1} / ${SNAKE_LEVELS.length}`}
+              aria-label={`已解锁 ${unlocked ?? 1} 关`}
+            >
+              <i style={{ width: `${Math.min(100, Math.round(((unlocked ?? 1) / Math.max(1, SNAKE_LEVELS.length)) * 100))}%` }} />
+            </span>
           </span>
         ) : level ? (
           <>
@@ -657,6 +665,19 @@ export default function Snake() {
           <>
             <span>
               无尽模式 分数<b>{hud.score}</b>
+              <span
+                className="snake-score-bar"
+                data-record={best != null && hud.score >= best && hud.score > 0 || undefined}
+                data-near={best != null && best > 0 && hud.score / best >= 0.8 || undefined}
+                title={`分数 ${hud.score}${best != null ? ` / 最高 ${best}` : ""}`}
+                aria-label={`分数 ${hud.score}`}
+              >
+                <i
+                  style={{
+                    width: `${Math.min(100, Math.round((hud.score / Math.max(1, best ?? hud.score, 1)) * 100))}%`,
+                  }}
+                />
+              </span>
             </span>
             <span>
               最高<b>{best ?? 0}</b>

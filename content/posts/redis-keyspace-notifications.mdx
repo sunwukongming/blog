@@ -1,0 +1,44 @@
+---
+title: Redis Keyspace Notifications：过期事件、订阅与生产边界
+date: "2026-10-24"
+category: backend
+summary: 打开 notify-keyspace-events 可订阅过期/驱逐等键事件；适合轻量反应，不适合当唯一可靠队列。配置、频道形态与至少一次语义要先写清。
+---
+
+「key 过期了通知我」常用 **keyspace notifications**：Redis 在键空间变化时往 pub/sub 频道发消息。和 Streams 消费组不同，这是 **火忘式广播**，默认不持久、不断言投递。
+
+## 打开与订阅
+
+```conf
+notify-keyspace-events Ex
+```
+
+常见字母：`K`/`E` keyspace/keyevent 前缀，`x` 过期，`e` 驱逐，`A` 近似全能（先想清楚噪声）。
+
+```text
+PSUBSCRIBE __keyevent@0__:expired
+# 消息：expired <key>
+```
+
+过期是 **惰性 + 主动抽样** 触发的：事件在键真正被删掉时发，不是「TTL 到点墙上时钟」的精确定时器。延迟与负载相关。
+
+## 适合 / 不适合
+
+| 适合 | 不适合 |
+|---|---|
+| 缓存失效后刷本地视图、轻量指标 | 订单超时唯一真相（应用层到期任务更稳） |
+| 调试「谁删了这个 key」 | 需要 ACK、重放、消费组并行 |
+| 与现有 Redis 同进程反应 | 跨机房强可靠、严格一次 |
+
+要可靠延迟队列，优先 Streams / 外部调度；通知只做辅助。和站内 Streams 消费组文对比：一边是 PEL+ACK，一边是 pub/sub 尽力而为。
+
+## 实践注意
+
+1. **DB 编号**写进频道：`@0__` 与实际 `SELECT` 一致。  
+2. 订阅端断线会丢事件；重要动作要可对账（扫一遍带 TTL 的 key 或业务表）。  
+3. `A` 或写密集前缀会产生大量 pub/sub 流量，先在从库或独立实例试点。  
+4. Cluster 下事件在 **持有该 slot 的节点** 上发，订阅拓扑要跟着设计。
+
+## 小结
+
+Keyspace notifications 是观察镜，不是工单系统。配置收窄事件类型，把业务可靠性放在可 ACK 的通道上，过期通知只做增量反应。

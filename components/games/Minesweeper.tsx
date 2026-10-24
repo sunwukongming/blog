@@ -350,11 +350,43 @@ export default function Minesweeper() {
         <span
           className="mine-progress"
           data-late={lateClear || undefined}
-          title="安全格开图进度（不含雷）"
+          data-seg={
+            safeProgress <= 0
+              ? "zero"
+              : safeProgress <= 20
+                ? "early"
+                : safeProgress < 75
+                  ? "mid"
+                  : lateClear
+                    ? "late"
+                    : "high"
+          }
+          title={`安全格开图 ${safeProgress}%（${safeOpen}/${safeTotal}）· 段 ${
+            safeProgress <= 0
+              ? "未开"
+              : safeProgress <= 20
+                ? "前段"
+                : safeProgress < 75
+                  ? "中段"
+                  : lateClear
+                    ? "收官"
+                    : "后段"
+          }`}
         >
           开图<b>{safeProgress}%</b>
           <small>
             {safeOpen}/{safeTotal}
+          </small>
+          <small className="mine-progress__seg" style={{ marginLeft: 6 }}>
+            {safeProgress <= 0
+              ? "未开"
+              : safeProgress <= 20
+                ? "前段"
+                : safeProgress < 75
+                  ? "中段"
+                  : lateClear
+                    ? "收官"
+                    : "后段"}
           </small>
         </span>
         <span

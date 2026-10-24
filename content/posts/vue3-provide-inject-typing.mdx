@@ -1,0 +1,50 @@
+---
+title: Vue 3 provide/inject 的 TypeScript：InjectionKey 与默认值
+date: "2026-10-24"
+category: frontend
+summary: 用 InjectionKey<T> 拴住提供方与注入方类型；避免字符串 key 漂移。可选 inject 默认值、app.provide 与测试替身一并写清。
+---
+
+跨层共享（主题、表单总线、当前用户）用 `provide`/`inject` 比层层 props 干净。TypeScript 下若用普通字符串 key，注入侧容易变成 `T | undefined` 或静默 `any`。
+
+## InjectionKey
+
+```ts
+import type { InjectionKey, Ref } from "vue";
+
+export type Theme = { mode: "dark" | "light"; toggle: () => void };
+export const ThemeKey: InjectionKey<Ref<Theme>> = Symbol("theme");
+
+// parent
+provide(ThemeKey, themeRef);
+
+// child
+const theme = inject(ThemeKey);
+// theme: Ref<Theme> | undefined
+```
+
+`Symbol` 作 key 可避免多库同名碰撞；导出 `ThemeKey` 让提供/注入共用同一类型锚点。
+
+## 默认值与必存
+
+```ts
+const theme = inject(ThemeKey, defaultThemeRef);
+// 有默认：Ref<Theme>
+
+const themeStrict = inject(ThemeKey);
+if (!themeStrict) throw new Error("ThemeKey missing");
+```
+
+- 库组件：给可运行默认值，文档写清「可被覆盖」。  
+- 应用壳：缺失即抛，早失败优于页面半残。  
+- `app.provide(ThemeKey, …)` 适合插件级依赖；单测里 `app.provide` 或包装 `Provider`。
+
+## 和 defineModel / composable 边界
+
+- 父子一对一同步优先 `defineModel`（站内另文）。  
+- 跨多层、跨路由布局用 provide/inject。  
+- composable 内部 `inject(ThemeKey)` 时，在 JSDoc/类型上标明「须在 Provider 下调用」。
+
+## 小结
+
+`InjectionKey<T>` 是契约；字符串 key 是隐患。默认值策略（宽松库 vs 严格应用）选一种写进规范，类型才能在跨层依赖里帮上忙。

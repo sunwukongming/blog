@@ -1,0 +1,41 @@
+---
+title: React key 与重挂载：什么时候该逼组件「从头再来」
+date: "2026-10-24"
+category: frontend
+summary: key 不只是列表稳妥符：改 key 会卸载再挂载，清掉 state/effects。表单切换、媒体播放器换源、错误边界复位都靠这招，也别滥用成隐性重置。
+---
+
+React 用 `key` 识别「是不是同一个组件实例」。列表里用稳定 id；**刻意换 key** 则是合法的重置手段——新实例、空 state、effects 重跑。
+
+## 该重挂载的场景
+
+```tsx
+<Editor key={docId} initial={doc} />
+<VideoPlayer key={src} src={src} />
+<ErrorBoundary key={retryToken}>{children}</ErrorBoundary>
+```
+
+| 场景 | 为何换 key |
+|---|---|
+| 路由/文档 id 变了 | 避免旧文档 state 漏到新文档 |
+| 播放器换 URL | 避免内部 currentTime/缓冲粘住 |
+| 错误边界重试 | 清掉 error state，子树真正重试 |
+| 向导「再来一次」 | 一步重置整棵表单树 |
+
+`key={index}` 在会重排的列表里仍是坑；这里说的是 **业务 id 或显式 resetToken**。
+
+## 别用 key 偷懒
+
+- 高频输入框不要每键改 key → 失焦、IME 打断。  
+- 能用 `useEffect` 在 `id` 变化时 `setState(initial)` 就够时，不必拆实例（保留 DOM 焦点/动画）。  
+- 和 `useTransition` / `useDeferredValue` 文章衔接：过渡更新的是 UI 优先级，**不替代**身份变更时的重挂载。
+
+## 检查清单
+
+1. 换实体（用户、订单、房间）→ 根组件 `key={entityId}`。  
+2. 同实体仅改字段 → 更新 props，保留 key。  
+3. 测：切换实体后本地 draft、订阅、定时器是否还指着旧 id。
+
+## 小结
+
+`key` 是身份。列表要稳定；跨实体要换。把「重置」写成显式 key 变更，比深挖 `useEffect` 清一堆 ref 更可读，也更不容易漏。

@@ -692,11 +692,20 @@ export default function Tetris() {
         )}
         {(phase === "running" || phase === "paused") && (
           <span
-            title={stats.canHold === false ? "当前块已用过 Hold，落地后恢复" : "C / Shift 可与暂存交换"}
-            className={stats.canHold === false ? undefined : "game-tip--alert"}
+            className={stats.canHold === false ? "tetris-hold-hud tetris-hold-hud--cool" : "tetris-hold-hud game-tip--alert"}
+            data-ready={stats.canHold || undefined}
+            data-cool={stats.canHold === false || undefined}
+            title={
+              stats.canHold === false
+                ? `Hold 冷却：当前块已用过，落地后恢复${stats.hold ? ` · 槽内 ${stats.hold}` : " · 槽空"}`
+                : `Hold 可用：C / Shift 与暂存交换${stats.hold ? ` · 槽内 ${stats.hold}` : " · 空槽将存入当前块"}`
+            }
           >
-            Hold<b>{stats.canHold === false ? "已用" : "可用"}</b>
-            {stats.hold ? <small style={{ marginLeft: 4, opacity: 0.75 }}>{stats.hold}</small> : null}
+            Hold
+            <b className={stats.canHold === false ? undefined : "game-tip--alert"}>
+              {stats.canHold === false ? "冷却" : "可用"}
+            </b>
+            {stats.hold ? <small style={{ marginLeft: 4, opacity: 0.75 }}>{stats.hold}</small> : <small style={{ marginLeft: 4, opacity: 0.55 }}>空</small>}
           </span>
         )}
         <span className="spacer" />
@@ -719,7 +728,9 @@ export default function Tetris() {
           {" · 幽灵 "}
           {stats.ghost}
           {" 格"}
-          {stats.canHold === false ? " · Hold 已用" : " · Hold 可用"}
+          {stats.canHold === false
+            ? ` · Hold 冷却中${stats.hold ? `（槽 ${stats.hold}）` : "（槽空）"}· 落地后恢复`
+            : ` · Hold 可用${stats.hold ? `（槽 ${stats.hold}，C/Shift 交换）` : "（空槽，C/Shift 存入）"}`}
         </p>
       )}
       <div className="tetris">
@@ -759,7 +770,10 @@ export default function Tetris() {
           )}
         </div>
         <div className="tetris-side">
-          <span title="C / Shift：与当前块交换；落地前每块限一次">暂存</span>
+          <span title={stats.canHold === false ? "Hold 冷却：落地后再可交换" : "C / Shift：与当前块交换；落地前每块限一次"}>
+            暂存
+            <small style={{ marginLeft: 6, opacity: 0.8 }}>{stats.canHold === false ? "冷却" : "可用"}</small>
+          </span>
           <div
             className="tetris-next"
             data-dim={stats.canHold === false ? "true" : undefined}

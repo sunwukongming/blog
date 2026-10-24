@@ -898,3 +898,50 @@ html:has(.page--game) { overscroll-behavior: none; }
   background: #ffb86b;
 }
 .pk-pot-hud b { font-variant-numeric: tabular-nums; }
+
+/* batch29: Memory endgame bar, Mines progress seg colors, Tetris Hold cool */
+.memory-endgame {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding-bottom: 5px;
+}
+.memory-endgame__bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 0.08);
+  overflow: hidden;
+}
+.memory-endgame__bar::after {
+  content: "";
+  display: block;
+  height: 100%;
+  width: var(--end-pct, 0%);
+  border-radius: 2px;
+  background: #7ab8ff;
+  transition: width 0.2s ease;
+}
+.memory-endgame[data-endgame] .memory-endgame__bar::after {
+  background: var(--accent);
+  box-shadow: 0 0 6px rgb(255 122 156 / 0.45);
+}
+.mine-progress[data-seg="early"] b { color: #7ab8ff; }
+.mine-progress[data-seg="mid"] b { color: #ffb86b; }
+.mine-progress[data-seg="high"] b { color: #7af5c0; }
+.mine-progress[data-seg="late"] b { color: var(--accent); }
+.mine-progress__seg { opacity: 0.85; }
+.tetris-hold-hud--cool {
+  opacity: 0.75;
+}
+.tetris-hold-hud[data-cool] b {
+  color: #9aa4b2;
+}
+.tetris-hold-hud[data-ready] {
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--accent) 45%, transparent);
+  border-radius: 6px;
+  padding-inline: 4px;
+}

@@ -17,6 +17,9 @@ export const metadata: Metadata = {
     url: SITE_URL ?? undefined,
   },
   twitter: { card: "summary", title: SITE.name, description: SITE.description },
+  alternates: SITE_URL
+    ? { canonical: "/", types: { "application/rss+xml": `${SITE_URL}/feed.xml` } }
+    : undefined,
 };
 
 

@@ -5,16 +5,16 @@ import { SITE, SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "文章",
-  description: "GM Lab 文章列表：Go、云原生、可观测与前端笔记；支持搜索与按分类筛选，每篇对应卡片环上的一张卡。",
+  description: "GM Lab 文章列表：Go / 云原生 / OpenTelemetry / 前端与数据层笔记；支持搜索与分类筛选，卡片环一页一景。",
   openGraph: {
     title: "文章",
-    description: "GM Lab 文章列表：Go、云原生、可观测与前端笔记；支持搜索与按分类筛选，每篇对应卡片环上的一张卡。",
+    description: "GM Lab 文章列表：Go / 云原生 / OpenTelemetry / 前端与数据层笔记；支持搜索与分类筛选，卡片环一页一景。",
     type: "website",
   },
   twitter: {
     card: "summary",
     title: "文章",
-    description: "GM Lab 文章列表：Go、云原生、可观测与前端笔记；支持搜索与按分类筛选，每篇对应卡片环上的一张卡。",
+    description: "GM Lab 文章列表：Go / 云原生 / OpenTelemetry / 前端与数据层笔记；支持搜索与分类筛选，卡片环一页一景。",
   },
 };
 
@@ -24,7 +24,7 @@ export default async function BlogIndex() {
     "@context": "https://schema.org",
     "@type": "ItemList",
     name: `${SITE.name} 文章`,
-    description: "GM Lab 文章列表",
+    description: "GM Lab 文章列表：Go / 云原生 / 可观测 / 前端笔记",
     numberOfItems: posts.length,
     itemListElement: posts.slice(0, 50).map((p, i) => ({
       "@type": "ListItem",

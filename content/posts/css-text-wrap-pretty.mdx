@@ -1,0 +1,40 @@
+---
+title: CSS text-wrap: pretty：正文折行观感
+date: "2026-10-25"
+category: frontend
+summary: 站内已有 text-wrap: balance 讲标题均分。这篇只写 pretty：减少段落末行孤零感、适用正文，以及和 balance 的分工与代价。
+---
+
+**`text-wrap: balance`** 适合短标题均分行长。正文段落更常试 **`pretty`**：引擎在折行时兼顾末行观感，少出现「最后一行只剩两三个字」的突兀感。本文不复述 balance 的标题场景。
+
+## 写法
+
+```css
+.article-body p {
+  text-wrap: pretty;
+}
+
+.card-title {
+  text-wrap: balance; /* 短标题仍用 balance，见站内专文 */
+}
+```
+
+| 值 | 更合适 |
+|---|---|
+| `pretty` | 多句段落、博客正文 |
+| `balance` | 一行～三行标题、卡片标题 |
+| `wrap` | 默认；不支持时的回退 |
+
+## 边界
+
+- `pretty` 的计算比普通 `wrap` 重，长列表/无限滚动里慎全局套用。  
+- 与 `hyphens`、`word-break` 叠用时先定语言与断词策略，再调 pretty。  
+- 支持度因引擎而异；不支持时静默回退，可作渐进增强。  
+- 两端对齐（`text-align: justify`）会改变「末行难看」的定义——先对齐策略，再谈 pretty。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| text-wrap pretty | 本文 |
+| text-wrap balance | css-text-wrap-balance |

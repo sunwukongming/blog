@@ -843,6 +843,23 @@ export default function Tetris() {
                 }}
               />
             </span>
+            <span
+              className="tetris-lines-density-bar"
+              data-hot={stats.lines / Math.max(1, stats.level) >= 10 || undefined}
+              data-low={stats.level >= 3 && stats.lines / Math.max(1, stats.level) < 6 || undefined}
+              title={`级均行 ${Math.round((stats.lines / Math.max(1, stats.level)) * 10) / 10}（满刻度按 12，理想约 10）`}
+              aria-label={`级均行 ${Math.round((stats.lines / Math.max(1, stats.level)) * 10) / 10}`}
+            >
+              <i
+                className="tetris-lines-density-bar__fill"
+                style={{
+                  width: `${Math.min(
+                    100,
+                    Math.round((stats.lines / Math.max(1, stats.level) / 12) * 100),
+                  )}%`,
+                }}
+              />
+            </span>
             {stats.comboPeak > 1 ? (
               <small style={{ marginLeft: 4, opacity: 0.7 }} title={`本局连消峰值 ×${stats.comboPeak}`}>
                 峰{stats.comboPeak}

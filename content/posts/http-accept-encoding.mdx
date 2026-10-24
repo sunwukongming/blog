@@ -1,0 +1,44 @@
+---
+title: HTTP Accept-Encoding：内容编码协商
+date: "2026-10-25"
+category: frontend
+summary: 客户端声明能解哪些内容编码，服务器用 Content-Encoding 回应。这篇写 gzip / br / zstd、identity、以及和 Vary 缓存的衔接点。
+---
+
+**`Accept-Encoding`** 是请求头：客户端说「我能解 gzip、br…」。响应侧对应 **`Content-Encoding`**。压缩谈的是**传输内容编码**，不是 `Content-Type` 里的媒体类型。
+
+## 常见形态
+
+```http
+GET /app.js HTTP/1.1
+Accept-Encoding: gzip, deflate, br, zstd
+```
+
+```http
+HTTP/1.1 200 OK
+Content-Encoding: br
+Vary: Accept-Encoding
+```
+
+| 记号 | 含义 |
+|---|---|
+| `gzip` / `deflate` | 传统；兼容面最广 |
+| `br`（Brotli） | 静态资源常见更优比 |
+| `zstd` | 新兴；看 CDN / 运行时是否启用 |
+| `identity` | 不编码；也可省略 |
+
+质量值 `q`（如 `br;q=1.0, gzip;q=0.8`）影响服务器优选顺序。
+
+## 边界
+
+- 已压缩的格式（如 `.jpg`、`.mp4`）再 gzip 往往无益，还浪费 CPU——按类型跳过。  
+- 中间层若解压后再传给客户端，勿再谎称同一 `Content-Encoding`。  
+- 缓存键必须考虑编码差异：通常要 **`Vary: Accept-Encoding`**（详见站内 Vary 文，若有）。  
+- `Accept-Encoding: *` 语义宽泛，服务端仍应选自己支持且安全的编码。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| Accept-Encoding | 本文 |
+| Vary | http-vary（若已发布） |

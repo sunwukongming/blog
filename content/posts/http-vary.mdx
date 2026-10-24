@@ -1,0 +1,42 @@
+---
+title: HTTP Vary：缓存按哪些请求头分变体
+date: "2026-10-25"
+category: frontend
+summary: 同一 URL 因 Accept-Encoding、Cookie、Authorization 等返回不同正文时，缓存靠 Vary 区分变体。这篇写语法、与压缩协商的搭配，以及过度 Vary 的代价。
+---
+
+**`Vary`** 响应头告诉共享缓存：「选变体时，请把下列请求头也算进键」。没有它，CDN 可能把 gzip 正文发给只声明 `identity` 的客户端。
+
+## 写法
+
+```http
+HTTP/1.1 200 OK
+Content-Encoding: br
+Vary: Accept-Encoding
+```
+
+多个字段用逗号分隔：
+
+```http
+Vary: Accept-Encoding, Accept-Language
+```
+
+| 场景 | 常见 Vary |
+|---|---|
+| 按编码压静态资源 | `Accept-Encoding` |
+| 多语言页面 | `Accept-Language` |
+| 按 Cookie 个性化 | 尽量避免对共享缓存 `Vary: Cookie`（碎片化严重） |
+
+## 边界
+
+- **`Vary: *`** 表示「与请求相关、不宜共享缓存」——等价于私有/不可复用信号，慎用。  
+- 列得越多，缓存命中率越低；只列真正影响正文的头。  
+- 与 **Accept-Encoding** 配对是压缩场景的标配；只压不 Vary 是经典踩坑。  
+- 授权内容优先 `Cache-Control: private` / 不分发，而不是靠堆 Vary 凑合。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| Vary | 本文 |
+| Accept-Encoding | http-accept-encoding |

@@ -723,6 +723,32 @@ export default function Minesweeper() {
               }}
             />
           </span>
+          <span
+            className="mine-safe-pace-bar"
+            data-hot={seconds > 0 && safeOpen / seconds >= 0.3 || undefined}
+            data-slow={seconds >= 25 && safeOpen / Math.max(1, seconds) < 0.08 || undefined}
+            title={
+              seconds > 0
+                ? `安全格配速 ${Math.round((safeOpen / seconds) * 100) / 100}/s（满刻度按 0.4/s）`
+                : "安全格配速 —"
+            }
+            aria-label={
+              seconds > 0
+                ? `每秒约开安全格 ${Math.round((safeOpen / seconds) * 100) / 100}`
+                : "安全格配速未知"
+            }
+          >
+            <i
+              className="mine-safe-pace-bar__fill"
+              style={{
+                width: `${
+                  seconds > 0
+                    ? Math.min(100, Math.round((safeOpen / seconds / 0.4) * 100))
+                    : 0
+                }%`,
+              }}
+            />
+          </span>
           {best != null && phase === "playing" && best > 0 ? (
             <>
               <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>

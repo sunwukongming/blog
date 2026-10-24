@@ -459,6 +459,32 @@ export default function Memory() {
               style={{ width: `${Math.min(100, Math.round((seconds / 90) * 100))}%` }}
             />
           </span>
+          <span
+            className="memory-pace-bar"
+            data-slow={matchedCount > 0 && seconds / matchedCount >= 8 || undefined}
+            data-fast={matchedCount > 0 && seconds / matchedCount <= 3 || undefined}
+            title={
+              matchedCount > 0
+                ? `配速 ${Math.round((seconds / matchedCount) * 10) / 10}s/对（满刻度按 12s/对）`
+                : "配速 —（尚未配对）"
+            }
+            aria-label={
+              matchedCount > 0
+                ? `配速每对 ${Math.round((seconds / matchedCount) * 10) / 10} 秒`
+                : "配速未知"
+            }
+          >
+            <i
+              className="memory-pace-bar__fill"
+              style={{
+                width: `${
+                  matchedCount > 0
+                    ? Math.min(100, Math.round((seconds / matchedCount / 12) * 100))
+                    : 0
+                }%`,
+              }}
+            />
+          </span>
         </span>
       </div>
       <p className={endgame || streak >= 2 ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">

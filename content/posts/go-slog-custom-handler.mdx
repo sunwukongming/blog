@@ -1,0 +1,72 @@
+---
+title: Go slog 自写 Handler：Enabled / Handle / WithAttrs 契约
+date: "2026-10-25"
+category: backend
+summary: Options、流水线、中间件另有专文。这篇只谈自己实现 slog.Handler 时必须守住的三个方法，以及 WithGroup 易踩的坑。
+---
+
+`JSONHandler` 的 Options、中间件包装、LevelVar 站内已有。**当你要写自己的 Handler**（采样、外发、改写 Record），契约比「能编译」更窄。
+
+## 三个方法
+
+```go
+type Handler interface {
+    Enabled(context.Context, slog.Level) bool
+    Handle(context.Context, slog.Record) error
+    WithAttrs([]slog.Attr) Handler
+    WithGroup(string) Handler
+}
+```
+
+| 方法 | 约定 |
+|---|---|
+| `Enabled` | 便宜；Logger 先问再分配字段。勿在这里做 I/O。 |
+| `Handle` | 真正写出去；`Record` 的 attrs 要 `Record.Attrs` 遍历，别假设私有结构。 |
+| `WithAttrs` / `WithGroup` | 返回 **新 Handler**（或等价不可变视图）；后续 `logger.With` 靠它们叠状态。 |
+
+## 常见翻车
+
+1. **WithAttrs 改 receiver 再返回 self**：并发下字段串台。应拷贝一份再挂 attrs。  
+2. **Handle 里忽略 `Record.Time` / `PC`**：AddSource 链路会断。  
+3. **Enabled 恒 true、在 Handle 再丢弃**：热路径多分配。  
+4. **WithGroup 只改字符串前缀却不包下一层**：和标准 JSONHandler 的 group 嵌套不一致，采集端难解析。
+
+## 最小委托骨架
+
+```go
+type Wrap struct {
+    next  slog.Handler
+    attrs []slog.Attr
+}
+
+func (w Wrap) Enabled(ctx context.Context, l slog.Level) bool {
+    return w.next.Enabled(ctx, l)
+}
+
+func (w Wrap) Handle(ctx context.Context, r slog.Record) error {
+    r.AddAttrs(w.attrs...)
+    return w.next.Handle(ctx, r)
+}
+
+func (w Wrap) WithAttrs(attrs []slog.Attr) slog.Handler {
+    c := w
+    c.attrs = append(slices.Clip(w.attrs), attrs...)
+    return c
+}
+
+func (w Wrap) WithGroup(name string) slog.Handler {
+    return Wrap{next: w.next.WithGroup(name), attrs: w.attrs}
+}
+```
+
+先委托、再扩展；采样或远程写放在 `Handle`，并想好背压与丢弃策略。
+
+## 和站内其它文
+
+- **JSONHandler Options**：定输出形状，不自写类型。  
+- **pipeline / middleware**：组合多个已有 Handler。  
+- **本文**：你真的 `implements slog.Handler` 时的契约。
+
+## 小结
+
+自写 Handler 的核心是 **不可变 With\*** 与 **便宜的 Enabled**。契约守住了，再谈采样率与外发格式。

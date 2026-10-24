@@ -704,6 +704,19 @@ export default function Tetris() {
           >
             <i style={{ width: `${Math.min(100, Math.round((stats.lines / 50) * 100))}%` }} />
           </span>
+          <span
+            className="tetris-sprint-bar"
+            data-done={stats.lines >= 40 || undefined}
+            data-near={stats.lines >= 30 && stats.lines < 40 || undefined}
+            title={`40 行短冲 ${Math.min(40, stats.lines)}/40`}
+            aria-label={`短冲进度 ${Math.min(40, stats.lines)} 之 40`}
+          >
+            <i
+              style={{
+                width: `${Math.min(100, Math.round((stats.lines / 40) * 100))}%`,
+              }}
+            />
+          </span>
         </span>
         <span>
           等级<b>{stats.level}</b>

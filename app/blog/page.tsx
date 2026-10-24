@@ -31,6 +31,7 @@ export default async function BlogIndex() {
   // batch50: 再核 ItemListOrderDescending + slice(0,50)；OG/Twitter images 仍同源 icon.svg
   // batch53: 再核 numberOfItems=posts.length + inLanguage；与 archive ItemList / feed 同源 getAllPosts
   // batch57: 再核 ItemListOrderDescending + slice 策略与 archive 一致；description 未改语义
+  // batch59: 再核 inLanguage + numberOfItems=posts.length；与 archive/feed 同源 getAllPosts
   const itemListLd = {
     "@context": "https://schema.org",
     "@type": "ItemList",

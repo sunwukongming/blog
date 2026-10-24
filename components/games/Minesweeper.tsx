@@ -479,6 +479,32 @@ export default function Minesweeper() {
               }}
             />
           </span>
+          <span
+            className="mine-pace-bar"
+            data-fast={seconds > 0 && safeOpen / seconds >= 1.5 || undefined}
+            data-slow={seconds >= 30 && safeOpen / Math.max(1, seconds) < 0.4 || undefined}
+            title={
+              seconds > 0
+                ? `开图配速 ${Math.round((safeOpen / seconds) * 100) / 100} 格/s（满刻度按 2 格/s）`
+                : "开图配速 —"
+            }
+            aria-label={
+              seconds > 0
+                ? `每秒开启约 ${Math.round((safeOpen / seconds) * 100) / 100} 格`
+                : "开图配速未知"
+            }
+          >
+            <i
+              className="mine-pace-bar__fill"
+              style={{
+                width: `${
+                  seconds > 0
+                    ? Math.min(100, Math.round((safeOpen / seconds / 2) * 100))
+                    : 0
+                }%`,
+              }}
+            />
+          </span>
           <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
           <span
             className="mine-safe-left-bar"

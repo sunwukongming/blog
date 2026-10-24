@@ -1,0 +1,55 @@
+---
+title: Next.js 缓存读路径：命中、stale 与 tag 失效怎么汇合
+date: "2026-10-25"
+category: frontend
+summary: tag-revalidate 讲怎么发失效，cacheLife / unstable_cache 讲怎么挂寿命与键。这篇只谈读路径：请求进来时如何命中、何时当 stale、tag 扫落后下一读见什么。
+---
+
+站内已有 **revalidateTag**、**cacheLife**、**unstable_cache**。运维最常问的是另一半：**读的时候到底发生了什么**。
+
+## 读路径三态（直觉）
+
+```text
+请求 → 查缓存键
+  ├─ fresh：直接返回
+  ├─ stale（在 stale 窗内）：可先返回旧值，并触发后台再验证
+  └─ miss / expire：同步拉源，再写入
+```
+
+`cacheLife` 档位里的 stale / revalidate / expire 描述的就是这些窗。`unstable_cache` 的 `revalidate: 秒` 更像「过期后下次再填」。
+
+## Tag 失效落在读上的表现
+
+```ts
+// 写路径 / Server Action
+revalidateTag("product");
+
+// 之后任意读：带 tag "product" 的条目在后续请求视为失效
+const product = await getProduct(id); // unstable_cache(..., { tags: ["product"] })
+```
+
+| 时刻 | 读者看到 |
+|---|---|
+| tag 刚触发后的下一请求 | 通常 miss 或强制再验证，不该长期傻返回旧值 |
+| 仅 TTL 到期、未 tag | 依 stale 窗：可能先旧后新 |
+| 键参数变了 | 新键，与旧条目无关 |
+
+## 和三篇站内文怎么拼
+
+| 文 | 管 |
+|---|---|
+| `next-cache-tag-revalidate` | 谁在何时 `revalidateTag` |
+| `next-cache-life` | 寿命档怎么声明 |
+| `next-unstable-cache` | 函数怎么挂 key / tags / TTL |
+| **本文** | **一次读如何解释命中与失效后果** |
+
+## 排障清单
+
+1. 失效了仍旧：是否挂了同一个 tag 字符串；多实例是否各有一份缓存。  
+2. 偶发旧值：是否在 stale 窗内「先返回再后台刷新」——对用户是否可接受。  
+3. 键抖动：把 cookie、header 闭包进函数却不进 `keyParts`/参数，会读到别人的条目或永远 miss。  
+4. 开发态与生产缓存行为不同：用生产或 `next start` 验证，不要只看 `dev`。
+
+## 小结
+
+写配置时想 **键与 tag**；排障时想 **这一读处于 fresh/stale/miss 哪一态**。读路径画清楚，TTL 与 tag 才不会互相甩锅。

@@ -1,0 +1,48 @@
+---
+title: Gateway API TCPRoute：非 HTTP 端口怎么挂
+date: "2026-10-25"
+category: cloud
+summary: HTTPRoute / GRPCRoute 管 L7。这篇只谈 TCPRoute：把 TCP 端口从 Gateway listener 转到后端 Service，以及和 TLS、sniff 的边界。
+---
+
+站内 HTTPRoute、GRPCRoute 已覆盖常见 L7。数据库、自定义二进制、旧 TCP 探活仍要 **四层转发**——Gateway API 用 **TCPRoute**（具体 CRD 成熟度随发行版，以你集群 API 为准）。
+
+## 和 L7 路由分工
+
+| 资源 | 层 | 匹配 |
+|---|---|---|
+| HTTPRoute | L7 | path / header / method |
+| GRPCRoute | L7 | gRPC service/method |
+| **TCPRoute** | **L4** | **listener 端口 → backend** |
+
+不要在 TCPRoute 里找 path；TLS 若在 Gateway 终结，后面可能是明文 TCP，需和安全模型对齐。
+
+## 示意
+
+```yaml
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: TCPRoute
+metadata:
+  name: redis-tcp
+spec:
+  parentRefs:
+    - name: edge-gateway
+      sectionName: tcp-6379
+  rules:
+    - backendRefs:
+        - name: redis
+          port: 6379
+```
+
+Gateway 上先有对应 **TCP listener**（`sectionName` 对上）。没有 listener，Route 会一直 Accepted=False。
+
+## 注意点
+
+1. **SNI / TLS**：纯 TCPRoute 不解释 HTTP；TLS passthrough 看 Gateway 发行版是否用 TLSRoute 等扩展。  
+2. **权重与多后端**：与 Service 能力绑定；健康检查仍靠探针，不要假设 L7 那种 header 重试。  
+3. **策略附件**：Timeout/Retry 类 HTTP 中间件通常不适用于裸 TCP；限流要在 L4/防火墙另做。  
+4. **与 Service mesh**：Mesh 已接管端口时，再叠 Gateway TCP 易双路径；选一个入口。
+
+## 小结
+
+TCPRoute 就是 **把 Gateway 的 TCP 端口订到 Service**。和 HTTP/gRPC 文分开记：无 path、无内容路由，只有 listener 与后端端口对齐。

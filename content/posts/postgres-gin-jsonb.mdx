@@ -2,7 +2,7 @@
 title: Postgres GIN 与 JSONB：容器里的键值怎么索引
 date: "2026-10-24"
 category: backend
-summary: 与表达式、BRIN、部分、覆盖索引区分：GIN 服务 @>、?、路径存在性等容器查询；讲 jsonb_ops / jsonb_path_ops 取舍与膨胀。
+summary: "与表达式、BRIN、部分、覆盖索引区分：GIN 服务 @>、?、路径存在性等容器查询；讲 jsonb_ops / jsonb_path_ops 取舍与膨胀。"
 ---
 
 `payload @> '{"status":"open"}'` 这类包含查询，B-tree 列索引帮不上。**GIN（Generalized Inverted Index）**把容器拆成条目再倒排。

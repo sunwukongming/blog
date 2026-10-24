@@ -1,8 +1,9 @@
 ---
-title: CSS Cascade Layers：用 @layer 管住覆盖顺序
+
+title: "CSS Cascade Layers：用 @layer 管住覆盖顺序"
 date: "2026-10-24"
 category: frontend
-summary: @layer 把样式分成 reset / tokens / components / utilities，同层比特异性、跨层比图层顺序。减少 !important 战争，也避开「后写的类永远赢」的意外。
+summary: "@layer 把样式分成 reset / tokens / components / utilities，同层比特异性、跨层比图层顺序。减少 !important 战争，也避开「后写的类永远赢」的意外。"
 ---
 
 特异性算不清、工具类与组件样式互殴时，**Cascade Layers**（`@layer`）给层一个显式优先级：后声明的层压前层，**与选择器特异性无关**（层间比较时）。

@@ -1,8 +1,9 @@
 ---
+
 title: TypeScript NoInfer：抑制多余推断
 date: "2026-10-25"
 category: frontend
-summary: 泛型默认会从所有参数位推断。这篇写 NoInfer<T>：保住由别的参数决定的类型，避免默认值或回调把 T 拉宽。
+summary: "泛型默认会从所有参数位推断。这篇写 NoInfer<T>：保住由别的参数决定的类型，避免默认值或回调把 T 拉宽。"
 ---
 
 部分 API 希望 **T 只由第一个参数决定**，后面的默认值或回调不要参与推断。TypeScript 的 **`NoInfer<T>`** 把该位置排除出推断候选。

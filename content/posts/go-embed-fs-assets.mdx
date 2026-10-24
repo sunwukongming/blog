@@ -1,8 +1,9 @@
 ---
+
 title: Go embed：把静态资源打进二进制
 date: "2026-10-24"
 category: backend
-summary: go:embed 把模板、迁移 SQL、前端产物嵌进同一可执行文件。讲清 embed.FS、模式匹配、与 http.FileServer 的接法，以及别嵌入密钥。
+summary: "go:embed 把模板、迁移 SQL、前端产物嵌进同一可执行文件。讲清 embed.FS、模式匹配、与 http.FileServer 的接法，以及别嵌入密钥。"
 ---
 
 运维只发一个二进制时，模板与静态页常跟着跑。`//go:embed` 在编译期把文件打进包变量。

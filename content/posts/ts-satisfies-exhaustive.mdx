@@ -1,8 +1,9 @@
 ---
+
 title: TypeScript satisfies：联合穷尽检查
 date: "2026-10-25"
 category: frontend
-summary: 站内 satisfies 与 vs-as 讲保留字面量、对比断言。这篇只谈穷尽：用 satisfies 固定 Record<Union, V>，改联合时漏 key 直接红。
+summary: "站内 satisfies 与 vs-as 讲保留字面量、对比断言。这篇只谈穷尽：用 satisfies 固定 Record<Union, V>，改联合时漏 key 直接红。"
 ---
 
 `satisfies` 常用来保留字面量。另一高频场景：**对联合类型做穷尽映射**——加枚举成员时漏改表就该编译失败。基本 / vs `as` 见站内文；本文只谈穷尽表。

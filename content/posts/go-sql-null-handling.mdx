@@ -1,8 +1,9 @@
 ---
+
 title: Go database/sql：NULL 怎么接才不踩坑
 date: "2026-10-24"
 category: backend
-summary: 扫描可空列用 sql.Null* 或指针；别对 NULL 直接 Scan 进非指针基本类型。业务层尽早变成明确的 optional，而不是把 NullString 传遍全栈。
+summary: "扫描可空列用 sql.Null* 或指针；别对 NULL 直接 Scan 进非指针基本类型。业务层尽早变成明确的 optional，而不是把 NullString 传遍全栈。"
 ---
 
 `database/sql` 遇到 SQL `NULL` 时，往 `string`/`int64` 等非指针扫会直接报错。团队里常见两种接法。

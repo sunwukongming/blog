@@ -1,8 +1,9 @@
 ---
+
 title: pnpm workspace 单体仓：协议依赖与过滤命令比「再套一层 lerna」先有用
 date: "2026-10-24"
 category: tools
-summary: pnpm-workspace.yaml 划包边界，workspace: 协议钉本地版本，pnpm --filter 跑子集。先把这三件事稳住，再谈远程缓存与变更集。
+summary: "pnpm-workspace.yaml 划包边界，workspace: 协议钉本地版本，pnpm --filter 跑子集。先把这三件事稳住，再谈远程缓存与变更集。"
 ---
 
 多包仓库最容易烂在：有人 `npm link`、有人相对路径 `file:`、CI 全量 `install` 再全量 `build`。pnpm workspace 把边界写进配置，默认就少很多漂移。

@@ -1,8 +1,9 @@
 ---
+
 title: Go json.RawMessage：先留住字节，再决定怎么解
 date: "2026-10-24"
 category: backend
-summary: 多态 JSON、延迟解析、原样回传时，用 json.RawMessage 保住原始字节。对比 json.Decoder 与 map[string]any，并标出易踩的 nil 与二次 Marshal。
+summary: "多态 JSON、延迟解析、原样回传时，用 json.RawMessage 保住原始字节。对比 json.Decoder 与 map[string]any，并标出易踩的 nil 与二次 Marshal。"
 ---
 
 `encoding/json.RawMessage` 本质是 `[]byte`，实现了 `Marshaler` / `Unmarshaler`：解码时把该字段对应的 JSON **原样切开存下**，编码时再原样写回。

@@ -1,8 +1,9 @@
 ---
+
 title: Go net/netip：Addr 比 net.IP 更该做键
 date: "2026-10-25"
 category: backend
-summary: net.IP 是 []byte 别名，作 map 键会踩切片语义。netip.Addr 是值类型，解析、比较、前缀运算都更适合当现代网络栈的一等公民。
+summary: "net.IP 是 []byte 别名，作 map 键会踩切片语义。netip.Addr 是值类型，解析、比较、前缀运算都更适合当现代网络栈的一等公民。"
 ---
 
 `net.IP` 用了几十年，但当「地址身份」用时别扭：底层是切片，拷贝/别名行为容易让人在 map、并发缓存里踩坑。Go 1.18 起的 **`net/netip`** 给出值类型的 `Addr` / `Prefix` / `AddrPort`。

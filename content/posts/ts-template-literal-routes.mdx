@@ -1,8 +1,9 @@
 ---
+
 title: TypeScript 模板字面量路由：把路径写成类型
 date: "2026-10-24"
 category: frontend
-summary: 用模板字面量类型表达 /users/:id 与查询串，联动参数提取与跳转 API。比字符串常量多一层编译期检查，也标出何时别过度造类型。
+summary: "用模板字面量类型表达 /users/:id 与查询串，联动参数提取与跳转 API。比字符串常量多一层编译期检查，也标出何时别过度造类型。"
 ---
 
 路由字符串是运行时的，但 TypeScript 的 **模板字面量类型** 能把模式写成类型，从而在 `navigate`、`Link`、loader 参数上得到补全与报错。

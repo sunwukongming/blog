@@ -1,8 +1,9 @@
 ---
+
 title: Postgres 表达式索引：函数与计算列上建 B-tree
 date: "2026-10-24"
 category: backend
-summary: 与选型总览、覆盖、部分、BRIN 分开：专讲对 lower(email)、(data->>'id') 等表达式建索引，注意不可变函数与查询写法必须对齐。
+summary: "与选型总览、覆盖、部分、BRIN 分开：专讲对 lower(email)、(data->>'id') 等表达式建索引，注意不可变函数与查询写法必须对齐。"
 ---
 
 查询常写成 `WHERE lower(email) = $1` 或 `WHERE (payload->>'sku') = $1`，普通列索引帮不上忙。**表达式索引**把计算本身放进 B-tree。

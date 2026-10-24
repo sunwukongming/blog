@@ -1,8 +1,9 @@
 ---
+
 title: React Activity：隐藏 UI 时保留状态
 date: "2026-10-25"
 category: frontend
-summary: 用 Activity（原 Offscreen 思路）在「可见 / 隐藏」间切换子树：隐藏时少干活、再显示时状态还在。对比 conditional render、display:none 与 transition。
+summary: "用 Activity（原 Offscreen 思路）在「可见 / 隐藏」间切换子树：隐藏时少干活、再显示时状态还在。对比 conditional render、display:none 与 transition。"
 ---
 
 列表详情、多 Tab、预渲染下一页时，常在「卸载丢状态」和「挂着费 CPU」之间摆。React 的 **Activity** 组件把子树标成可见或隐藏：隐藏时跳过大部分工作，再次可见时 **state / DOM 还在**。

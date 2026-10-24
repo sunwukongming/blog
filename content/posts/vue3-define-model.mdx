@@ -1,8 +1,9 @@
 ---
+
 title: Vue 3 defineModel：双向绑定少写一层样板
 date: "2026-10-24"
 category: frontend
-summary: defineModel 把 props + emit('update:x') 收成一个 ref；适合输入型子组件。注意默认值、修饰符与多个 model 命名。
+summary: "defineModel 把 props + emit('update:x') 收成一个 ref；适合输入型子组件。注意默认值、修饰符与多个 model 命名。"
 ---
 
 以前手写 `modelValue` + `update:modelValue` 很啰嗦。`defineModel` 把读写收成一个可写 ref。

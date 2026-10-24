@@ -813,3 +813,45 @@ html:has(.page--game) { overscroll-behavior: none; }
   0%, 100% { opacity: 1; }
   50% { opacity: 0.55; }
 }
+
+/* batch27: Memory combo meter + Mines timer segments */
+.memory-combo {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding-bottom: 5px;
+}
+.memory-combo__bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 0.08);
+  overflow: hidden;
+}
+.memory-combo__bar::after {
+  content: "";
+  display: block;
+  height: 100%;
+  width: var(--combo-pct, 0%);
+  border-radius: 2px;
+  background: var(--accent);
+  transition: width 0.2s ease;
+}
+.memory-combo[data-level="warm"] .memory-combo__bar::after {
+  background: #ffb86b;
+}
+.memory-combo[data-level="hot"] .memory-combo__bar::after {
+  background: #ff7a9c;
+  box-shadow: 0 0 6px rgb(255 122 156 / 0.55);
+}
+.mine-timer[data-seg="mid"] b { color: #ffb86b; }
+.mine-timer[data-seg="late"] b,
+.mine-timer[data-seg="over"] b { color: var(--accent); }
+.mine-timer__seg { opacity: 0.85; font-variant-numeric: tabular-nums; }
+.tetris-next-queue[data-preview-tip="true"] .tetris-next[data-queue="primary"] {
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--accent) 55%, transparent);
+}

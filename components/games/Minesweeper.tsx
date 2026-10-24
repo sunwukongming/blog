@@ -365,8 +365,30 @@ export default function Minesweeper() {
           Chord<b className={chordReady > 0 ? "game-tip--alert" : undefined}>{chordReady}</b>
           {chordReady > 0 ? <small style={{ marginLeft: 4, opacity: 0.85 }}>可点</small> : null}
         </span>
-        <span>
-          时间<b>{seconds}</b>
+        <span
+          className="mine-timer"
+          data-seg={
+            seconds < 30 ? "early" : seconds < 60 ? "mid" : seconds < 120 ? "late" : "over"
+          }
+          title={
+            best != null
+              ? `用时 ${seconds}s · 最快 ${best}s · 段 ${seconds < 30 ? "前段(<30s)" : seconds < 60 ? "中段(30–60s)" : seconds < 120 ? "后段(1–2min)" : "超时(≥2min)"}${phase === "playing" && best > 0 ? ` · 进度约 ${Math.min(100, Math.round((seconds / best) * 100))}%` : ""}`
+              : `用时 ${seconds}s · 段 ${seconds < 30 ? "前段" : seconds < 60 ? "中段" : seconds < 120 ? "后段" : "超时"}`
+          }
+        >
+          时间<b className={seconds >= 60 ? "game-tip--alert" : undefined}>{seconds}</b>
+          <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
+          <small className="mine-timer__seg">
+            {seconds < 30 ? "前段" : seconds < 60 ? "中段" : seconds < 120 ? "后段" : "超时"}
+          </small>
+          {best != null && phase === "playing" && best > 0 ? (
+            <>
+              <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
+              <small title="相对本档最快">
+                {seconds <= best ? "未破线" : "已慢于最快"}
+              </small>
+            </>
+          ) : null}
         </span>
         <span>
           最快<b>{best ?? "—"}</b>
@@ -425,8 +447,8 @@ export default function Minesweeper() {
                 : phase === "playing" && safeOpen > 0 && safeProgress <= 20
                     ? `首击后：安全区已展开 · 开图 ${safeProgress}%（${safeOpen}/${safeTotal}）· 先清边再标旗，旗数=数字可 chord`
                     : safeOpen === 0
-                      ? `首击安全区已生效 · 开图 0% · 旗 ${flags}/${level.mines}`
-                      : `开图 ${safeProgress}%（${safeOpen}/${safeTotal}）· 旗 ${flags}/${level.mines} · 旗数=数字时可 chord`}
+                      ? `首击安全区已生效 · 开图 0% · 旗 ${flags}/${level.mines} · 计时${seconds}s（${seconds < 30 ? "前段" : seconds < 60 ? "中段" : seconds < 120 ? "后段" : "超时"}）`
+                      : `开图 ${safeProgress}%（${safeOpen}/${safeTotal}）· 旗 ${flags}/${level.mines} · 计时${seconds}s/${seconds < 30 ? "前段" : seconds < 60 ? "中段" : seconds < 120 ? "后段" : "超时"}${best != null ? ` · 最快 ${best}s` : ""} · 旗数=数字时可 chord`}
         </p>
       )}
       <div className="game-bar">

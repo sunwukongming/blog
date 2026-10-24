@@ -63,9 +63,29 @@ async function PostBody({ params }: { params: Promise<{ slug: string }> }) {
   const newer = all[i - 1];
   const older = all[i + 1];
   const headings = extractHeadings(post.body);
+  const pageUrl = SITE_URL ? `${SITE_URL}/blog/${slug}` : undefined;
+  const articleLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: post.title,
+    description: post.summary,
+    datePublished: post.date,
+    dateModified: post.date,
+    inLanguage: "zh-CN",
+    author: { "@type": "Person", name: SITE.author },
+    publisher: { "@type": "Organization", name: SITE.name },
+    mainEntityOfPage: pageUrl ? { "@type": "WebPage", "@id": pageUrl } : undefined,
+    articleSection: category?.name ?? post.category,
+    wordCount: post.readingMinutes ? post.readingMinutes * 400 : undefined,
+    url: pageUrl,
+  };
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleLd) }}
+      />
       <ReadingProgress />
       <header className="article-head" style={{ width: "100%" }}>
         <div className="article-meta">

@@ -1,0 +1,50 @@
+---
+title: 用 Zod 守 API 边界：入参、出参与错误形状
+date: "2026-10-24"
+category: frontend
+summary: 把 Zod 放在 HTTP/RPC 边界做解析，而不是散落在组件里；区分输入校验失败与业务错误，并把输出也 schema 化，避免「any 从 fetch 漏进来」。
+---
+
+TypeScript 类型在编译期蒸发。运行时从 `fetch` / 路由 handler 进来的数据仍是 `unknown`。Zod（或同类）适合做 **边界解析**：进门校验、出门再校验（可选），中间才是你的领域类型。
+
+## 边界放哪
+
+```ts
+const CreateUser = z.object({
+  email: z.string().email(),
+  name: z.string().min(1).max(64),
+});
+type CreateUser = z.infer<typeof CreateUser>;
+
+// Route handler / server action
+const body = CreateUser.safeParse(await req.json());
+if (!body.success) {
+  return Response.json({ error: "invalid_body", issues: body.error.flatten() }, { status: 400 });
+}
+await db.user.create({ data: body.data });
+```
+
+- **进**：`safeParse` 失败 → 400 + 稳定错误码；别把 Zod 大串直接甩给前端当文案唯一来源。  
+- **出**（推荐）：`UserPublic.parse(row)` 再 `json`，挡住多吐了的 `passwordHash`。  
+- **前端**：对 `res.json()` 再 parse 一次，或用共享 schema 包一层 `apiGet`；别在每个组件 `as User`。
+
+## 错误形状要契约化
+
+```ts
+const ApiError = z.object({
+  error: z.string(),
+  issues: z.unknown().optional(),
+});
+```
+
+把「校验失败 / 鉴权失败 / 业务冲突」分成状态码 + `error` 字面量。UI 只依赖字面量分支；`issues` 仅调试或字段级高亮。和站内谈 API 契约、表单的文章衔接：边界 schema 是契约的可执行版。
+
+## 别做的事
+
+1. 在 React 树深处随手 `MySchema.parse(props)` 当断言——边界已过就信任内部类型，或用品牌类型。  
+2. 用 `parse` 代替 `safeParse` 打在请求路径上却不 catch → 未处理异常变 500。  
+3. 输入输出共用一个「巨无霸 schema」——创建与公开视图字段不同，拆开更安全。
+
+## 小结
+
+Zod 的价值在 **运行时边界**，不是替代领域建模。入参失败给 400，出参再剥一层防泄露，错误码写成字面量契约，TypeScript 的「看起来有类型」才能和线上数据对齐。

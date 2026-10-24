@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { buzz, lower, useKeys, useRecord, useRecordList } from "./input";
 
 type Diff = { key: string; label: string; cols: number; rows: number };
@@ -219,9 +219,19 @@ export default function Memory() {
             {matchedCount}/{pairs}
           </b>
         </span>
-        <span className={streak >= 2 ? "game-tip--alert" : undefined} data-combo={streak >= 2 || undefined}>
+        <span
+          className={streak >= 2 ? "memory-combo game-tip--alert" : "memory-combo"}
+          data-combo={streak >= 2 || undefined}
+          data-level={streak >= 5 ? "hot" : streak >= 3 ? "warm" : streak >= 2 ? "on" : undefined}
+          title={bestStreak > 1 ? `本局连击 ${streak} · 本档峰 ${bestStreak}` : `本局连击 ${streak}（翻错清零）`}
+        >
           连击<b>{streak}</b>
-          {bestStreak > 1 ? <small style={{ marginLeft: 4, opacity: 0.7 }}>最高{bestStreak}</small> : null}
+          {bestStreak > 1 ? <small style={{ marginLeft: 4, opacity: 0.7 }}>峰{bestStreak}</small> : null}
+          <span
+            className="memory-combo__bar"
+            aria-hidden="true"
+            style={{ ["--combo-pct" as string]: `${Math.min(100, streak * 20)}%` } as CSSProperties}
+          />
         </span>
         <span>
           时间<b>{seconds}</b>
@@ -233,7 +243,11 @@ export default function Memory() {
       <p className={endgame || streak >= 2 ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">
         {endgame
           ? `残局：还剩 ${leftPairs} 对 · 焦点 第${focusRow}行${focusCol}列（牌 ${focus + 1}） · 连击 ${streak}${bestStreak > 1 ? `（峰 ${bestStreak}）` : ""}`
-          : `本局连击 ${streak}${bestStreak > 1 ? `（本档峰 ${bestStreak}）` : ""}`}
+          : streak >= 5
+            ? `连击热：×${streak} · 条格 ${Math.min(100, streak * 20)}%（×5 满格）· 峰 ${bestStreak > 1 ? bestStreak : streak}`
+            : streak >= 2
+              ? `连击条：×${streak} · 条格 ${Math.min(100, streak * 20)}%${bestStreak > 1 ? ` · 峰 ${bestStreak}` : ""} · 翻错清零`
+              : `本局连击 ${streak}${bestStreak > 1 ? `（本档峰 ${bestStreak}）` : ""}`}
         {" · "}
         最少 <b>{shownBest ?? "—"}</b> 步
         {" · "}

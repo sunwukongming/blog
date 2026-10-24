@@ -39,6 +39,9 @@ async function buildFeed(base: string) {
     <managingEditor>${escape(SITE.author)} (GM Lab)</managingEditor>
     <webMaster>${escape(SITE.author)} (GM Lab)</webMaster>
     <generator>GM Lab</generator>
+    <docs>https://www.rssboard.org/rss-specification</docs>
+    <ttl>60</ttl>
+    <copyright>© ${escape(SITE.author)} · ${escape(SITE.name)}</copyright>
     <atom:link href="${base}/feed.xml" rel="self" type="application/rss+xml" />
     <atom:link href="${base}/" rel="alternate" type="text/html" />
 ${items}

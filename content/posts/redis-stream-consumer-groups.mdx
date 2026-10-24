@@ -1,0 +1,47 @@
+---
+title: Redis Stream 消费组：ACK、Pending 与认领
+date: "2026-10-24"
+category: backend
+summary: 与「Streams vs Kafka」选型文分开：专讲 XREADGROUP、XACK、XPENDING/XCLAIM 与 PEL 卡住时的处置，把至少一次做成可运维的闭环。
+---
+
+站内另有一篇对比 Streams 与 Kafka。这篇只谈 **消费组怎么把消息从投递变成业务确认**，以及 Pending Entries List（PEL）为什么会「有滞后却像没消息」。
+
+## 三条命令串起来
+
+```text
+XGROUP CREATE mystream mygroup $ MKSTREAM
+XREADGROUP GROUP mygroup consumer-1 COUNT 10 BLOCK 2000 STREAMS mystream >
+XACK mystream mygroup <id...>
+```
+
+- `>`：只领尚未分给本组的新条目。  
+- 不 `XACK`：条目留在该消费者的 **PEL**，重启后可用 `0` 再读 pending，而不是新消息。  
+- 组名、消费者名要稳定；临时 UUID 当 consumer 名会把 PEL 撕成碎片。
+
+## Pending 不是死信，是工单
+
+```text
+XPENDING mystream mygroup - + 20
+XCLAIM mystream mygroup consumer-2 60000 <id...>
+```
+
+| 现象 | 常见原因 | 处置 |
+|---|---|---|
+| `XPENDING` 条数涨、`XREADGROUP >` 空 | 处理成功却忘了 ACK | 补 ACK；或修好后批量 ACK |
+| 某 consumer 挂了，PEL 挂在它名下 | 进程没优雅下线 | 空闲超过阈值后 `XCLAIM` / `XAUTOCLAIM` |
+| 重复业务副作用 | 至少一次 + 无幂等 | 业务键去重，ACK 放在副作用成功之后 |
+
+认领空闲阈值要大于「最慢一次合法处理」；太短会抢飞正在算的任务，太长故障转移像睡着。
+
+## 实践清单
+
+1. **ACK 边界**：DB 提交或下游成功后再 ACK；失败保持 pending，靠认领重试。  
+2. **监控**：组 lag、PEL 长度、认领次数分开展示；只看 stream 长度会漏掉「卡在 PEL」。  
+3. **修剪**：`MAXLEN`/`MINID` 与「未 ACK 是否还要重放」一起设计，别先砍日志再查 pending。
+
+和选型文对照：Kafka 也有消费组与 offset，但 Redis 的 PEL 是显式工单列表——运维时要会读 `XPENDING`，不能只盯「还有没有新消息」。
+
+## 小结
+
+消费组的价值在 **投递与确认解耦**。把 XREADGROUP → 处理 → XACK 写成事务感流程，并用 XPENDING/XCLAIM 处理掉队消费者，Streams 才能在至少一次语义下长期跑得住。

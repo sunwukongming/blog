@@ -712,8 +712,10 @@ export default function Tetris() {
         </p>
       )}
       {phase === "running" && !stats.clearTip && (
-        <p className={stats.b2b || stats.combo > 1 || stats.canHold ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">
-          {`连消×B2B：连消 ×${stats.combo} · B2B ${stats.b2b ? "就绪" : "未武装"}`}
+        <p className={stats.b2b || stats.combo > 1 || stats.canHold || stats.next[0] === "I" || stats.next[0] === "T" ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">
+          {`预览格：下一块 ${stats.next[0] ?? "—"}${stats.next.length > 1 ? ` · 队列 ${stats.next.join("→")}` : ""}`}
+          {" · "}
+          {`连消 ×${stats.combo} · B2B ${stats.b2b ? "就绪" : "未武装"}`}
           {" · 幽灵 "}
           {stats.ghost}
           {" 格"}
@@ -728,7 +730,7 @@ export default function Tetris() {
               {phase === "ready" && (
                 <>
                   <strong>俄罗斯方块</strong>
-                  <p>消掉一行得分，一次消得越多分越高</p>
+                  <p>右侧预览下一块与队列；消一行得分，一次消得越多分越高</p>
                   <button type="button" className="game-btn game-btn--primary" onClick={() => setPhase("running")}>
                     开始
                   </button>
@@ -769,8 +771,11 @@ export default function Tetris() {
               return <i key={i} style={on && kind ? { background: COLORS[kind] } : undefined} />;
             })}
           </div>
-          <span title="预览队列前 3 个（来自 7-bag）">下一个</span>
-          <div className="tetris-next-queue" aria-label={`下一个：${stats.next.join("、")}`}>
+          <span title={`预览队列：${stats.next.join(" → ")}（7-bag）`}>
+            下一个
+            {stats.next[0] ? <small style={{ marginLeft: 6, opacity: 0.8 }}>首{stats.next[0]}</small> : null}
+          </span>
+          <div className="tetris-next-queue" aria-label={`下一个：${stats.next.join("、")}`} data-preview-tip="true">
             {stats.next.map((kind, qi) => (
               <div key={`${kind}-${qi}`} className="tetris-next" data-queue={qi === 0 ? "primary" : "next"}>
                 {Array.from({ length: 8 }, (_, i) => {

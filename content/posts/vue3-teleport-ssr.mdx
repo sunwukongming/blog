@@ -1,0 +1,51 @@
+---
+title: Vue 3 Teleport 与 SSR：挂载目标、水合与闪一下
+date: "2026-10-24"
+category: frontend
+summary: Teleport 把弹层挂到 body 很爽，但 SSR/水合时目标节点、disabled 与条件渲染顺序不对，会出现闪屏或 hydration mismatch。
+---
+
+`Teleport` 让 Modal、Toast 脱离当前组件树 DOM，常见写法是挂到 `body`。CSR 单页几乎无感；**SSR 或带预渲染的 Nuxt/Vite SSR** 时，目标是否存在、服务端是否也 Teleport，决定水合是否干净。
+
+## 服务端有没有那个洞
+
+```vue
+<Teleport to="body">
+  <div class="modal" v-if="open">...</div>
+</Teleport>
+```
+
+- 浏览器有 `document.body`；**Node 渲染时**若没有对等容器，实现会回退或警告。  
+- Nuxt 等会注入 `__nuxt` / 专用挂载点；`to="body"` 在 SSR 仍可能输出到 body，但若客户端首帧目标不同，就会 mismatch。  
+- 更稳：Teleport 到 **应用根内已知节点**（如 `#modals`），服务端模板里预留空节点，两端一致。
+
+## disabled 与「先 SSR 再挂出去」
+
+```vue
+<Teleport to="#modals" :disabled="!mounted">
+  <Dialog v-if="open" />
+</Teleport>
+```
+
+`disabled` 为 true 时内容留在原位，适合：
+
+1. 首屏在组件内渲染，避免服务端找不到 `to`；  
+2. `onMounted` 后再 `mounted = true`，客户端挂到 portal。  
+
+代价是首帧位置可能不同 → 用 CSS 固定遮罩，或接受「挂载后再显示」避免闪一下。`v-if="open"` 放在 Teleport **内**还是外，会影响是否在关闭时销毁传送内容；SSR 关闭态不要输出半套弹层 DOM。
+
+## 水合检查清单
+
+| 项 | 建议 |
+|---|---|
+| 目标选择器 | 文档里真实存在，SSR HTML 也有 |
+| 条件渲染 | 开闭态在服务端/客户端首屏一致 |
+| 选择器拼写 | `#modals` 与 id 完全一致 |
+| 多实例 | 多个 Teleport 同目标时注意事件与 `z-index` |
+| 测试 | 开 SSR 水合警告，专测「直链打开带 query 的弹层页」 |
+
+和 `Suspense` / `keep-alive` 文章一样：传送的是 DOM 位置，不是生命周期豁免——父级卸载仍会带走 Teleport 内容。
+
+## 小结
+
+Teleport 解决的是层叠与裁剪，不是 SSR 免费午餐。预留稳定挂载点、必要时 `disabled` 延后传送、保证开闭态首屏一致，弹层才能既不闪也不报 hydration 错。

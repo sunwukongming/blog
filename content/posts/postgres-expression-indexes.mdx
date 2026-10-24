@@ -1,0 +1,42 @@
+---
+title: Postgres 表达式索引：函数与计算列上建 B-tree
+date: "2026-10-24"
+category: backend
+summary: 与选型总览、覆盖、部分、BRIN 分开：专讲对 lower(email)、(data->>'id') 等表达式建索引，注意不可变函数与查询写法必须对齐。
+---
+
+查询常写成 `WHERE lower(email) = $1` 或 `WHERE (payload->>'sku') = $1`，普通列索引帮不上忙。**表达式索引**把计算本身放进 B-tree。
+
+## 写法
+
+```sql
+CREATE INDEX ON users (lower(email));
+CREATE INDEX ON events ((payload->>'sku'));
+CREATE INDEX ON orders ((created_at AT TIME ZONE 'UTC')::date);
+```
+
+- 查询表达式必须与索引**逐字同构**（含强制类型、运算符）。  
+- 函数必须是 **IMMUTABLE**（或至少对同一输入稳定）；`now()`、`random()` 不行。  
+- 可与部分索引叠：`WHERE status = 'active'` 再挂 `lower(email)`。
+
+## 和兄弟们怎么分
+
+| 手段 | 解决什么 |
+|---|---|
+| 列索引 / 选型总览 | 谓词直接打在列上 |
+| 部分索引 | 只索引热子集 |
+| 覆盖 INCLUDE | 少回表 |
+| BRIN | 物理有序大表粗过滤 |
+| **表达式索引** | 谓词落在函数/JSON 路径上 |
+
+别用表达式索引「假装」生成列：写多、规划器也更挑。若表达式固定，可评估生成列 + 普通索引，语义更清晰。
+
+## 陷阱
+
+1. `EXPLAIN` 里看不到 Index Scan → 多半是查询写法漂移（多空格、多一层 cast）。  
+2. 改函数体后记得 `REINDEX`；依赖扩展函数时版本升级要回归。  
+3. JSON 路径索引对写入有成本；只给真正高频的路径建。
+
+## 小结
+
+表达式索引是「查询长什么样，叶子就存什么样」。和站内覆盖、部分、BRIN 文一起按谓词形态选型，而不是先堆一个万能索引。

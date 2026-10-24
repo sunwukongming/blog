@@ -348,8 +348,9 @@ export default function Minesweeper() {
           ) : null}
         </span>
         <span
-          className="mine-progress"
+          className="mine-progress mine-open-flag"
           data-late={lateClear || undefined}
+          data-dense={flagDense || undefined}
           data-seg={
             safeProgress <= 0
               ? "zero"
@@ -361,7 +362,7 @@ export default function Minesweeper() {
                     ? "late"
                     : "high"
           }
-          title={`安全格开图 ${safeProgress}%（${safeOpen}/${safeTotal}）· 段 ${
+          title={`开图 ${safeProgress}%（${safeOpen}/${safeTotal}）· 旗 ${flags}/${level.mines}${flagDense ? " · 旗密" : ""} · 段 ${
             safeProgress <= 0
               ? "未开"
               : safeProgress <= 20
@@ -388,6 +389,12 @@ export default function Minesweeper() {
                     ? "收官"
                     : "后段"}
           </small>
+          <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
+          旗密
+          <b className={flagDense ? "game-tip--alert" : undefined}>
+            {flags}/{level.mines}
+          </b>
+          {flagDense ? <small style={{ marginLeft: 4, opacity: 0.85 }}>密</small> : null}
         </span>
         <span
           className="mine-chord"
@@ -475,7 +482,7 @@ export default function Minesweeper() {
                 : phase === "playing" && level.mines - flags <= 3 && level.mines - flags > 0
                   ? `剩余雷仅 ${level.mines - flags} · 开图 ${safeProgress}% · 旗位对齐后再 chord`
                   : flagDense
-                  ? `中盘旗密：已插 ${flags}/${level.mines} · 开图 ${safeProgress}% · 核对数字再 chord，忌盲插`
+                  ? `开图/旗密同条：开图 ${safeProgress}% · 旗 ${flags}/${level.mines}（密）· 核对数字再 chord，忌盲插`
                 : phase === "playing" && safeOpen > 0 && safeProgress <= 20
                     ? `首击后：安全区已展开 · 开图 ${safeProgress}%（${safeOpen}/${safeTotal}）· 先清边再标旗，旗数=数字可 chord`
                     : safeOpen === 0

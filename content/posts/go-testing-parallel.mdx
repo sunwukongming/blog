@@ -1,0 +1,47 @@
+---
+title: Go testing.Parallel：并发测与共享状态边界
+date: "2026-10-24"
+category: backend
+summary: t.Parallel() 能缩短 CI，也会把全局变量、临时目录与端口争用放大。讲清何时并行、如何隔离，以及和 -count/-race 一起用。
+---
+
+默认每个测试串行。`t.Parallel()` 让子测试与其他已标记并行的用例重叠跑——适合纯函数与自带隔离的集成测。
+
+## 基本形
+
+```go
+func TestParse(t *testing.T) {
+  t.Parallel()
+  // ...
+}
+
+func TestMatrix(t *testing.T) {
+  cases := []string{"a", "b", "c"}
+  for _, c := range cases {
+    c := c
+    t.Run(c, func(t *testing.T) {
+      t.Parallel()
+      // use c
+    })
+  }
+}
+```
+
+循环里务必 `c := c`（或用 Go 1.22+ 循环变量语义），否则全并行看到最后一个值。
+
+## 隔离清单
+
+1. **禁止**共享可变包级变量；要用 `t.Setenv`、`t.TempDir()`、本地 server。  
+2. 监听端口：`localhost:0` 或 `bufconn`，别写死。  
+3. 与 `-race` 同开；偶发失败先怀疑数据竞争而非「再试一次」。  
+4. 需要全局初始化时用 `sync.Once` 只读，或拆到 `TestMain` 并文档化不可并行的子集。
+
+## 何时不要并行
+
+- 依赖真实时钟顺序、全局 logger 缓冲断言  
+- 操作同一数据库库表且未按用例分 schema  
+- 已经很短的纯单测（调度开销不值得）
+
+## 小结
+
+并行是加速器也是放大器：放大隔离做得好的收益，也放大隐藏共享状态。先让串行下稳定，再点 `t.Parallel()`，并用 `-race` 守门。

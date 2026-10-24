@@ -215,9 +215,24 @@ export default function Memory() {
           步数<b>{moves}</b>
         </span>
         <span
-          className={endgame ? "memory-endgame game-tip--alert" : "memory-endgame"}
+          className={
+            endgame || streak >= 2
+              ? "memory-end-combo memory-endgame memory-combo game-tip--alert"
+              : "memory-end-combo memory-endgame memory-combo"
+          }
           data-endgame={endgame || undefined}
-          title={endgame ? `残局：还剩 ${leftPairs} 对 · 已配 ${matchedCount}/${pairs}` : `已配 ${matchedCount}/${pairs}`}
+          data-combo={streak >= 2 || undefined}
+          data-both={(endgame && streak >= 2) || undefined}
+          data-level={streak >= 5 ? "hot" : streak >= 3 ? "warm" : streak >= 2 ? "on" : undefined}
+          title={
+            endgame && streak >= 2
+              ? `残局+连击：剩 ${leftPairs} 对 · 已配 ${matchedCount}/${pairs} · 连击 ×${streak}${bestStreak > 1 ? ` · 峰 ${bestStreak}` : ""}`
+              : endgame
+                ? `残局：还剩 ${leftPairs} 对 · 已配 ${matchedCount}/${pairs} · 连击 ${streak}`
+                : bestStreak > 1
+                  ? `本局连击 ${streak} · 本档峰 ${bestStreak} · 已配 ${matchedCount}/${pairs}`
+                  : `已配 ${matchedCount}/${pairs} · 连击 ${streak}（翻错清零）`
+          }
         >
           配对<b>
             {matchedCount}/{pairs}
@@ -228,15 +243,10 @@ export default function Memory() {
             aria-hidden="true"
             style={{ ["--end-pct" as string]: `${pairs ? Math.round((matchedCount / pairs) * 100) : 0}%` } as CSSProperties}
           />
-        </span>
-        <span
-          className={streak >= 2 ? "memory-combo game-tip--alert" : "memory-combo"}
-          data-combo={streak >= 2 || undefined}
-          data-level={streak >= 5 ? "hot" : streak >= 3 ? "warm" : streak >= 2 ? "on" : undefined}
-          title={bestStreak > 1 ? `本局连击 ${streak} · 本档峰 ${bestStreak}` : `本局连击 ${streak}（翻错清零）`}
-        >
+          <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
           连击<b>{streak}</b>
           {bestStreak > 1 ? <small style={{ marginLeft: 4, opacity: 0.7 }}>峰{bestStreak}</small> : null}
+          {endgame && streak >= 2 ? <small className="memory-end-combo__both" style={{ marginLeft: 6 }}>双高</small> : null}
           <span
             className="memory-combo__bar"
             aria-hidden="true"
@@ -251,7 +261,9 @@ export default function Memory() {
         </span>
       </div>
       <p className={endgame || streak >= 2 ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">
-        {endgame
+        {endgame && streak >= 2
+          ? `残局+连击：${matchedCount}/${pairs}（${pairs ? Math.round((matchedCount / pairs) * 100) : 0}%）· 剩 ${leftPairs} · ×${streak}${bestStreak > 1 ? `（峰 ${bestStreak}）` : ""} · 焦点 第${focusRow}行${focusCol}列`
+          : endgame
           ? `残局进度：${matchedCount}/${pairs}（${pairs ? Math.round((matchedCount / pairs) * 100) : 0}%）· 剩 ${leftPairs} 对 · 焦点 第${focusRow}行${focusCol}列 · 连击 ${streak}${bestStreak > 1 ? `（峰 ${bestStreak}）` : ""}`
           : streak >= 5
             ? `连击热：×${streak} · 条格 ${Math.min(100, streak * 20)}%（×5 满格）· 峰 ${bestStreak > 1 ? bestStreak : streak}`

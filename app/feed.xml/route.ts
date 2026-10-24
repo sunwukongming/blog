@@ -44,6 +44,11 @@ async function buildFeed(base: string) {
     <copyright>© ${escape(SITE.author)} · ${escape(SITE.name)}</copyright>
     <atom:link href="${base}/feed.xml" rel="self" type="application/rss+xml" />
     <atom:link href="${base}/" rel="alternate" type="text/html" />
+    <image>
+      <url>${base}/icon.svg</url>
+      <title>${escape(SITE.name)}</title>
+      <link>${base}</link>
+    </image>
 ${items}
   </channel>
 </rss>

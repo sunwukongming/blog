@@ -7,16 +7,20 @@ import { SITE, SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "游戏",
-  description: "GM Lab 桌上小游戏：贪吃蛇、俄罗斯方块、2048、打砖块、扫雷、德州扑克与记忆翻牌；本机纪录存浏览器，可直接在站内玩。",
+  description: "GM Lab 桌上小游戏：贪吃蛇、俄罗斯方块、2048、打砖块、扫雷、德州扑克与记忆翻牌；本机纪录存浏览器，HUD 提示连击/道具/胜率，可直接在站内玩。",
   openGraph: {
     title: "游戏",
-    description: "GM Lab 桌上小游戏：贪吃蛇、俄罗斯方块、2048、打砖块、扫雷、德州扑克与记忆翻牌；本机纪录存浏览器，可直接在站内玩。",
+    description: "GM Lab 桌上小游戏：贪吃蛇、俄罗斯方块、2048、打砖块、扫雷、德州扑克与记忆翻牌；本机纪录存浏览器，HUD 提示连击/道具/胜率，可直接在站内玩。",
     type: "website",
+    siteName: SITE.name,
+    locale: "zh_CN",
+    url: SITE_URL ? `${SITE_URL}/games` : undefined,
   },
+  alternates: SITE_URL ? { canonical: "/games" } : undefined,
   twitter: {
     card: "summary",
     title: "游戏",
-    description: "GM Lab 桌上小游戏：贪吃蛇、俄罗斯方块、2048、打砖块、扫雷、德州扑克与记忆翻牌；本机纪录存浏览器，可直接在站内玩。",
+    description: "GM Lab 桌上小游戏：贪吃蛇、俄罗斯方块、2048、打砖块、扫雷、德州扑克与记忆翻牌；本机纪录存浏览器，HUD 提示连击/道具/胜率，可直接在站内玩。",
   },
 };
 
@@ -33,7 +37,7 @@ export default function GamesPage() {
     "@context": "https://schema.org",
     "@type": "ItemList",
     name: `${SITE.name} 游戏`,
-    description: "站内可玩小游戏列表",
+    description: "站内可玩小游戏列表（蛇 / 方块 / 2048 / 砖块 / 扫雷 / 扑克 / 记忆）",
     numberOfItems: playable.length,
     itemListElement: playable.map((game, i) => ({
       "@type": "ListItem",

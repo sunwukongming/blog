@@ -1,0 +1,46 @@
+---
+title: CSS Subgrid：子项对齐父网格轨道
+date: "2026-10-24"
+category: frontend
+summary: 卡片、表单行、对比表经常要对齐跨组件的列。subgrid 让子网格继承父轨道，少写魔法数字与嵌套 flex 补丁。
+---
+
+父级 `display: grid` 定了列，子卡片内部再开一套 grid 时，默认轨道互不相干——标题高低一错，整列就「抖」。**`grid-template-columns: subgrid`** 让子项沿用父轨道。
+
+## 最小例子
+
+```css
+.catalog {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+.card {
+  display: grid;
+  grid-column: span 1;
+  grid-template-rows: subgrid;
+  grid-row: span 3; /* 标题 / 摘要 / 操作 三行对齐 */
+}
+```
+
+- **列或行**可分别 subgrid；另一轴仍可本地定义。  
+- 子项必须 `span` 足够的父轨道，否则继承不到。  
+- 与站内 `:has()`、anchor 文类似：布局契约尽量留在 CSS。
+
+## 适合 / 不适合
+
+| 适合 | 不适合 |
+|---|---|
+| 卡片墙标题基线对齐 | 完全独立滚动的小组件 |
+| 表单标签-控件两列贯穿 | 轨道数随内容剧烈变化 |
+| 价目/对比表跨组对齐 | 需要旧浏览器无前缀兜底且无法降级 |
+
+## 注意
+
+1. 缺口浏览器用「单列堆叠」或普通 grid 降级，不要用 JS 量高度对齐。  
+2. subgrid 不消除内容自身的 `minmax` 冲突；先让父轨道诚实。  
+3. 调试时看 Computed 里子项是否真的标成 subgrid。
+
+## 小结
+
+Subgrid 把「跨组件对齐」从像素修补收回网格语义。卡片墙与表单行优先试；复杂仪表盘仍可局部 flex，但共享基线交给轨道。

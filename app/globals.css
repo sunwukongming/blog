@@ -965,3 +965,29 @@ html:has(.page--game) { overscroll-behavior: none; }
 .pk-odds-hud[data-tier="mid"] b { color: #ffb86b; }
 .pk-odds-hud[data-tier="high"] b { color: var(--accent); }
 .pk-odds-hud__tier { opacity: 0.85; }
+
+/* batch31: Memory end+combo, Mines open|flag, Tetris Hold|preview */
+.memory-end-combo {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0;
+}
+.memory-end-combo[data-both] {
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--accent) 55%, transparent);
+  border-radius: 6px;
+  padding-inline: 4px;
+}
+.memory-end-combo__both {
+  color: var(--accent);
+  opacity: 0.9;
+}
+.mine-open-flag[data-dense] {
+  box-shadow: 0 0 0 1px color-mix(in oklab, #ffb86b 55%, transparent);
+  border-radius: 6px;
+  padding-inline: 4px;
+}
+.tetris-hold-preview {
+  display: inline-flex;
+  align-items: center;
+}

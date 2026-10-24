@@ -692,13 +692,18 @@ export default function Tetris() {
         )}
         {(phase === "running" || phase === "paused") && (
           <span
-            className={stats.canHold === false ? "tetris-hold-hud tetris-hold-hud--cool" : "tetris-hold-hud game-tip--alert"}
+            className={
+              stats.canHold === false
+                ? "tetris-hold-hud tetris-hold-preview tetris-hold-hud--cool"
+                : "tetris-hold-hud tetris-hold-preview game-tip--alert"
+            }
             data-ready={stats.canHold || undefined}
             data-cool={stats.canHold === false || undefined}
+            data-preview={stats.next[0] || undefined}
             title={
               stats.canHold === false
-                ? `Hold 冷却：当前块已用过，落地后恢复${stats.hold ? ` · 槽内 ${stats.hold}` : " · 槽空"}`
-                : `Hold 可用：C / Shift 与暂存交换${stats.hold ? ` · 槽内 ${stats.hold}` : " · 空槽将存入当前块"}`
+                ? `Hold 冷却：落地后恢复${stats.hold ? ` · 槽 ${stats.hold}` : " · 槽空"} · 预览下一块 ${stats.next[0] ?? "—"}`
+                : `Hold 可用：C/Shift 交换${stats.hold ? ` · 槽 ${stats.hold}` : " · 空槽存入"} · 预览下一块 ${stats.next[0] ?? "—"}`
             }
           >
             Hold
@@ -706,6 +711,14 @@ export default function Tetris() {
               {stats.canHold === false ? "冷却" : "可用"}
             </b>
             {stats.hold ? <small style={{ marginLeft: 4, opacity: 0.75 }}>{stats.hold}</small> : <small style={{ marginLeft: 4, opacity: 0.55 }}>空</small>}
+            <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
+            预览
+            <b className={stats.next[0] === "I" || stats.next[0] === "T" ? "game-tip--alert" : undefined}>
+              {stats.next[0] ?? "—"}
+            </b>
+            {stats.next.length > 1 ? (
+              <small style={{ marginLeft: 4, opacity: 0.65 }}>{stats.next.slice(1, 3).join("→")}</small>
+            ) : null}
           </span>
         )}
         <span className="spacer" />
@@ -722,15 +735,12 @@ export default function Tetris() {
       )}
       {phase === "running" && !stats.clearTip && (
         <p className={stats.b2b || stats.combo > 1 || stats.canHold || stats.next[0] === "I" || stats.next[0] === "T" ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">
-          {`预览格：下一块 ${stats.next[0] ?? "—"}${stats.next.length > 1 ? ` · 队列 ${stats.next.join("→")}` : ""}`}
+          {`Hold+预览：${stats.canHold === false ? "冷却" : "可用"}${stats.hold ? `/${stats.hold}` : "/空"} · 下一块 ${stats.next[0] ?? "—"}${stats.next.length > 1 ? ` · 队列 ${stats.next.join("→")}` : ""}`}
           {" · "}
           {`连消 ×${stats.combo} · B2B ${stats.b2b ? "就绪" : "未武装"}`}
           {" · 幽灵 "}
           {stats.ghost}
           {" 格"}
-          {stats.canHold === false
-            ? ` · Hold 冷却中${stats.hold ? `（槽 ${stats.hold}）` : "（槽空）"}· 落地后恢复`
-            : ` · Hold 可用${stats.hold ? `（槽 ${stats.hold}，C/Shift 交换）` : "（空槽，C/Shift 存入）"}`}
         </p>
       )}
       <div className="tetris">

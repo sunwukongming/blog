@@ -1,0 +1,50 @@
+---
+title: HTTP If-Match：乐观锁与 412
+date: "2026-10-25"
+category: frontend
+summary: 站内 If-None-Match 管条件 GET。这篇写写路径上的 If-Match：用 ETag 做乐观并发控制、412 Precondition Failed，以及和 If-Unmodified-Since 的分工。
+---
+
+站内 **http-if-none-match** 讲「有这些版本就别传体」。本文写对称的写侧头 **`If-Match`**：只有当前表示仍是我以为的那个版本时，才允许改。
+
+## 请求形态
+
+```http
+PUT /docs/42 HTTP/1.1
+If-Match: "v7"
+Content-Type: application/json
+
+{"title":"…"}
+```
+
+| 结果 | 含义 |
+|---|---|
+| 当前 ETag 与列出的标签匹配 | 继续处理（常 200/204） |
+| 不匹配或资源已变 | **`412 Precondition Failed`** |
+| `If-Match: *` | 要求资源 **存在**（创建冲突场景偶用） |
+
+客户端应把上次 GET/PUT 拿到的 ETag **原样**带回，不要手改强弱前缀。
+
+## 乐观锁套路
+
+1. GET 读文档 + `ETag`  
+2. 本地编辑  
+3. PUT/PATCH 带 `If-Match: <旧 ETag>`  
+4. 412 → 提示冲突，重新拉取合并  
+
+比「最后写入获胜」安全，比悲观行锁轻。API 若同时支持 `If-Unmodified-Since`，有 ETag 时优先 ETag。
+
+## 边界
+
+- 弱 ETag 是否允许用于 `If-Match` 依实现；写路径更稳妥发 **强** ETag。  
+- 丢失更新：中间代理剥掉 `If-Match` 会让校验失效——网关白名单要保留。  
+- 批量 PATCH 多资源时，要么事务化，要么逐资源带各自 ETag。  
+- 删除常用 `DELETE` + `If-Match`，避免删到别人刚改过的版本。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| If-Match / 412 | 本文 |
+| If-None-Match / 304 | http-if-none-match |
+| ETag 强弱 | http-etag-weak-strong |

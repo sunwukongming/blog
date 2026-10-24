@@ -3249,3 +3249,76 @@ html:has(.page--game) { overscroll-behavior: none; }
 .pk-allin-bar[data-many] > i {
   background: linear-gradient(90deg, #f87171, #ef4444);
 }
+
+/* batch67: memory-match-rate-bar / mine-flag-ratio-bar / tetris-pressure-bar */
+.memory-match-rate-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.memory-match-rate-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #86efac, #22c55e);
+  transition: width 100ms ease-out;
+}
+.memory-match-rate-bar[data-hot] .memory-match-rate-bar__fill {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+.memory-match-rate-bar[data-slow] .memory-match-rate-bar__fill {
+  background: linear-gradient(90deg, #93c5fd, #3b82f6);
+}
+
+.mine-flag-ratio-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.mine-flag-ratio-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+  transition: width 100ms ease-out;
+}
+.mine-flag-ratio-bar[data-over] .mine-flag-ratio-bar__fill {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+}
+.mine-flag-ratio-bar[data-low] .mine-flag-ratio-bar__fill {
+  background: linear-gradient(90deg, #93c5fd, #3b82f6);
+}
+
+.tetris-pressure-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.tetris-pressure-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #c4b5fd, #8b5cf6);
+  transition: width 100ms ease-out;
+}
+.tetris-pressure-bar[data-hot] .tetris-pressure-bar__fill {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+}
+.tetris-pressure-bar[data-safe] .tetris-pressure-bar__fill {
+  background: linear-gradient(90deg, #86efac, #22c55e);
+}

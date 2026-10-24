@@ -9,6 +9,7 @@ import { SITE_URL } from "@/lib/site";
 /** batch61: 再核 /games lastmod=GAMES_UPDATED；与 categories ItemList inLanguage 再核对齐. */
 /** batch63: 再核 /games lastmod=GAMES_UPDATED；与 categories ItemList 再核对齐. */
 /** batch65: 再核 /games lastmod=GAMES_UPDATED；与 categories ItemList inLanguage 再核对齐. */
+/** batch67: 再核 /games lastmod=GAMES_UPDATED；与 categories ItemList inLanguage 再核对齐. */
 const postDate = (d: string) => new Date(`${d}T12:00:00+08:00`);
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

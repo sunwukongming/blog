@@ -658,6 +658,24 @@ export default function Minesweeper() {
               }}
             />
           </span>
+          <span
+            className="mine-flag-ratio-bar"
+            data-over={flags > level.mines || undefined}
+            data-low={level.mines > 0 && flags / level.mines < 0.3 && safeOpen > 0 || undefined}
+            title={`插旗进度 ${flags}/${level.mines}`}
+            aria-label={`插旗 ${flags} 之 ${level.mines}`}
+          >
+            <i
+              className="mine-flag-ratio-bar__fill"
+              style={{
+                width: `${
+                  level.mines > 0
+                    ? Math.min(100, Math.round((flags / level.mines) * 100))
+                    : 0
+                }%`,
+              }}
+            />
+          </span>
           {best != null && phase === "playing" && best > 0 ? (
             <>
               <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>

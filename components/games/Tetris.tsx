@@ -798,6 +798,20 @@ export default function Tetris() {
                 }}
               />
             </span>
+            <span
+              className="tetris-pressure-bar"
+              data-hot={stats.ghost > 0 && stats.ghost <= 3 || undefined}
+              data-safe={stats.ghost >= 12 || undefined}
+              title={`堆高压力（幽灵越浅越高）深度 ${stats.ghost}（满压按深度 0）`}
+              aria-label={`堆高压力，幽灵深度 ${stats.ghost}`}
+            >
+              <i
+                className="tetris-pressure-bar__fill"
+                style={{
+                  width: `${Math.min(100, Math.round(((20 - Math.min(20, stats.ghost)) / 20) * 100))}%`,
+                }}
+              />
+            </span>
             {stats.comboPeak > 1 ? (
               <small style={{ marginLeft: 4, opacity: 0.7 }} title={`本局连消峰值 ×${stats.comboPeak}`}>
                 峰{stats.comboPeak}

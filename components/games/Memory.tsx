@@ -537,6 +537,32 @@ export default function Memory() {
               }}
             />
           </span>
+          <span
+            className="memory-match-rate-bar"
+            data-hot={seconds > 0 && matchedCount / seconds >= 0.25 || undefined}
+            data-slow={seconds >= 30 && matchedCount / Math.max(1, seconds) < 0.06 || undefined}
+            title={
+              seconds > 0
+                ? `配对速率 ${Math.round((matchedCount / seconds) * 60 * 10) / 10}/min（满刻度按 15/min）`
+                : "配对速率 —"
+            }
+            aria-label={
+              seconds > 0
+                ? `每分钟约配对 ${Math.round((matchedCount / seconds) * 60 * 10) / 10} 对`
+                : "配对速率未知"
+            }
+          >
+            <i
+              className="memory-match-rate-bar__fill"
+              style={{
+                width: `${
+                  seconds > 0
+                    ? Math.min(100, Math.round(((matchedCount / seconds) * 60 / 15) * 100))
+                    : 0
+                }%`,
+              }}
+            />
+          </span>
         </span>
       </div>
       <p className={endgame || streak >= 2 ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">

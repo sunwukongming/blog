@@ -1,0 +1,45 @@
+---
+title: Go singleflight.Forget：失效与缓存毒化
+date: "2026-10-25"
+category: backend
+summary: 站内 go-singleflight 已覆盖 Do/DoChan/shared。这篇只谈 Forget：何时丢掉飞行中的键、错误结果毒化热点、以及和外部缓存失效的配合。
+---
+
+站内 **go-singleflight** 讲合并回源与 `DoChan`。本文只聚焦 **`Forget(key)`**：从 group 里丢掉某个键的飞行记录，避免错误或过期结果被后来者继续「搭车」。
+
+## 做什么
+
+```go
+v, err, shared := g.Do(key, fn)
+if err != nil {
+    g.Forget(key) // 别让下一个等待方复用这次失败
+    return err
+}
+```
+
+`Do` 在 `fn` 返回后，会把结果交给所有等待者。若 `fn` 失败（超时、5xx、空指针），**默认仍算一次完成**；若你的封装还把错误缓存到进程外，热点键会被「毒化」。`Forget` 清掉 group 内该键，使下一次 `Do` 重新执行 `fn`。
+
+## 典型场景
+
+| 场景 | 做法 |
+|---|---|
+| 回源错误不应共享 | 失败分支 `Forget`，让重试真正打到 `fn` |
+| 主动失效 | 上游发出版本变更时 `Forget`，与 Redis `DEL` 一起 |
+| 长飞行卡住 | 少见；Forget 不会取消已在跑的 `fn`，只影响后续订阅 |
+
+注意：已在 `Do` 里阻塞的等待者仍拿到 **这一次** 的返回值；Forget 影响的是 **之后** 的新 `Do`。
+
+## 边界
+
+- Forget **不取消** 正在执行的 `fn`；要取消靠 `fn` 自己听 `context`。  
+- 与外部缓存：Forget 只清 singleflight 表；进程外 TTL/主动失效要另做。  
+- 高频 Forget + 高频失败 = 失去合并、打穿后端——失败要打点并限速。  
+- 成功路径一般不必 Forget；除非你把成功结果也短期粘在 group 语义之外。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| Forget / 毒化 | 本文 |
+| Do / DoChan / shared | go-singleflight |
+| 击穿合并入门 | go-singleflight-coalesce |

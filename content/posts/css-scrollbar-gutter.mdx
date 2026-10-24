@@ -1,0 +1,48 @@
+---
+title: CSS scrollbar-gutter：预留滚动条槽
+date: "2026-10-25"
+category: frontend
+summary: 站内 overscroll-behavior 管滚动链。这篇写 scrollbar-gutter：stable 如何避免出现滚动条时布局横跳，以及和 overflow、经典 padding  hack 的取舍。
+---
+
+站内 **css-overscroll-behavior** 管边缘手势。本文写 **`scrollbar-gutter`**：提前为经典滚动条留出槽位，减少「内容变高 → 出现条 → 宽度突然变窄」的跳动。
+
+## 取值
+
+```css
+html {
+  scrollbar-gutter: stable;
+}
+.panel {
+  overflow: auto;
+  scrollbar-gutter: stable both-edges;
+}
+```
+
+| 值 | 含义 |
+|---|---|
+| `auto` | 默认：需要时再占空间 |
+| `stable` | 即使暂时不可滚，也按「可能出现条」预留 gutter |
+| `stable both-edges` | 两侧都留（少见；对称布局或垂直书写时） |
+
+预留的是 **经典叠在边上的条** 的空间；overlay 滚动条（常不占宽）上观感可能几乎无差。
+
+## 何时用
+
+- 长文章、仪表盘主栏：切换筛选项导致高度跨过一屏时，标题与侧栏对齐不抖。  
+- 模态 / 抽屉：打开时锁 `body` 滚动若仍抖宽，可给 `html` 加 `stable` 代替粗暴 `padding-right: 15px`。  
+- 与 `overflow: overlay` 历史写法不同——现在用标准 gutter + `overflow: auto`。
+
+## 边界
+
+- 移动端多数字体用叠加条，`stable` 可能多出空白；可用 `@media (hover: hover) and (pointer: fine)` 再启用。  
+- gutter 不替代 `scrollbar-width` / `scrollbar-color`（外观）；各管各的。  
+- `both-edges` 在仅一侧有条的桌面环境会显得「空一截」，默认先 `stable`。  
+- 与居中 `max-width` 容器叠加时，预留后视觉中心可能微偏，按设计调。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| scrollbar-gutter | 本文 |
+| overscroll-behavior | css-overscroll-behavior |

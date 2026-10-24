@@ -1,0 +1,47 @@
+---
+title: Postgres 部分索引：用 WHERE 砍掉不该进树的行
+date: "2026-10-24"
+category: backend
+summary: 与「索引选型」总览分开：专讲 CREATE INDEX … WHERE 的适用面、谓词必须可匹配、以及维护成本与唯一约束变体。
+---
+
+站内索引选型文会提到 B-tree / BRIN。部分索引（partial index）是另一把刀：**只为满足谓词的行建树**，让「热数据很小、冷数据很多」的表少背索引体积与写放大。
+
+## 典型形状
+
+```sql
+CREATE INDEX ON orders (created_at)
+  WHERE status = 'open';
+
+CREATE UNIQUE INDEX ON users (email)
+  WHERE deleted_at IS NULL;
+```
+
+- 列表只扫 `open` 订单 → 索引远小于全表 `created_at`。  
+- 软删除下「未删除邮箱唯一」→ 用部分唯一索引，而不是触发器硬扛。
+
+## 规划器认不认
+
+谓词要 **和查询一致或可被蕴含**。`WHERE status = 'open'` 的索引帮不上 `status IN ('open','paid')` 里对 `paid` 的部分，也不要指望隐式类型转换还走索引。
+
+```sql
+EXPLAIN (ANALYZE, BUFFERS)
+SELECT * FROM orders
+WHERE status = 'open' AND created_at > now() - interval '7 days';
+```
+
+看是否 `Index Scan` / `Bitmap Index Scan` 打在该部分索引上。改了业务枚举却忘了改索引谓词，是静默变全表扫的常见原因。
+
+## 取舍
+
+| 适合 | 不适合 |
+|---|---|
+| 状态机里少数热状态 | 谓词几乎选中全表 |
+| 软删除「存活行」唯一 | 谓词每天改、索引要跟着翻 |
+| 报表只关心 `is_active` | 需要覆盖所有状态的排序 |
+
+写入时只有命中谓词的行维护索引；`UPDATE`/`DELETE` 使行进出入谓词会触发索引维护，和表达式索引一样要算进写路径。
+
+## 小结
+
+部分索引是用 **业务谓词换空间与缓存命中**。先写清「哪些行值得进索引」，再 `EXPLAIN` 验证查询谓词对齐；和 BRIN、分区裁剪可以叠用，但每层都要能讲清为什么。

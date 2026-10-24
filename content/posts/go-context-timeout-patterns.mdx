@@ -1,0 +1,48 @@
+---
+title: Go context 的 Deadline 与 Timeout：怎么叠、怎么露、怎么收
+date: "2026-10-24"
+category: backend
+summary: 与 cancellation / WithValue 文区分：专讲 WithTimeout、WithDeadline、父截止时间取早、以及 HTTP/SQL 边界如何露出剩余时间。
+---
+
+`context` 取消讲的是信号；这篇只谈 **时间盒**：请求必须在某个时刻前结束，子调用如何继承、缩短与观测剩余时间。
+
+## 三种入口
+
+```go
+ctx, cancel := context.WithTimeout(parent, 3*time.Second)
+defer cancel()
+
+deadline := time.Now().Add(500 * time.Millisecond)
+ctx, cancel = context.WithDeadline(parent, deadline)
+defer cancel()
+```
+
+- **Timeout**：从现在起一段相对时长。  
+- **Deadline**：绝对时刻（对接上游 `Deadline` 头、批任务对齐整点）。  
+- 子 context 的截止时间是 **父与自身的较早者**；不能用子 timeout「延长」父已经更短的期限。
+
+## 组合套路
+
+1. **入口设总预算**：HTTP middleware / gRPC interceptor `WithTimeout(r.Context(), 5s)`。  
+2. **下游再收紧**：调支付 `WithTimeout(ctx, 800ms)`，别复用 5s 把下游拖死。  
+3. **读剩余**：`deadline, ok := ctx.Deadline()`；`ok` 为 false 表示没有截止——此时自己补一个，避免无限等。  
+4. **错误区分**：`errors.Is(err, context.DeadlineExceeded)` vs `Canceled`；对外 504/499 策略不同。
+
+```go
+if dl, ok := ctx.Deadline(); ok {
+  // 传给 SQL：context 带 deadline 时驱动可提前停
+  _ = time.Until(dl)
+}
+```
+
+## 常见坑
+
+- `defer cancel()` 漏掉 → timer 与子 goroutine 泄漏。  
+- 在已取消的 ctx 上再 `WithTimeout` 仍立刻失败——先检查 `ctx.Err()`。  
+- 把 timeout 只设在客户端、服务端 handler 无预算 → 客户端走了服务端还在跑。  
+- 和站内 cancellation 文一样：超时也是取消的一种；别用 `WithValue` 传 deadline。
+
+## 小结
+
+Timeout/Deadline 是 **预算分配**：入口总预算、下游更短、处处 `defer cancel()`，并用 `DeadlineExceeded` 指导重试与对外状态码。先算清整条链路最慢合法路径，再填毫秒数，比拍脑袋 `context.Background()` 加 30s 稳。

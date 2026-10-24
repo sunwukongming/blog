@@ -855,3 +855,46 @@ html:has(.page--game) { overscroll-behavior: none; }
 .tetris-next-queue[data-preview-tip="true"] .tetris-next[data-queue="primary"] {
   box-shadow: 0 0 0 1px color-mix(in oklab, var(--accent) 55%, transparent);
 }
+
+/* batch28: Snake edge warn, Breakout level bar, Poker pot HUD */
+.snake-wrap-badge__warn {
+  color: var(--accent);
+  font-weight: 600;
+}
+.snake-wrap-badge__near { opacity: 0.9; color: #ffb86b; }
+.snake-wrap-badge[data-near] {
+  animation: snake-wrap-pulse 1.2s ease-in-out infinite alternate;
+  box-shadow: 0 0 0 1px color-mix(in oklab, #ffb86b 50%, transparent);
+}
+.snake-wrap-badge[data-edge] {
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--accent) 65%, transparent);
+}
+.breakout-progress {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding-bottom: 5px;
+}
+.breakout-progress__bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 0.08);
+  overflow: hidden;
+}
+.breakout-progress__bar::after {
+  content: "";
+  display: block;
+  height: 100%;
+  width: var(--bo-pct, 0%);
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.15s ease;
+}
+.breakout-progress[data-low] .breakout-progress__bar::after {
+  background: #ffb86b;
+}
+.pk-pot-hud b { font-variant-numeric: tabular-nums; }

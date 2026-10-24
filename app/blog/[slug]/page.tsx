@@ -79,6 +79,20 @@ async function PostBody({ params }: { params: Promise<{ slug: string }> }) {
     wordCount: post.readingMinutes ? post.readingMinutes * 400 : undefined,
     url: pageUrl,
   };
+  const relatedLd =
+    related.length > 0
+      ? {
+          "@context": "https://schema.org",
+          "@type": "ItemList",
+          name: `相关推荐 · ${post.title}`,
+          itemListElement: related.map((r, idx) => ({
+            "@type": "ListItem",
+            position: idx + 1,
+            url: SITE_URL ? `${SITE_URL}/blog/${r.slug}` : `/blog/${r.slug}`,
+            name: r.title,
+          })),
+        }
+      : null;
 
   return (
     <>
@@ -86,6 +100,12 @@ async function PostBody({ params }: { params: Promise<{ slug: string }> }) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleLd) }}
       />
+      {relatedLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(relatedLd) }}
+        />
+      )}
       <ReadingProgress />
       <header className="article-head" style={{ width: "100%" }}>
         <div className="article-meta">

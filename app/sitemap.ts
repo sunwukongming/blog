@@ -17,6 +17,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const listPages = ["/", "/blog", "/categories", "/archive", "/feed.xml"].map((path) => ({
     url: SITE_URL + path,
     ...(latest ? { lastModified: latest } : {}),
+    changeFrequency: path === "/" || path === "/blog" ? ("daily" as const) : ("weekly" as const),
+    priority: path === "/" ? 1 : path === "/blog" ? 0.9 : 0.7,
   }));
   const gamesIndex = {
     url: `${SITE_URL}/games`,
@@ -25,7 +27,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     ...listPages,
     gamesIndex,
-    ...posts.map((p) => ({ url: `${SITE_URL}/blog/${p.slug}`, lastModified: postDate(p.date) })),
+    ...posts.map((p) => ({
+      url: `${SITE_URL}/blog/${p.slug}`,
+      lastModified: postDate(p.date),
+      changeFrequency: "monthly" as const,
+      priority: 0.8,
+    })),
     ...CATEGORIES.map((c) => ({ url: `${SITE_URL}/categories/${c.slug}`, ...(latest ? { lastModified: latest } : {}) })),
     ...GAMES.filter((g) => g.playable).map((g) => ({
       url: `${SITE_URL}/games/${g.slug}`,

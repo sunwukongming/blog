@@ -1,0 +1,39 @@
+---
+title: K8s ephemeral-storage：临时盘配额、驱逐与可写层
+date: "2026-10-24"
+category: cloud
+summary: 容器可写层、emptyDir、日志与镜像层都吃节点临时存储；不设 requests/limits 时，打满会 Evicted，且比 CPU 更难在现场「感觉」到。
+---
+
+CPU/内存限额大家会配；**ephemeral-storage** 常被忘。节点磁盘被日志、未收敛的 `emptyDir`、或超大可写层吃满时，kubelet 会按策略驱逐 Pod，现象是「好好的副本突然 Evicted」。
+
+## 谁在吃临时存储
+
+- 容器 **可写层**（未挂卷的写文件）  
+- **emptyDir**（含 memory 介质时主要吃 RAM，disk 介质吃节点盘）  
+- 日志（容器 stdout 落盘策略依赖运行时）  
+- 镜像拉取与解压的短暂占用（与 imageFS 配置相关）
+
+```yaml
+resources:
+  requests:
+    ephemeral-storage: "256Mi"
+  limits:
+    ephemeral-storage: "1Gi"
+```
+
+`requests` 参与调度（节点可分配临时存储）；`limits` 超限可触发驱逐。和 CPU 不同，打满往往没有「慢慢变慢」的体感，直接是盘满与 Evicted。
+
+## 运维上要看的
+
+| 信号 | 含义 |
+|---|---|
+| `Reason: Evicted` / `The node was low on resource: ephemeral-storage` | 节点或 Pod 临时存储压力 |
+| 本地 `df` / kubelet `imagefs`/`nodefs` 阈值 | 是否已触软硬阈值 |
+| 未设 limit 的日志型 Pod | 一个吵闹邻居拖垮节点 |
+
+实践：日志侧车上限、`emptyDir.sizeLimit`、应用别把大缓存写进可写层（改 PVC 或对象存储）。和 ResourceQuota 文衔接：命名空间也可以卡 `ephemeral-storage` 请求总和。
+
+## 小结
+
+把 ephemeral-storage 当成一等资源：请求用于调度，限制用于自保，`sizeLimit` 管 emptyDir。排「随机 Evicted」时优先看节点 disk pressure，而不是只盯 OOMKilled。

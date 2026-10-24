@@ -247,6 +247,35 @@ export default function Poker() {
             </small>
           </span>
         )}
+        {started && !gameOver && !victory && (
+          <span
+            className="pk-pot-hud"
+            title={
+              result && result.pots.length > 1
+                ? `主池 ${result.pots[0]?.amount ?? 0} · 边池合计 ${result.pots.slice(1).reduce((s, x) => s + x.amount, 0)}`
+                : table.players.some((pl) => pl.allIn && !pl.out)
+                  ? `底池 ${pot} · 有人全下，结算将拆主池/边池`
+                  : `当前底池 ${pot}`
+            }
+          >
+            底池<b>{pot}</b>
+            {result && result.pots.length > 1 ? (
+              <>
+                <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
+                边池
+                <b className="game-tip--alert">
+                  {result.pots.slice(1).reduce((s, x) => s + x.amount, 0)}
+                </b>
+                <small style={{ marginLeft: 4, opacity: 0.75 }}>×{result.pots.length - 1}</small>
+              </>
+            ) : table.players.some((pl) => pl.allIn && !pl.out) ? (
+              <>
+                <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
+                边池<b className="game-tip--alert">待拆</b>
+              </>
+            ) : null}
+          </span>
+        )}
         <span className="spacer" />
         <span>
           本机最多<b>{best ?? STARTING_CHIPS}</b>
@@ -315,9 +344,18 @@ export default function Poker() {
           </div>
           <p className="pk-pot">
             底池 {pot}
-            {started && !gameOver && !victory && me && !me.out && me.chips > 0 && (
+            {result && result.pots.length > 1 ? (
+              <small className="pk-pot-hint">
+                {" "}
+                · 主池 {result.pots[0]?.amount ?? 0}
+                {" | "}
+                边池 {result.pots.slice(1).reduce((s, x) => s + x.amount, 0)}（{result.pots.length - 1}）
+              </small>
+            ) : table.players.some((pl) => pl.allIn && !pl.out) ? (
+              <small className="pk-pot-hint"> · 底池|边池：全下中，结算按资格拆池</small>
+            ) : started && !gameOver && !victory && me && !me.out && me.chips > 0 ? (
               <small className="pk-pot-hint"> · 约占你筹码 {Math.min(999, Math.round((pot / me.chips) * 100))}%</small>
-            )}
+            ) : null}
           </p>
           {myTurn && rules && !rules.canCheck && rules.toCall > 0 && pot > 0 && (
             <p className="game-tip game-tip--alert pk-odds" aria-live="polite">

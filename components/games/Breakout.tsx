@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useEffectEvent, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useEffectEvent, useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import { BREAKOUT_LEVELS } from "./breakoutLevels";
 import { buzz, higher, saveRecord, setBuzzMuted, useBuzzMuted, useKeys, useRecord } from "./input";
 import LevelSelect from "./LevelSelect";
@@ -543,11 +543,21 @@ const [phase, setPhase] = useState<Phase>("select");
               <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
               速<b className={hud.lives <= 1 || hud.slow ? "game-tip--alert" : undefined}>{hud.ballSpeed}</b>
             </span>
-            <span title="可打碎砖剩余 / 本关总数">
-              剩余砖<b>{hud.brickLeft}/{hud.brickTotal}</b>
-            </span>
-            <span>
-              完成<b>{hud.progress}%</b>
+            <span
+              className="breakout-progress"
+              data-low={hud.brickLeft <= 3 && hud.brickLeft > 0 || undefined}
+              data-done={hud.progress >= 100 || undefined}
+              title={`本关进度 ${hud.progress}% · 剩余可打砖 ${hud.brickLeft}/${hud.brickTotal}`}
+            >
+              关卡
+              <b>{hud.progress}%</b>
+              <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
+              砖<b className={hud.brickLeft <= 3 && hud.brickLeft > 0 ? "game-tip--alert" : undefined}>{hud.brickLeft}/{hud.brickTotal}</b>
+              <span
+                className="breakout-progress__bar"
+                aria-hidden="true"
+                style={{ ["--bo-pct" as string]: `${hud.progress}%` } as CSSProperties}
+              />
             </span>
             <span title="当前拍宽（关卡越高越短；加宽道具×1.5）">
               拍宽<b className={hud.wide ? "game-tip--alert" : undefined}>{hud.paddleW}</b>
@@ -585,7 +595,7 @@ const [phase, setPhase] = useState<Phase>("select");
               ? `多球/残命：多球×${hud.balls} · ♥×${hud.lives} · 速 ${hud.ballSpeed} · 连击 ${hud.combo}`
             : hud.brickLeft <= 3 && hud.brickLeft > 0
               ? `多球/残命：♥×${hud.lives} · 球×${hud.balls} · 残局 ${hud.brickLeft} 块 · 拍 ${hud.paddleW}`
-              : `多球/残命：♥×${hud.lives} · 球×${hud.balls} · 速 ${hud.ballSpeed}${hud.slow ? "(减)" : ""} · 连击 ${hud.combo}（峰 ${hud.bestCombo}）`}
+              : `关卡进度 ${hud.progress}%（砖 ${hud.brickLeft}/${hud.brickTotal}）· ♥×${hud.lives} · 球×${hud.balls} · 速 ${hud.ballSpeed}${hud.slow ? "(减)" : ""} · 连击 ${hud.combo}`}
         </p>
       )}
       {(phase === "running" || phase === "aim" || phase === "paused" || phase === "select") && (

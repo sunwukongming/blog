@@ -1,0 +1,42 @@
+---
+title: "Go testing：Deadline 与超时边界"
+date: "2026-10-25"
+category: backend
+summary: "站内已有 Helper / Cleanup / Parallel。这篇写 testing 里的截止时间：t.Deadline、context 联动，以及慢断言如何避免误杀。"
+---
+
+集成测或依赖时钟的用例里，常需要「整测最多跑多久」。Go 1.15+ 的 **`t.Deadline()`** 读出 `-timeout`（或默认）推算出的截止时刻，便于把剩余时间分给子步骤。
+
+## 写法
+
+```go
+func TestFetch(t *testing.T) {
+	deadline, ok := t.Deadline()
+	if !ok {
+		// 无 -timeout 时 ok=false；自行决定是否硬编码上限
+		t.Skip("no test deadline")
+	}
+	ctx, cancel := context.WithDeadline(context.Background(), deadline)
+	defer cancel()
+
+	if err := fetch(ctx, "https://example.test"); err != nil {
+		t.Fatal(err)
+	}
+}
+```
+
+也可用 `context.WithTimeout(parent, time.Until(deadline)-margin)` 给 teardown 留余量。
+
+## 边界
+
+- **`ok == false`**：未设超时（如 IDE 直接跑、或 timeout=0）；不要假设永远有 Deadline。  
+- 与 **`t.Parallel()`**：子测共享进程级 `-timeout`；并行越多，单测可用墙钟越紧。  
+- `t.Helper()` 不改变 Deadline；失败定位仍靠 Helper，超时靠 `go test -timeout`。  
+- 别在单测里 `time.Sleep` 顶满 Deadline；把预算留给被测 I/O，用 fake clock / 短超时。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| Deadline | 本文 |
+| Helper / Cleanup / Parallel | 站内 go-testing-* 文 |

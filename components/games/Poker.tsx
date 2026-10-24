@@ -433,6 +433,38 @@ export default function Poker() {
               }}
             />
           </span>
+          <span
+            className="pk-matched-bar"
+            data-hot={
+              table.players.filter((p) => !p.out).length > 0 &&
+              table.players.filter((p) => !p.out && p.bet >= table.currentBet).length >=
+                Math.max(2, Math.ceil(table.players.filter((p) => !p.out).length * 0.75)) || undefined
+            }
+            data-cold={
+              table.players.filter((p) => !p.out).length > 0 &&
+              table.currentBet > 0 &&
+              table.players.filter((p) => !p.out && p.bet >= table.currentBet).length <= 1 || undefined
+            }
+            title={`已跟上注额 ${table.players.filter((p) => !p.out && p.bet >= table.currentBet).length}/${table.players.filter((p) => !p.out).length || 0}（仍在局，当前注 ${table.currentBet}）`}
+            aria-label={`仍在局中已跟上 ${table.players.filter((p) => !p.out && p.bet >= table.currentBet).length} 人`}
+          >
+            <i
+              style={{
+                width: `${
+                  table.players.filter((p) => !p.out).length
+                    ? Math.min(
+                        100,
+                        Math.round(
+                          (table.players.filter((p) => !p.out && p.bet >= table.currentBet).length /
+                            table.players.filter((p) => !p.out).length) *
+                            100,
+                        ),
+                      )
+                    : 0
+                }%`,
+              }}
+            />
+          </span>
         </span>
         <span
           className={

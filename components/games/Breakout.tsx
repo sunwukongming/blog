@@ -757,6 +757,31 @@ const [phase, setPhase] = useState<Phase>("select");
                   }}
                 />
               </span>
+              <span
+                className="breakout-metal-share-bar"
+                data-high={hud.brickLeft > 0 && hud.metalLeft / hud.brickLeft >= 0.45 || undefined}
+                data-clear={hud.brickLeft > 0 && hud.metalLeft === 0 || undefined}
+                title={
+                  hud.brickLeft > 0
+                    ? `金属占比 ${hud.metalLeft}/${hud.brickLeft}`
+                    : "金属占比 —"
+                }
+                aria-label={
+                  hud.brickLeft > 0
+                    ? `剩余砖中金属 ${hud.metalLeft} 块`
+                    : "金属占比未知"
+                }
+              >
+                <i
+                  style={{
+                    width: `${
+                      hud.brickLeft > 0
+                        ? Math.min(100, Math.round((hud.metalLeft / hud.brickLeft) * 100))
+                        : 0
+                    }%`,
+                  }}
+                />
+              </span>
               <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
               速<b className={hud.lives <= 1 || hud.slow ? "game-tip--alert" : undefined}>{hud.ballSpeed}</b>
               <span

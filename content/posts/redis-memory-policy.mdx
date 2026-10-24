@@ -1,0 +1,33 @@
+---
+title: "Redis maxmemory-policy：淘汰策略怎么选"
+date: "2026-10-25"
+category: backend
+summary: "站内写过 lazyfree 与大键释放。这篇谈 maxmemory 触顶后的 eviction：volatile-* / allkeys-* / noeviction 的适用面与踩坑。"
+---
+
+内存到 **`maxmemory`** 后，写命令是否成功取决于 **`maxmemory-policy`**。缓存与「真存储」混用时，选错策略会直接丢持久数据或让写入雪崩。
+
+## 常见策略（语义以你版本为准）
+
+| 策略 | 大致行为 |
+|---|---|
+| `noeviction` | 不淘汰；写满返回错误 |
+| `allkeys-lru` / `allkeys-lfu` | 在全部键里按 LRU/LFU 淘汰 |
+| `volatile-lru` / `volatile-lfu` / `volatile-ttl` | 只在**带过期**的键里淘汰 |
+| `volatile-random` / `allkeys-random` | 随机 |
+
+缓存层多用 `allkeys-lru`（或 LFU）；必须保留的会话/队列键则靠独立实例或 `noeviction` + 限流。
+
+## 边界
+
+- **`volatile-*` 且几乎无 TTL**：等价于几乎不淘汰，写满仍报错——别以为「volatile」更安全。  
+- 与 **lazyfree**：淘汰也可异步释放（配置项因版本而异）；监控 `evicted_keys` 与延迟。  
+- 主从：从库只读时策略表现不同；以官方文档与你部署的 `INFO memory` 为准。  
+- 大键一次淘汰代价高；配合合理 TTL、拆键与站内 lazyfree 文一起看。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| maxmemory-policy | 本文 |
+| lazyfree / UNLINK | 站内 redis-lazyfree |

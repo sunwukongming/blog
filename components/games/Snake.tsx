@@ -775,6 +775,31 @@ export default function Snake() {
                   }}
                 />
               </span>
+              <span
+                className="snake-score-len-bar"
+                data-hot={hud.len > 0 && hud.score / hud.len >= 8 || undefined}
+                data-low={hud.len >= 5 && hud.score / Math.max(1, hud.len) < 2 || undefined}
+                title={
+                  hud.len > 0
+                    ? `分/节 ${Math.round((hud.score / hud.len) * 10) / 10}（满刻度按 10）`
+                    : "分/节 —"
+                }
+                aria-label={
+                  hud.len > 0
+                    ? `每节约 ${Math.round((hud.score / hud.len) * 10) / 10} 分`
+                    : "分节效率未知"
+                }
+              >
+                <i
+                  style={{
+                    width: `${
+                      hud.len > 0
+                        ? Math.min(100, Math.round((hud.score / hud.len / 10) * 100))
+                        : 0
+                    }%`,
+                  }}
+                />
+              </span>
             </span>
             </span>
             <span

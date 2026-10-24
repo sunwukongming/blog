@@ -1,0 +1,43 @@
+---
+title: "Vue 3 泛型组件：defineProps 与类型参数"
+date: "2026-10-25"
+category: frontend
+summary: "站内写过 withDefaults。这篇写 script setup 泛型组件：在组件上声明类型参数，让列表/选择器的 item 类型随用法收窄。"
+---
+
+Vue 3.3+ 支持在 **`<script setup>`** 上声明**泛型**，让 `defineProps` / `defineEmits` 吃到调用方传入的类型参数：
+
+```vue
+<script setup lang="ts" generic="T extends { id: string }">
+const props = defineProps<{
+  items: T[];
+  selected?: T["id"];
+}>();
+
+const emit = defineEmits<{
+  select: [id: T["id"]];
+}>();
+</script>
+```
+
+用法侧：
+
+```vue
+<ItemList :items="users" :selected="uid" @select="onSelect" />
+```
+
+`users` 的元素类型会流入 `T`，`selected` / `select` 的 id 类型随之收窄。
+
+## 边界
+
+- 泛型约束写在 `generic="..."` 属性里；多个参数用逗号分隔。  
+- 与 **`withDefaults`** 可组合：先 `defineProps`，再包 defaults；注意可选字段与工厂默认值。  
+- 运行时仍是普通 props；泛型只存在于类型世界，不生成额外运行时代码。  
+- IDE / `vue-tsc` 版本需跟上；旧插件可能解析失败。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| 泛型组件 | 本文 |
+| withDefaults | 站内 vue3-with-defaults |

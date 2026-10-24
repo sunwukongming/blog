@@ -1,0 +1,29 @@
+---
+title: K8s 探针与资源： readiness 不是活着就行
+date: "2026-10-21"
+category: cloud
+summary: liveness / readiness / startup 职责不同；资源请求和限制配错，轻则抖动，重则被 OOM 或永久未就绪。
+---
+
+排障时最常见的一句是「Pod Running 但流量没有」。多数时候不是调度坏了，而是探针和资源语义被混用。
+
+## 三种探针各管什么
+
+- **startupProbe**：慢启动（JVM、大量预热）先用它挡着，避免 liveness 在启动期误杀。
+- **livenessProbe**：只回答「进程是否卡死」。失败就重启。不要在这里做重依赖检查，否则依赖抖一下，你的副本会被轮流杀掉。
+- **readinessProbe**：回答「能不能接流量」。依赖库未就绪、连接池耗尽、关键配置热更新中，都应该让 readiness 失败，把端点从 Service 摘走。
+
+我见过把「能不能连上下游 Redis」写进 liveness 的：Redis 抖动 → 应用被杀 → 雪崩。下游检查请放 readiness，或做成独立的依赖健康，由网关 / 副本集策略消化。
+
+## 资源请求与限制
+
+- **requests**：调度依据。写太小会挤在一起，CPU throttle；写太大浪费节点。
+- **limits**：上限。内存 limit 触顶直接 OOMKill；CPU limit 则是节流，表现为尾延迟变差。
+
+实操上我习惯：先用观测（容器 CPU / 内存、GC、排队）看稳态和峰值，再把 requests 贴近稳态偏上，limits 给内存留一点抖动空间。对 Go 服务，无脑的小 memory limit 比「没有 limit」更容易在流量尖刺时连环重启。
+
+## 和优雅下线的衔接
+
+`preStop` + 足够的 `terminationGracePeriodSeconds`、readiness 先失败再停进程，这套和探针是一套戏。只调探针不调下线，滚动发布照样丢请求；只调下线不调 readiness，坏副本还会继续进负载均衡。
+
+探针是交通信号，资源是车道宽度。两者都按「活着」来配，集群看起来很忙，用户侧却在超时。

@@ -116,6 +116,7 @@ export default function Poker() {
   }, [done, started, table.hand]);
 
   const deal = () => {
+    setRaiseTo(0);
     // 纪录从起始筹码算起，第一手输一点也不会出现低于 1000 的“最高”
     submitBest(STARTING_CHIPS);
     update((t) => {
@@ -132,7 +133,12 @@ export default function Poker() {
 
   const minTo = rules?.minTo ?? 0;
   const maxTo = rules?.maxTo ?? 0;
-  const raiseValue = Math.min(Math.max(raiseTo, minTo), maxTo);
+  // clamp raise display when last hand amount is out of this street range
+  const raiseValue = rules
+    ? raiseTo >= minTo && raiseTo <= maxTo
+      ? raiseTo
+      : minTo
+    : 0;
   const presets = rules
     ? [
         { label: "½ 池", to: table.currentBet + Math.round(pot / 2) },
@@ -197,7 +203,7 @@ export default function Poker() {
         </span>
         <span className="spacer" />
         <span>
-          最多<b>{best ?? 0}</b>
+          本机最多<b>{best ?? STARTING_CHIPS}</b>
         </span>
       </div>
 
@@ -296,6 +302,9 @@ export default function Poker() {
             </button>
           )}
           {!done && myHand && <p className="game-hint">你现在是：{myHand}</p>}
+          {!done && !myHand && myTurn && (
+            <p className="game-hint">F 弃牌，C / 空格过牌或跟注，R 加注，A 全下</p>
+          )}
         </div>
       )}
     </div>

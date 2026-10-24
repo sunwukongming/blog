@@ -9,7 +9,8 @@ export const SITE_URL = siteUrl ? siteUrl.replace(/\/$/, "") : null;
 
 export const SITE = {
   name: "GM Lab",
-  description: "GM Lab：Go、云平台、可观测性与前端笔记，外加几个能在浏览器里玩的小游戏。",
+  description:
+    "GM Lab：一间可点的书房，里面是 Go / 云原生 / OpenTelemetry 与前端笔记，桌上还有几个能直接玩的小游戏。",
   author: "GM",
 };
 
@@ -21,6 +22,7 @@ export const PROFILE = {
     "擅长高并发与复杂业务的系统设计：服务拆分、存储选型、性能调优、稳定性治理；出了问题，从系统调用一路查到 Kubernetes 集群。",
     "前端同样精通，一个人就能把产品从服务端做到用户眼前；也乐于带团队、定规范，让一群人写出风格一致、好维护的代码。",
     "做事求稳：先想清楚系统和网络层面会发生什么，再小步上线，每一步都能回滚。",
+    "这个站本身也是实验场：左边是书房里的文章与观测笔记，右边桌上的小游戏用来验证交互与前端工程——边写架构，边把玩法做完整。",
   ],
   skills: ["Go", "gRPC", "MySQL", "Redis", "Kubernetes", "OpenTelemetry", "Linux", "TypeScript", "Vue 3", "React"],
   links: [

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useEffectEvent, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent } from "react";
-import { buzz, useRecord } from "./input";
+import { buzz, useKeys, useRecord } from "./input";
 
 type Level = { key: string; label: string; w: number; h: number; mines: number };
 type Cell = { mine: boolean; adj: number; open: boolean; flag: boolean };
@@ -136,8 +136,10 @@ export default function Minesweeper() {
   const [now, setNow] = useState(Date.now);
   // 开局时的最快纪录，赢了以后和这局用时比，判断是不是新纪录
   const [bestAtStart, setBestAtStart] = useState<number | null>(null);
+  const [focus, setFocus] = useState(0);
   const [best, submitBest] = useRecord(`minesweeper-${game.level.key}`, (next, prev) => next < prev);
   const press = useRef<{ timer: number; fired: boolean; touch: boolean } | null>(null);
+  const cellRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const { level, cells, phase } = game;
   const flags = cells.filter((c) => c.flag).length;
@@ -151,6 +153,10 @@ export default function Minesweeper() {
     return () => clearInterval(id);
   }, [phase]);
 
+  useEffect(() => {
+    cellRefs.current[focus]?.focus();
+  }, [focus, level.key]);
+
   const onEnd = useEffectEvent(() => {
     if (phase === "won") submitBest(seconds);
     if (phase === "lost") buzz([60, 40, 120]);
@@ -159,8 +165,18 @@ export default function Minesweeper() {
     onEnd();
   }, [phase]);
 
-  const restart = (next = level) => setGame(newGame(next));
+  const restart = (next = level) => {
+    setGame(newGame(next));
+    setFocus(0);
+  };
   const record = phase === "won" && (bestAtStart === null || seconds < bestAtStart);
+
+  const openAt = (i: number) => {
+    if (i < 0) return;
+    if (phase === "ready" && !flagMode) setBestAtStart(best);
+    setGame((g) => (flagMode && !g.cells[i].open ? toggleFlag(g, i) : reveal(g, i)));
+    setFocus(i);
+  };
 
   const onClick = (e: MouseEvent) => {
     const i = cellIndex(e);
@@ -169,8 +185,7 @@ export default function Minesweeper() {
       press.current = null;
       return;
     }
-    if (phase === "ready" && !flagMode) setBestAtStart(best);
-    setGame((g) => (flagMode && !g.cells[i].open ? toggleFlag(g, i) : reveal(g, i)));
+    openAt(i);
   };
 
   const onContextMenu = (e: MouseEvent) => {
@@ -178,7 +193,10 @@ export default function Minesweeper() {
     // 手机上长按也会触发 contextmenu，交给长按计时器处理
     if (press.current?.touch) return;
     const i = cellIndex(e);
-    if (i >= 0) setGame((g) => toggleFlag(g, i));
+    if (i >= 0) {
+      setGame((g) => toggleFlag(g, i));
+      setFocus(i);
+    }
   };
 
   const onPointerDown = (e: PointerEvent) => {
@@ -190,6 +208,7 @@ export default function Minesweeper() {
       press.current.fired = true;
       buzz(15);
       setGame((g) => toggleFlag(g, i));
+      setFocus(i);
     }, LONG_PRESS_MS);
     press.current = { timer, fired: false, touch: true };
   };
@@ -199,6 +218,41 @@ export default function Minesweeper() {
     // 长按成功时保留标记，让紧接着的 click 被忽略
     if (press.current && !press.current.fired) press.current = null;
   };
+
+  useKeys((key) => {
+    const { w, h } = level;
+    const n = w * h;
+    if (key === "ArrowRight") {
+      setFocus((f) => (f % w === w - 1 ? f - (w - 1) : f + 1));
+      return true;
+    }
+    if (key === "ArrowLeft") {
+      setFocus((f) => (f % w === 0 ? f + (w - 1) : f - 1));
+      return true;
+    }
+    if (key === "ArrowDown") {
+      setFocus((f) => (f + w) % n);
+      return true;
+    }
+    if (key === "ArrowUp") {
+      setFocus((f) => (f - w + n) % n);
+      return true;
+    }
+    if (key === "Enter" || key === " ") {
+      openAt(focus);
+      return true;
+    }
+    if (key.toLowerCase() === "f") {
+      setGame((g) => toggleFlag(g, focus));
+      buzz(12);
+      return true;
+    }
+    if (key.toLowerCase() === "r") {
+      restart();
+      return true;
+    }
+    return false;
+  });
 
   return (
     <div className="game">
@@ -221,6 +275,9 @@ export default function Minesweeper() {
         <span>
           时间<b>{seconds}</b>
         </span>
+        <span>
+          最快<b>{best ?? "—"}</b>
+        </span>
       </div>
       <div
         className="mines"
@@ -231,18 +288,26 @@ export default function Minesweeper() {
         onPointerUp={endPress}
         onPointerCancel={endPress}
         onPointerLeave={endPress}
+        role="grid"
+        aria-label={`扫雷 ${level.label}`}
       >
         {cells.map((c, i) => (
           <button
             key={i}
             type="button"
+            ref={(el) => {
+              cellRefs.current[i] = el;
+            }}
             data-i={i}
             className="mine-cell"
+            tabIndex={focus === i ? 0 : -1}
             data-open={c.open || undefined}
             data-flag={(!c.open && c.flag) || undefined}
             data-boom={i === game.exploded || undefined}
             data-n={c.open && !c.mine ? c.adj : undefined}
+            data-focus={focus === i || undefined}
             aria-label={`第 ${Math.floor(i / level.w) + 1} 行第 ${(i % level.w) + 1} 列${c.flag ? "，已插旗" : c.open ? `，${c.mine ? "雷" : c.adj}` : ""}`}
+            onFocus={() => setFocus(i)}
           >
             {cellLabel(c, phase === "lost")}
           </button>
@@ -261,10 +326,10 @@ export default function Minesweeper() {
         {phase === "won"
           ? `全部排完，用时 ${seconds} 秒${record ? "，新纪录！" : ""}`
           : phase === "lost"
-            ? "踩雷了。点“重新开始”再来一局。"
+            ? "踩雷了。点“重新开始”或按 R 再来一局。"
             : best !== null
-              ? `${level.label}最快 ${best} 秒`
-              : "第一下随便点，不会踩雷。"}
+              ? `${level.label}最快 ${best} 秒。方向键移动，回车翻开，F 插旗。`
+              : "方向键移动焦点，回车翻开，F 插旗。第一下不会踩雷。"}
       </p>
     </div>
   );

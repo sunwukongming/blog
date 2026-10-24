@@ -1,12 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { buzz, lower, useRecord } from "./input";
+import { buzz, lower, useKeys, useRecord } from "./input";
 
+type Diff = { key: string; label: string; cols: number; rows: number };
 type Card = { id: number; pair: number; flipped: boolean; matched: boolean };
 
-const PAIRS = 8;
-const SYMBOLS = ["♠", "♥", "♦", "♣", "★", "●", "▲", "■"];
+const DIFFS: Diff[] = [
+  { key: "easy", label: "简单", cols: 3, rows: 4 },
+  { key: "normal", label: "普通", cols: 4, rows: 4 },
+  { key: "hard", label: "困难", cols: 5, rows: 4 },
+];
+const SYMBOLS = ["♠", "♥", "♦", "♣", "★", "●", "▲", "■", "◆", "☀"];
 const FLIP_BACK_MS = 650;
 
 function shuffle<T>(arr: T[]): T[] {
@@ -18,8 +23,8 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-function deal(): Card[] {
-  const base = Array.from({ length: PAIRS }, (_, pair) => pair);
+function deal(pairs: number): Card[] {
+  const base = Array.from({ length: pairs }, (_, pair) => pair);
   return shuffle([...base, ...base]).map((pair, id) => ({
     id,
     pair,
@@ -28,18 +33,29 @@ function deal(): Card[] {
   }));
 }
 
+function recordKey(diff: Diff) {
+  return `memory-${diff.key}`;
+}
+
 export default function Memory() {
-  const [cards, setCards] = useState<Card[]>(() => deal());
+  const [diff, setDiff] = useState<Diff>(DIFFS[1]);
+  const pairs = (diff.cols * diff.rows) / 2;
+  const [cards, setCards] = useState<Card[]>(() => deal(8));
   const [open, setOpen] = useState<number[]>([]);
   const [moves, setMoves] = useState(0);
   const [lock, setLock] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [running, setRunning] = useState(false);
-  const [best, submitBest] = useRecord("memory", lower);
+  const [focus, setFocus] = useState(0);
+  const [best, submitBest] = useRecord(recordKey(diff), lower);
+  // 兼容第一批只写过 memory 键的普通难度纪录
+  const [legacy] = useRecord("memory", lower);
+  const shownBest = best ?? (diff.key === "normal" ? legacy : null);
   const reported = useRef(false);
+  const cardRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const matchedCount = useMemo(() => cards.filter((c) => c.matched).length / 2, [cards]);
-  const won = matchedCount === PAIRS;
+  const won = matchedCount === pairs;
 
   useEffect(() => {
     if (!running || won) return;
@@ -54,6 +70,10 @@ export default function Memory() {
     buzz(isBest ? 30 : [12, 40, 12]);
   }, [won, moves, submitBest]);
 
+  useEffect(() => {
+    cardRefs.current[focus]?.focus();
+  }, [focus, diff.key, cards.length]);
+
   const flip = (i: number) => {
     if (lock || won) return;
     const c = cards[i];
@@ -62,6 +82,7 @@ export default function Memory() {
 
     const nextOpen = [...open, i];
     setCards((prev) => prev.map((x) => (x.id === i ? { ...x, flipped: true } : x)));
+    setFocus(i);
 
     if (nextOpen.length < 2) {
       setOpen(nextOpen);
@@ -91,49 +112,102 @@ export default function Memory() {
     }, FLIP_BACK_MS);
   };
 
-  const restart = () => {
+  const restart = (next = diff) => {
     reported.current = false;
-    setCards(deal());
+    setDiff(next);
+    setCards(deal((next.cols * next.rows) / 2));
     setOpen([]);
     setMoves(0);
     setLock(false);
     setSeconds(0);
     setRunning(false);
+    setFocus(0);
   };
+
+  useKeys((key) => {
+    const cols = diff.cols;
+    const n = cards.length;
+    if (key === "ArrowRight") {
+      setFocus((f) => (f + 1) % n);
+      return true;
+    }
+    if (key === "ArrowLeft") {
+      setFocus((f) => (f - 1 + n) % n);
+      return true;
+    }
+    if (key === "ArrowDown") {
+      setFocus((f) => (f + cols) % n);
+      return true;
+    }
+    if (key === "ArrowUp") {
+      setFocus((f) => (f - cols + n) % n);
+      return true;
+    }
+    if (key === "Enter" || key === " ") {
+      flip(focus);
+      return true;
+    }
+    if (key.toLowerCase() === "r") {
+      restart();
+      return true;
+    }
+    return false;
+  });
 
   return (
     <div className="game">
       <div className="game-bar">
+        {DIFFS.map((d) => (
+          <button
+            key={d.key}
+            type="button"
+            className="game-btn"
+            aria-pressed={d.key === diff.key}
+            onClick={() => restart(d)}
+          >
+            {d.label}
+          </button>
+        ))}
+        <span className="spacer" />
         <span>
           步数<b>{moves}</b>
         </span>
         <span>
           配对<b>
-            {matchedCount}/{PAIRS}
+            {matchedCount}/{pairs}
           </b>
         </span>
         <span>
           时间<b>{seconds}</b>
         </span>
-        <span className="spacer" />
-        <button type="button" className="game-btn" onClick={restart}>
-          重新开始
-        </button>
+        <span>
+          最少<b>{shownBest ?? "—"}</b>
+        </span>
       </div>
-      <div className="memory" role="grid" aria-label="记忆翻牌">
+      <div
+        className="memory"
+        role="grid"
+        aria-label={`记忆翻牌 ${diff.label}`}
+        style={{ gridTemplateColumns: `repeat(${diff.cols}, 1fr)` }}
+      >
         {cards.map((c, i) => {
           const show = c.flipped || c.matched;
           return (
             <button
               key={c.id}
               type="button"
+              ref={(el) => {
+                cardRefs.current[i] = el;
+              }}
               className="memory-card"
               role="gridcell"
+              tabIndex={focus === i ? 0 : -1}
               data-open={show || undefined}
               data-matched={c.matched || undefined}
               aria-label={show ? `牌面 ${SYMBOLS[c.pair]}` : `第 ${i + 1} 张，背面`}
               disabled={lock || c.matched}
               onClick={() => flip(i)}
+              onFocus={() => setFocus(i)}
             >
               <span className="memory-card__face memory-card__face--front" aria-hidden="true">
                 ?
@@ -145,12 +219,18 @@ export default function Memory() {
           );
         })}
       </div>
+      <div className="game-bar">
+        <span className="spacer" />
+        <button type="button" className="game-btn" onClick={() => restart()}>
+          重新开始
+        </button>
+      </div>
       <p className="game-hint" aria-live="polite">
         {won
-          ? `全部配对，用了 ${moves} 步、${seconds} 秒${best !== null && moves <= best ? "，新纪录！" : "。"}`
-          : best !== null
-            ? `本机最少 ${best} 步。点两张牌，相同就留下。`
-            : "点两张牌，图案相同就留下。步数越少越好。"}
+          ? `全部配对，用了 ${moves} 步、${seconds} 秒${shownBest !== null && moves <= shownBest ? "，新纪录！" : "。"}`
+          : shownBest !== null
+            ? `${diff.label}本机最少 ${shownBest} 步。方向键移动焦点，回车或空格翻牌。`
+            : "方向键移动焦点，回车或空格翻牌；也可用鼠标点。步数越少越好。"}
       </p>
     </div>
   );

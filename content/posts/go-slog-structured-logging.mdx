@@ -1,0 +1,45 @@
+---
+title: Go slog 结构化日志：字段约定比换库更重要
+date: "2026-10-24"
+category: backend
+summary: 标准库 slog 够用。真正拉开差距的是字段名、级别与 trace 关联的约定，而不是再包一层「自家 Logger」。
+---
+
+Go 1.21 起 `log/slog` 进标准库之后，再为「要不要 zap/zerolog」吵一轮意义不大。能统一的是 **怎么打**，不是品牌。
+
+## 先定字段，再定 Handler
+
+建议每个服务默认带上（名字可微调，但全仓库一致）：
+
+- `service` / `env` / `version`  
+- `trace_id` / `span_id`（有 OpenTelemetry 就从 context 取）  
+- 业务键：`order_id`、`user_id`（注意脱敏）
+
+级别：`Info` 走主路径，`Warn` 可恢复异常，`Error` 要人看，`Debug` 默认关。别把 Error 当「打印堆栈的 Info」。
+
+## Handler 怎么选
+
+- 本地：`TextHandler`，人眼友好。  
+- 生产：`JSONHandler`（或兼容你们采集的格式），给 Loki / ELK / 云日志。  
+- 中间件里用 `With` / `WithGroup` 挂请求级字段，避免每个调用手写十遍。
+
+```go
+logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+reqLog := logger.With("trace_id", tid, "path", r.URL.Path)
+reqLog.Info("request ok", "status", 200, "ms", elapsed)
+```
+
+## 常见翻车
+
+1. **同一件事又 Info 又 Error**，告警噪声直接翻倍。  
+2. **字段类型飘**：有时 `user_id` 字符串有时数字，下游解析炸。  
+3. **在热路径 Debug 拼大结构体**，级别关掉了仍可能分配——用懒计算或先判断 `Enabled`。  
+4. **和 trace 脱节**：日志里没有 trace id，排障还得靠时间戳碰运气。
+
+## 和「可观测」那几篇的关系
+
+日志是事件叙述，指标是聚合，追踪是因果链。slog 解决的是叙述是否机器可读；采样、尾部采样、示例比仍要在 OTel 侧定。不要指望「全打 Debug JSON」替代 tracing。
+
+## 小结
+
+换 slog 是半天的事；统一字段与级别是几周的事。先写一页日志约定，再让 Handler 落地——库已经免费了，贵的是纪律。

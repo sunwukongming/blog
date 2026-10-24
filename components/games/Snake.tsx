@@ -34,7 +34,7 @@ type Game = {
   /** 吃到东西时的光环特效 */
   fx: { x: number; y: number; at: number; color: string }[];
 };
-type Hud = { eaten: number; score: number; seconds: number };
+type Hud = { eaten: number; score: number; seconds: number; wrap: boolean; edgeHint: string | null };
 
 const VEC: Record<Dir, P> = { up: { x: 0, y: -1 }, down: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } };
 const OPPOSITE: Record<Dir, Dir> = { up: "down", down: "up", left: "right", right: "left" };
@@ -88,6 +88,34 @@ function freeCell(g: Game): P | null {
   if (!free.length) return null;
   const i = free[Math.floor(Math.random() * free.length)];
   return { x: i % N, y: Math.floor(i / N) };
+}
+
+
+const EXIT_HINT: Record<Dir, string> = {
+  left: "← 穿墙 · 将从右侧出现",
+  right: "→ 穿墙 · 将从左侧出现",
+  up: "↑ 穿墙 · 将从下侧出现",
+  down: "↓ 穿墙 · 将从上侧出现",
+};
+const NEAR_HINT: Record<Dir, string> = {
+  left: "穿墙关 · 靠左缘，出界从右回",
+  right: "穿墙关 · 靠右缘，出界从左回",
+  up: "穿墙关 · 靠上缘，出界从下回",
+  down: "穿墙关 · 靠下缘，出界从上回",
+};
+
+/** 穿墙关：贴边/近边时提示头会从对面出来 */
+function wrapHint(g: Game): string | null {
+  if (!g.wrap) return null;
+  const h = g.snake[0];
+  const d = g.queue[0] ?? g.dir;
+  if ((d === "left" && h.x === 0) || (d === "right" && h.x === N - 1) || (d === "up" && h.y === 0) || (d === "down" && h.y === N - 1)) {
+    return EXIT_HINT[d];
+  }
+  if ((d === "left" && h.x <= 2) || (d === "right" && h.x >= N - 3) || (d === "up" && h.y <= 2) || (d === "down" && h.y >= N - 3)) {
+    return NEAR_HINT[d];
+  }
+  return "穿墙关 · 边缘可出入，头从对面出";
 }
 
 const goalOf = (g: Game) => (g.mode.kind === "level" ? SNAKE_LEVELS[g.mode.index].goal : Infinity);
@@ -308,7 +336,7 @@ export default function Snake() {
   const game = useRef<Game>(initial);
   const [mode, setMode] = useState<Mode>(initial.mode);
   const [phase, setPhase] = useState<Phase>("select");
-  const [hud, setHud] = useState<Hud>({ eaten: 0, score: 0, seconds: 0 });
+  const [hud, setHud] = useState<Hud>({ eaten: 0, score: 0, seconds: 0, wrap: false, edgeHint: null });
   const [record, setRecord] = useState(false);
   const [unlocked] = useRecord("snake-unlocked", higher);
   const [best] = useRecord("snake", higher);
@@ -330,7 +358,13 @@ export default function Snake() {
 
   const sync = () => {
     const g = game.current;
-    setHud({ eaten: g.eaten, score: g.score, seconds: Math.floor(g.time) });
+    setHud({
+      eaten: g.eaten,
+      score: g.score,
+      seconds: Math.floor(g.time),
+      wrap: g.wrap,
+      edgeHint: wrapHint(g),
+    });
   };
 
   const finish = useEffectEvent((result: "dead" | "clear") => {
@@ -449,6 +483,15 @@ export default function Snake() {
             <span>
               时间<b>{hud.seconds}s</b>
             </span>
+            {hud.wrap && (
+              <span
+                className="snake-wrap-badge"
+                data-edge={hud.edgeHint?.includes("将从") || undefined}
+                title="本关边缘可穿墙"
+              >
+                穿墙
+              </span>
+            )}
           </>
         ) : (
           <>
@@ -468,10 +511,13 @@ export default function Snake() {
         )}
       </div>
       {level && (phase === "running" || phase === "paused") && (
-        <p className="game-tip" aria-live="polite">
-          第 {levelNo} 关·{level.name}：目标 {Math.min(hud.eaten, level.goal)}/{level.goal}
-          {level.wrap ? " · 边缘可穿墙（头从对面出）" : ""}
-          {level.bonus ? " · 有金色食物" : ""}
+        <p
+          className={hud.wrap && hud.edgeHint?.includes("将从") ? "game-tip game-tip--alert" : "game-tip"}
+          aria-live="polite"
+        >
+          {hud.wrap && hud.edgeHint
+            ? hud.edgeHint
+            : `第 ${levelNo} 关·${level.name}：目标 ${Math.min(hud.eaten, level.goal)}/${level.goal}${level.bonus ? " · 有金色食物" : ""}`}
         </p>
       )}
       <div className="game-stage" {...swipe}>
@@ -579,7 +625,8 @@ export default function Snake() {
           </button>
         )}
       </div>
-      <p className="game-hint when-touch">方向键或在棋盘上滑动转向；也可点暂停。</p>
+      <p className="game-hint when-mouse">穿墙关顶栏有「穿墙」标记；贴边时提示将从哪一侧出现。</p>
+      <p className="game-hint when-touch">方向键或在棋盘上滑动转向；也可点暂停。穿墙关贴边时有出口提示。</p>
     </div>
   );
 }

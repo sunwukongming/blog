@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import PostList from "@/components/PostList";
 import { getAllPosts } from "@/lib/posts";
 
-export const metadata: Metadata = { title: "归档" };
+export const metadata: Metadata = {
+  title: "归档",
+  description: "GM Lab 文章归档：按年份折叠浏览后端、前端、云原生与随笔笔记，当前年默认展开。",
+};
 
 export default async function Archive() {
   const posts = await getAllPosts();

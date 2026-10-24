@@ -32,8 +32,20 @@ type Game = {
   lockMs: number;
   /** how many times lock timer was reset for this piece */
   lockResets: number;
+  /** last successful input was rotate (for T-Spin check) */
+  lastWasRotate: boolean;
+  /** latest clear announcement */
+  clearTip: string | null;
 };
-type Stats = { score: number; lines: number; level: number; next: Kind[]; hold: Kind | null; canHold: boolean };
+type Stats = {
+  score: number;
+  lines: number;
+  level: number;
+  next: Kind[];
+  hold: Kind | null;
+  canHold: boolean;
+  clearTip: string | null;
+};
 
 const KINDS: Kind[] = ["I", "O", "T", "S", "Z", "J", "L"];
 // 每种方块在自己旋转框里的初始格子
@@ -101,6 +113,8 @@ function newGame(): Game {
     dropFx: null,
     lockMs: 0,
     lockResets: 0,
+    lastWasRotate: false,
+    clearTip: null,
   };
 }
 
@@ -115,6 +129,7 @@ function collides(board: Game["board"], p: Piece, dx = 0, dy = 0, cells = p.cell
 function move(g: Game, dx: number, dy: number) {
   if (collides(g.board, g.piece, dx, dy)) return false;
   g.piece = { ...g.piece, x: g.piece.x + dx, y: g.piece.y + dy };
+  if (dx !== 0) g.lastWasRotate = false;
   return true;
 }
 
@@ -123,7 +138,10 @@ function rotate(g: Game) {
   if (n === 2) return;
   const cells = g.piece.cells.map(([x, y]): Cell => [n - 1 - y, x]);
   const kick = KICKS.find(([dx, dy]) => !collides(g.board, g.piece, dx, dy, cells));
-  if (kick) g.piece = { ...g.piece, cells, x: g.piece.x + kick[0], y: g.piece.y + kick[1] };
+  if (kick) {
+    g.piece = { ...g.piece, cells, x: g.piece.x + kick[0], y: g.piece.y + kick[1] };
+    g.lastWasRotate = true;
+  }
 }
 
 const dropDistance = (g: Game) => {
@@ -133,6 +151,25 @@ const dropDistance = (g: Game) => {
 };
 
 const grounded = (g: Game) => collides(g.board, g.piece, 0, 1);
+
+
+const CLEAR_NAMES = ["", "单消", "双消！", "三消！", "Tetris！！"];
+
+/** 3+ of 4 corners around T center occupied/OOB => T-Spin candidate */
+function tSpinCorners(g: Game) {
+  const cx = g.piece.x + 1;
+  const cy = g.piece.y + 1;
+  let n = 0;
+  for (const [x, y] of [
+    [cx - 1, cy - 1],
+    [cx + 1, cy - 1],
+    [cx - 1, cy + 1],
+    [cx + 1, cy + 1],
+  ] as Cell[]) {
+    if (x < 0 || x >= W || y >= H || (y >= 0 && g.board[y * W + x] !== null)) n++;
+  }
+  return n;
+}
 
 /** Reset lock timer after a successful shift/rotate that stays grounded */
 function touchLock(g: Game) {
@@ -171,6 +208,7 @@ function swapHold(g: Game) {
 /** 固定当前方块、消行、出下一块；返回 false 表示堆到顶了 */
 function lock(g: Game) {
   const { piece } = g;
+  const tspin = piece.kind === "T" && g.lastWasRotate && tSpinCorners(g) >= 3;
   for (const [cx, cy] of piece.cells) {
     const y = piece.y + cy;
     if (y < 0) return false;
@@ -185,10 +223,19 @@ function lock(g: Game) {
     const shift = Array<number>(H).fill(0);
     keptRows.forEach((oldY, i) => (shift[cleared + i] = cleared + i - oldY));
     g.clearFx = { rows: rows.flatMap((r, y) => (r.every((c) => c !== null) ? [y] : [])), shift, at: performance.now() };
-    g.score += LINE_SCORE[cleared] * g.level;
+    const base = LINE_SCORE[cleared] * g.level;
+    g.score += tspin ? base + 400 * g.level * cleared : base;
     g.lines += cleared;
     g.level = 1 + Math.floor(g.lines / 10);
+    g.clearTip = tspin
+      ? cleared >= 2
+        ? `T-Spin ${CLEAR_NAMES[cleared]}`
+        : "T-Spin 单消！"
+      : CLEAR_NAMES[cleared];
+  } else {
+    g.clearTip = null;
   }
+  g.lastWasRotate = false;
   if (g.bag.length < 7) g.bag = refill(g.bag);
   g.piece = spawn(g.bag.shift()!);
   g.canHold = true;
@@ -321,7 +368,15 @@ export default function Tetris() {
   const [initial] = useState(newGame);
   const game = useRef<Game>(initial);
   const [phase, setPhase] = useState<Phase>("ready");
-  const [stats, setStats] = useState<Stats>({ score: 0, lines: 0, level: 1, next: initial.bag.slice(0, 3), hold: null, canHold: true });
+  const [stats, setStats] = useState<Stats>({
+    score: 0,
+    lines: 0,
+    level: 1,
+    next: initial.bag.slice(0, 3),
+    hold: null,
+    canHold: true,
+    clearTip: null,
+  });
   const [record, setRecord] = useState(false);
   const [best, submitBest] = useRecord("tetris", (next, prev) => next > prev);
   const repeat = useRef<number | null>(null);
@@ -333,7 +388,15 @@ export default function Tetris() {
 
   const sync = () => {
     const g = game.current;
-    setStats({ score: g.score, lines: g.lines, level: g.level, next: g.bag.slice(0, 3), hold: g.hold, canHold: g.canHold });
+    setStats({
+      score: g.score,
+      lines: g.lines,
+      level: g.level,
+      next: g.bag.slice(0, 3),
+      hold: g.hold,
+      canHold: g.canHold,
+      clearTip: g.clearTip,
+    });
   };
 
   useEffect(() => {
@@ -363,7 +426,10 @@ export default function Tetris() {
     const g = game.current;
     const before = g.lines;
     if (!lock(g)) return gameOver();
-    if (g.lines > before) buzz(25);
+    if (g.lines > before) {
+      const n = g.lines - before;
+      buzz(g.clearTip?.startsWith("T-Spin") || n >= 4 ? [20, 30, 20, 40] : 25);
+    }
     sync();
   };
 
@@ -469,6 +535,7 @@ export default function Tetris() {
       rotate(g);
       if (g.piece !== before) touchLock(g);
     } else if (a === "hold") {
+      g.lastWasRotate = false;
       if (swapHold(g)) buzz(10);
     } else if (a === "down") {
       if (move(g, 0, 1)) {
@@ -588,6 +655,11 @@ export default function Tetris() {
           </button>
         )}
       </div>
+      {stats.clearTip && phase === "running" && (
+        <p className="game-tip game-tip--alert" aria-live="polite">
+          {stats.clearTip}
+        </p>
+      )}
       <div className="tetris">
         <div className="game-stage tetris-board" {...swipe}>
           <canvas ref={canvas} aria-label={`俄罗斯方块，${stats.score} 分`} />
@@ -678,7 +750,8 @@ export default function Tetris() {
           {phase === "paused" ? "继续" : "暂停"}
         </button>
       </div>
-      <p className="game-hint when-touch">棋盘滑动：左右移动，上滑旋转，下滑落底；下方 Hold 暂存，↓ 加速，可点暂停。</p>
+      <p className="game-hint when-mouse">旋转后卡住 T 形再消行可触发 T-Spin 提示；一次消 4 行是 Tetris。</p>
+      <p className="game-hint when-touch">棋盘滑动：左右移动，上滑旋转，下滑落底；下方 Hold 暂存，↓ 加速，可点暂停。消行与 T-Spin 有顶部提示。</p>
     </div>
   );
 }

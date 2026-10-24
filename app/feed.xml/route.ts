@@ -12,13 +12,15 @@ async function buildFeed(base: string) {
   const items = posts
     .map((p) => {
       const link = `${base}/blog/${p.slug}`;
+      const summary = p.summary?.trim() || p.title;
       return `    <item>
       <title>${escape(p.title)}</title>
       <link>${link}</link>
       <guid isPermaLink="true">${link}</guid>
       <pubDate>${new Date(`${p.date}T00:00:00+08:00`).toUTCString()}</pubDate>
+      <author>${escape(SITE.author)}</author>
       <category>${escape(getCategory(p.category)?.name ?? p.category)}</category>
-      <description>${escape(p.summary)}</description>
+      <description><![CDATA[${summary}]]></description>
     </item>`;
     })
     .join("\n");

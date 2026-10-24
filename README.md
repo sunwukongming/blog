@@ -11,7 +11,7 @@
 | `/blog/[slug]` | 信号场（点阵） | 正文、目录 TOC、复制链接、分享到 X、阅读时长、相关推荐与进度点 |
 | `/about` | 跳转到首页 | |
 | `/games` | 夜行（霓虹线框地形） | 游戏入口、本机纪录汇总与相关条目 |
-| `/games/[slug]` | 同上（背景静止，省电） | 能直接玩的小游戏：贪吃蛇、俄罗斯方块、2048、打砖块、扫雷、德州扑克、记忆翻牌 |
+| `/games/[slug]` | 同上（背景静止，省电） | 能直接玩的小游戏：贪吃蛇（穿墙关 HUD）、俄罗斯方块（Hold / 幽灵 / T-Spin 与消行提示）、2048、打砖块、扫雷、德州扑克、记忆翻牌 |
 | `/archive` | 夜行（彼虹线框地形） | 按年折叠的文章归档 |
 
 ## 开发
@@ -48,9 +48,14 @@ summary: 一句话摘要
 - 看板娘“梦子”（《狂赌之渊》蛇喰梦子的同人形象）的台词（按页面、按时间、被戳时）：`lib/mascot.ts`；形象和交互在 `components/mascot/Mascot.tsx`
 - 站点正式地址：在 Vercel 项目的环境变量里设置 `NEXT_PUBLIC_SITE_URL`（例如 `https://example.com`）。不设置时会用 Vercel 提供的生产域名；两个都没有时不输出 canonical，sitemap 为空
 
+## 内容进度
+
+本地持续 enrichment；第十二批新增 Redis Streams vs Kafka、Go slog、Next PPR 等笔记，并强化 Tetris / Snake HUD。
+
 ## SEO 与订阅
 
-- `/feed.xml`：RSS 订阅
+- `/feed.xml`：RSS 订阅（item 含 author，摘要用 CDATA）
+- `/archive`：按年折叠归档，带 SEO description
 - `/sitemap.xml`、`/robots.txt`：给搜索引擎（文章 lastmod 用发布日，列表页用最新文章日）
 - 首页与分类页带 description，便于搜索摘要
 - 每篇文章自动生成 1200×630 的分享图（`app/blog/[slug]/opengraph-image.tsx`），中文字体在构建时从 Google Fonts 按需下载
@@ -95,8 +100,8 @@ lib/og.tsx                  分享图模板
 - 扫雷：中键/双击/点数字 chord；剩余雷数带开图进度，少雷时高亮
 - 德州扑克：盲注每 10 手翻倍，上涨时条目标红并提示下一涨手次
 - 打砖块：多球道具（M）、关卡难度提示（球速/拍宽）
-- 俄罗斯方块：落地后有短暂锁定延迟，左右/旋转可重置（有上限）；硬降仍立即固定
-- 贪吃蛇穿墙关：边框脉冲 + 箭头提示「头从对面出」
+- 俄罗斯方块：锁定延迟 + Hold/幽灵/预览；消行与 T-Spin 顶部提示（角落判定）
+- 贪吃蛇穿墙关：边框脉冲 + 顶栏「穿墙」徽章 + 贴边出口方向提示
 - `components/games/snakeLevels.ts`：20×20 地图，`#` 墙，`S` 蛇头（左边两格要空着，开局向右走）；`goal` 吃够多少过关，`speed` 开局速度，`wrap` 能否穿墙，`bonus` 是否刷金色食物
 - `components/games/breakoutLevels.ts`：每行 10 格，`1` 普通砖，`2` / `3` 硬砖，`#` 金属块（打不碎），`W` / `S` / `L` / `M` 带道具的砖（M=多球）
 

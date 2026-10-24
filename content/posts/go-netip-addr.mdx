@@ -1,0 +1,45 @@
+---
+title: Go net/netip：Addr 比 net.IP 更该做键
+date: "2026-10-25"
+category: backend
+summary: net.IP 是 []byte 别名，作 map 键会踩切片语义。netip.Addr 是值类型，解析、比较、前缀运算都更适合当现代网络栈的一等公民。
+---
+
+`net.IP` 用了几十年，但当「地址身份」用时别扭：底层是切片，拷贝/别名行为容易让人在 map、并发缓存里踩坑。Go 1.18 起的 **`net/netip`** 给出值类型的 `Addr` / `Prefix` / `AddrPort`。
+
+## 为什么换
+
+| | `net.IP` | `netip.Addr` |
+|---|---|---|
+| 表示 | `[]byte` | 结构体值（可比较） |
+| map 键 | 不推荐（切片不可比） | 直接可用 |
+| IPv4 / IPv6 | 常混 4 字节与 16 字节映射 | `Is4` / `Is6` / `Is4In6` 清晰 |
+| 解析 | `ParseIP` 偏松 | `ParseAddr` 更严、错误显式 |
+
+```go
+import "net/netip"
+
+a, err := netip.ParseAddr("2001:db8::1")
+if err != nil { /* ... */ }
+
+m := map[netip.Addr]string{}
+m[a] = "edge-1"
+
+p := netip.MustParsePrefix("10.0.0.0/8")
+if p.Contains(netip.MustParseAddr("10.1.2.3")) {
+    // ...
+}
+```
+
+从旧 API 迁：`netip.AddrFromSlice(ip)`；出去给仍要 `net.IP` 的库用 `addr.AsSlice()`（注意返回的是拷贝语义下的切片，别假设别名稳定）。
+
+## 实践建议
+
+1. **新代码默认 netip**：监听地址、ACL、限流桶键、对等节点表。  
+2. **前缀用 `Prefix`**：别手写 mask 字节。  
+3. **规范化**：展示前 `Unmap()`，避免同一个 IPv4 以两种形态进 map。  
+4. **与 `net.IPNet` 并存**：边界转换一次，业务层只留 netip。
+
+## 一句话
+
+把 IP 当 **值身份** 用时选 `netip.Addr`；`net.IP` 留给必须对接老 API 的边界。

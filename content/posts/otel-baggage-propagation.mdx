@@ -1,0 +1,50 @@
+---
+title: OpenTelemetry Baggage 跨服务传播：白名单与注入点
+date: "2026-10-25"
+category: cloud
+summary: 站内 baggage vs attributes 讲职责边界。这篇只谈跨服务怎么传：Propagator、网关注入、下游只读白名单，以及何时该停在进程边界。
+---
+
+Baggage 随 context 穿过进程边界（常见 W3C `baggage` 头）。和「别把 baggage 当 metric 维度」那篇互补：这里只谈 **传播链路怎么布线**。
+
+## 传播链
+
+```
+入口（网关/BFF）
+  → TextMapPropagator 注入 baggage
+  → 服务 A 读键做路由/租户
+  → 出站 client 再注入
+  → 服务 B …
+```
+
+SDK 侧通常组合 `TraceContext` + `Baggage` propagator。缺了 Baggage propagator，你在代码里 `baggage.Set` 也出不了进程。
+
+```go
+// 示意：入口只放白名单键
+b := baggage.FromContext(ctx)
+m, _ := baggage.NewMember("tenant", tenantID)
+b, _ = b.SetMember(m)
+ctx = baggage.ContextWithBaggage(ctx, b)
+// 出站 HTTP/gRPC 依赖已注册的 TextMapPropagator 写出 header
+```
+
+## 白名单纪律
+
+| 规则 | 原因 |
+|---|---|
+| 入口写入键 ≤ 少数稳定名 | 防止头爆炸与下游误读 |
+| 禁止 PII / 密钥 | baggage 常进日志代理与 sidecar |
+| 下游默认只读 | 任意服务追加会污染整条链 |
+| 需要进 span 就显式拷贝 | baggage **不会**自动变 attribute |
+
+网关可做「剥离未声明键」：只转发 `tenant`、`canary_bucket` 这类决策键。
+
+## 何时不要跨服务
+
+- 仅本服务排障用的请求 ID（用 trace id 即可）。  
+- 高基数用户级标签（会拖垮中间层与存储，若被误拷进属性）。  
+- 安全边界外的第三方：出站前清空 baggage。
+
+## 一句话
+
+**入口白名单注入、中间只读、出站按需剥离**；传播是管道，不是垃圾桶。职责对比见站内 baggage vs attributes。

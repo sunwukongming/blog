@@ -291,6 +291,19 @@ export default function Poker() {
                 <b className={me.chips / table.bb < 10 ? "game-tip--alert" : undefined}>
                   {Math.max(0, Math.round((me.chips / table.bb) * 10) / 10)}
                 </b>
+                <span
+                  className="pk-stack-bb-bar"
+                  data-short={me.chips / table.bb < 20 || undefined}
+                  data-critical={me.chips / table.bb < 10 || undefined}
+                  title={`筹码/BB 条：${Math.max(0, Math.round((me.chips / table.bb) * 10) / 10)}（满刻度按 100BB）`}
+                  aria-label={`筹码约 ${Math.max(0, Math.round((me.chips / table.bb) * 10) / 10)} 个大盲`}
+                >
+                  <i
+                    style={{
+                      width: `${Math.min(100, Math.round((me.chips / table.bb / 100) * 100))}%`,
+                    }}
+                  />
+                </span>
               </span>
             </>
           )}

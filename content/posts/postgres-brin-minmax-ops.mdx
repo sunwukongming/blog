@@ -1,0 +1,46 @@
+---
+title: Postgres BRIN minmax-ops：摘要里到底存了什么
+date: "2026-10-25"
+category: backend
+summary: 站内已有 BRIN 入门与 BRIN vs B-tree。这篇只抠默认 opclass minmax-ops：每页组的 min/max、空值位图、与 has_all_nulls / has_nulls 如何影响扫描。
+---
+
+`USING brin (col)` 默认挂的是 **minmax-ops**：每个 `pages_per_range` 页组记一份「这组里看见的最小/最大」。不是直方图，也不是布隆；就是区间摘要。
+
+## 页组里有什么
+
+对可比较类型，每条摘要大致包含：
+
+| 字段 | 含义 |
+|---|---|
+| `min` / `max` | 该页组非空值的下/上界 |
+| 空值相关位 | 是否全空、是否含空（具体列名随大版本略有差异） |
+
+查询 `WHERE ts BETWEEN $a AND $b` 时，规划器看摘要：区间与 `[min,max]` **不相交** → 整组页可跳过；相交 → 仍要读堆页再过滤。所以 BRIN 赢在「少读页」，不在「一次定位一行」。
+
+```sql
+-- 显式写出默认 opclass，便于和 inclusion / bloom 对照
+CREATE INDEX ON events USING brin (created_at minmax_ops)
+  WITH (pages_per_range = 32);
+
+-- 看摘要是否「松」：相关性差时 max-min 很大，跳过率崩
+SELECT * FROM brin_page_items(get_raw_page('events_created_at_idx', 1), 'events_created_at_idx');
+```
+
+（`brin_page_items` / 页号随版本与索引形态变化；生产以 `EXPLAIN (ANALYZE, BUFFERS)` 的 heap blocks 为准。）
+
+## 和站内另两篇的分工
+
+- **BRIN 入门**：何时上、`pages_per_range`、维护。  
+- **BRIN vs B-tree**：选型对照。  
+- **本文**：minmax 摘要语义——乱序写入如何把区间撑松、空值页组为何几乎总被扫到、为什么点查 `=` 仍可能扫很多块。
+
+## 运维要点
+
+1. **相关性**：按时间追加的事实表，minmax 紧；`UPDATE` 乱序打散后区间变宽，跳过失效。  
+2. **summarize**：大批量 load 后可 `SELECT brin_summarize_new_values('idx')`，避免长期停在未摘要页。  
+3. **别指望精确基数**：minmax 没有 NDV；选错列别怪规划器。
+
+## 一句话
+
+**minmax-ops = 页组上的闭区间标签**；相关性好才便宜，乱序写入先修写入顺序或分区，再谈调 `pages_per_range`。

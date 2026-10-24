@@ -34,7 +34,7 @@ type Game = {
   /** 吃到东西时的光环特效 */
   fx: { x: number; y: number; at: number; color: string }[];
 };
-type Hud = { eaten: number; score: number; seconds: number; wrap: boolean; edgeHint: string | null; speedMs: number; speedTier: string; nextSpeed: string | null; goldLeft: number | null; goldEta: number | null };
+type Hud = { eaten: number; score: number; seconds: number; len: number; wrap: boolean; edgeHint: string | null; speedMs: number; speedTier: string; nextSpeed: string | null; goldLeft: number | null; goldEta: number | null };
 
 const VEC: Record<Dir, P> = { up: { x: 0, y: -1 }, down: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } };
 const OPPOSITE: Record<Dir, Dir> = { up: "down", down: "up", left: "right", right: "left" };
@@ -354,7 +354,7 @@ export default function Snake() {
   const game = useRef<Game>(initial);
   const [mode, setMode] = useState<Mode>(initial.mode);
   const [phase, setPhase] = useState<Phase>("select");
-  const [hud, setHud] = useState<Hud>({ eaten: 0, score: 0, seconds: 0, wrap: false, edgeHint: null, speedMs: 150, speedTier: "中", nextSpeed: nextSpeedHint(150), goldLeft: null, goldEta: null });
+  const [hud, setHud] = useState<Hud>({ eaten: 0, score: 0, seconds: 0, len: 3, wrap: false, edgeHint: null, speedMs: 150, speedTier: "中", nextSpeed: nextSpeedHint(150), goldLeft: null, goldEta: null });
   const [record, setRecord] = useState(false);
   const [unlocked] = useRecord("snake-unlocked", higher);
   const [best] = useRecord("snake", higher);
@@ -381,6 +381,7 @@ export default function Snake() {
       eaten: g.eaten,
       score: g.score,
       seconds: Math.floor(g.time),
+      len: g.snake.length,
       wrap: g.wrap,
       edgeHint: wrapHint(g),
       speedMs,
@@ -520,6 +521,18 @@ export default function Snake() {
             <span>
               时间<b>{hud.seconds}s</b>
             </span>
+            <span title={`蛇长 ${hud.len} 格（满刻度按 40）`}>
+              长度<b>{hud.len}</b>
+              <span
+                className="snake-len-bar"
+                data-long={hud.len >= 24 || undefined}
+                data-huge={hud.len >= 32 || undefined}
+                title={`蛇长 ${hud.len} / 40`}
+                aria-label={`蛇长 ${hud.len}`}
+              >
+                <i style={{ width: `${Math.min(100, Math.round((hud.len / 40) * 100))}%` }} />
+              </span>
+            </span>
             <span
               className={
                 hud.goldLeft != null || hud.goldEta != null || hud.wrap
@@ -647,6 +660,18 @@ export default function Snake() {
             </span>
             <span>
               最高<b>{best ?? 0}</b>
+            </span>
+            <span title={`无尽蛇长 ${hud.len} 格（满刻度按 40）`}>
+              长度<b>{hud.len}</b>
+              <span
+                className="snake-len-bar"
+                data-long={hud.len >= 24 || undefined}
+                data-huge={hud.len >= 32 || undefined}
+                title={`无尽蛇长 ${hud.len} / 40`}
+                aria-label={`蛇长 ${hud.len}`}
+              >
+                <i style={{ width: `${Math.min(100, Math.round((hud.len / 40) * 100))}%` }} />
+              </span>
             </span>
             <span
               className={

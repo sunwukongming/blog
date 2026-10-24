@@ -676,6 +676,14 @@ const [phase, setPhase] = useState<Phase>("select");
                       <>
                         <b style={{ color: ITEM_LOOK.W.color }}>宽</b>
                         <small style={{ marginLeft: 2, color: ITEM_LOOK.W.color }}>{hud.wideLeft.toFixed(1)}s</small>
+                        <span
+                          className="breakout-item-timer-bar breakout-item-timer-bar--wide"
+                          data-low={hud.wideLeft <= 3 || undefined}
+                          title={`加宽剩余 ${hud.wideLeft.toFixed(1)}s / ${WIDE_TIME}s`}
+                          aria-label={`加宽剩余 ${hud.wideLeft.toFixed(1)} 秒`}
+                        >
+                          <i style={{ width: `${Math.min(100, Math.round((hud.wideLeft / WIDE_TIME) * 100))}%` }} />
+                        </span>
                       </>
                     )}
                     {hud.wide && hud.slow ? <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small> : null}
@@ -683,6 +691,14 @@ const [phase, setPhase] = useState<Phase>("select");
                       <>
                         <b style={{ color: ITEM_LOOK.S.color }}>慢</b>
                         <small style={{ marginLeft: 2, color: ITEM_LOOK.S.color }}>{hud.slowLeft.toFixed(1)}s</small>
+                        <span
+                          className="breakout-item-timer-bar breakout-item-timer-bar--slow"
+                          data-low={hud.slowLeft <= 3 || undefined}
+                          title={`减速剩余 ${hud.slowLeft.toFixed(1)}s / ${WIDE_TIME}s`}
+                          aria-label={`减速剩余 ${hud.slowLeft.toFixed(1)} 秒`}
+                        >
+                          <i style={{ width: `${Math.min(100, Math.round((hud.slowLeft / WIDE_TIME) * 100))}%` }} />
+                        </span>
                       </>
                     )}
                   </span>

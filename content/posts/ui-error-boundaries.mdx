@@ -1,0 +1,39 @@
+---
+title: Vue / React 错误边界与降级：别让一块白板吞掉整页
+date: "2026-10-18"
+category: frontend
+summary: 渲染期错误要就地挡住；异步与事件错误另案处理。降级 UI 比「全局 toast 一下」更能保住上下文。
+---
+
+和客户端边界、RSC 数据边界配套：组件树里 **谁炸了、用户还能看到什么**。
+
+## React
+
+- `error boundary`（class 的 `getDerivedStateFromError` / `componentDidCatch`，或框架封装）只吃 **渲染期** 错误。
+- 事件处理、`setTimeout`、异步 `fetch` 里的抛错 **不会** 被 boundary 接住，要自己 `try/catch` 或错误状态。
+- 粒度：一块小组件（编辑器、图表、3D）单独包，比整页一个 boundary 更有用——旁边导航和文章还在。
+
+## Vue 3
+
+- `app.config.errorHandler` 做全局上报。
+- 组件内 `onErrorCaptured` 可拦截子树错误并返回 `false` 阻止继续冒泡。
+- `<Suspense>` 管的是异步依赖 pending，不是替代错误边界；两者常一起用：fallback 骨架 + 错误时的重试条。
+
+## 降级写什么
+
+好的降级不是空 `div`：
+
+1. 简短说明「这块加载失败」。
+2. **重试**（带退避）或「刷新」。
+3. 若有只读替代（静态图、上一次缓存），先展示。
+4. 把错误 ID 打进日志 / OTel，用户若反馈能对上。
+
+## 别做的事
+
+- 在 boundary 里再抛一次未处理错误，造成白屏递归。
+- 把所有网络失败都当「代码异常」灌进 boundary，应走明确的 error state。
+- 在 SSR/RSC 场景假设客户端 boundary 能接住服务端抛错——服务端要自己的 error.js / 错误UI。
+
+## 小结
+
+边界保护的是 **渲染子树**；异步与交互要显式状态。降级保上下文，上报保下一轮修复。小游戏画布挂了，至少别把整间 GM Lab 书房一起带走。

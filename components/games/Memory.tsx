@@ -47,6 +47,7 @@ export default function Memory() {
   const [seconds, setSeconds] = useState(0);
   const [running, setRunning] = useState(false);
   const [focus, setFocus] = useState(0);
+  const [announce, setAnnounce] = useState("");
   const [best, submitBest] = useRecord(recordKey(diff), lower);
   // 兼容第一批只写过 memory 键的普通难度纪录
   const [legacy] = useRecord("memory", lower);
@@ -97,12 +98,14 @@ export default function Memory() {
 
     if (pairA === pairB) {
       buzz(18);
+      setAnnounce("配对成功，" + SYMBOLS[pairA]);
       setCards((prev) =>
         prev.map((x) => (x.id === a || x.id === i ? { ...x, flipped: true, matched: true } : x)),
       );
       return;
     }
 
+    setAnnounce("不同，已翻回");
     setLock(true);
     window.setTimeout(() => {
       setCards((prev) =>
@@ -141,6 +144,14 @@ export default function Memory() {
     }
     if (key === "ArrowUp") {
       setFocus((f) => (f - cols + n) % n);
+      return true;
+    }
+    if (key === "Home") {
+      setFocus(0);
+      return true;
+    }
+    if (key === "End") {
+      setFocus(n - 1);
       return true;
     }
     if (key === "Enter" || key === " ") {
@@ -204,6 +215,7 @@ export default function Memory() {
               tabIndex={focus === i ? 0 : -1}
               data-open={show || undefined}
               data-matched={c.matched || undefined}
+              data-focus={focus === i || undefined}
               aria-label={show ? `牌面 ${SYMBOLS[c.pair]}` : `第 ${i + 1} 张，背面`}
               disabled={lock || c.matched}
               onClick={() => flip(i)}
@@ -225,12 +237,15 @@ export default function Memory() {
           重新开始
         </button>
       </div>
+      <p className="sr-only" aria-live="polite">
+        {announce}
+      </p>
       <p className="game-hint" aria-live="polite">
         {won
           ? `全部配对，用了 ${moves} 步、${seconds} 秒${shownBest !== null && moves <= shownBest ? "，新纪录！" : "。"}`
           : shownBest !== null
-            ? `${diff.label}本机最少 ${shownBest} 步。方向键移动焦点，回车或空格翻牌。`
-            : "方向键移动焦点，回车或空格翻牌；也可用鼠标点。步数越少越好。"}
+            ? `${diff.label}本机最少 ${shownBest} 步。方向键移动，Home/End 跳首尾，回车或空格翻牌。`
+            : "方向键移动焦点，Home/End 跳首尾，回车或空格翻牌；也可点选。步数越少越好。"}
       </p>
     </div>
   );

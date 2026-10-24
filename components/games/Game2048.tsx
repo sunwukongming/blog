@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useReducer, type CSSProperties } from "react";
+import { useEffect, useReducer, useRef, type CSSProperties } from "react";
 import { KEY_DIR, useKeys, useRecord, useSwipe, type Dir } from "./input";
 
 /** gone：被合并掉的方块，滑到目标位置后在下一步移除，这样合并也有滑动动画 */
@@ -154,7 +154,17 @@ export default function Game2048() {
     return true;
   });
 
-  const swipe = useSwipe((dir) => dispatch({ type: "move", dir }));
+  const lastSwipe = useRef(0);
+  const swipe = useSwipe(
+    (dir) => {
+      const now = performance.now();
+      // ignore bounce / double fire within 160ms
+      if (now - lastSwipe.current < 160) return;
+      lastSwipe.current = now;
+      dispatch({ type: "move", dir });
+    },
+    { threshold: 42, axisRatio: 1.4 },
+  );
   // 被合并掉的方块画在下面
   const tiles = state.tiles.toSorted((a, b) => Number(!a.gone) - Number(!b.gone));
 
@@ -231,7 +241,7 @@ export default function Game2048() {
           </div>
         )}
       </div>
-      <p className="game-hint">滑动或方向键移动。撤销上一步用按钮，或按 U / Backspace。</p>
+      <p className="game-hint">滑动或方向键移动（触屏需主轴明显，减少斜滑误触）。撤销用按钮或 U / Backspace。</p>
     </div>
   );
 }

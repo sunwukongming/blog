@@ -14,5 +14,9 @@ export async function generateStaticParams() {
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
   const post = await getPost((await params).slug);
   if (!post) return ogImage({ title: "GM Lab" });
-  return ogImage({ title: post.title, subtitle: post.summary, tag: getCategory(post.category)?.name });
+  const tag = getCategory(post.category)?.name;
+  const subtitle = post.summary
+    ? `约 ${post.readingMinutes} 分钟 · ${post.summary}`
+    : `约 ${post.readingMinutes} 分钟`;
+  return ogImage({ title: post.title, subtitle, tag });
 }

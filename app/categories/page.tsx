@@ -16,14 +16,18 @@ export default async function Categories() {
         <h1 className="display">欢迎来到我的星系</h1>
         <p className="lede">每颗行星是一个分类，绕着它转的卫星是文章。点击行星飞过去看看。</p>
       </div>
-      <nav className="chips" data-ui aria-label="分类列表">
-        {CATEGORIES.map((c) => (
-          <Link key={c.slug} href={`/categories/${c.slug}`}>
-            <span className="dot" style={{ background: c.color }} />
-            {c.name}
-            <small>{posts.filter((p) => p.category === c.slug).length}</small>
-          </Link>
-        ))}
+      <nav className="chips categories-blurb" data-ui aria-label="分类列表">
+        {CATEGORIES.map((c) => {
+          const n = posts.filter((p) => p.category === c.slug).length;
+          return (
+            <Link key={c.slug} href={`/categories/${c.slug}`} title={c.blurb}>
+              <span className="dot" style={{ background: c.color }} />
+              {c.name}
+              <small>{n}</small>
+              <span className="categories-blurb__text">{c.blurb}</span>
+            </Link>
+          );
+        })}
       </nav>
     </main>
   );

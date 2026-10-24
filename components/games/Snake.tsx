@@ -451,6 +451,13 @@ export default function Snake() {
           </button>
         )}
       </div>
+      {level && (phase === "running" || phase === "paused") && (
+        <p className="game-tip" aria-live="polite">
+          第 {levelNo} 关·{level.name}：目标 {Math.min(hud.eaten, level.goal)}/{level.goal}
+          {level.wrap ? " · 可穿墙" : ""}
+          {level.bonus ? " · 有金色食物" : ""}
+        </p>
+      )}
       <div className="game-stage" {...swipe}>
         <canvas ref={canvas} aria-label={level ? `贪吃蛇第 ${levelNo} 关` : "贪吃蛇无尽模式"} />
         {phase !== "running" && (

@@ -45,7 +45,7 @@ export const GAMES: GameItem[] = [
     href: "/games/2048",
     playable: true,
     controls: "方向键或 WASD 移动；U / Backspace 撤销一步。相同数字相撞会合并。",
-    touchControls: "在棋盘上滑动；可点「撤销」回退一步。",
+    touchControls: "主轴明显地滑动（斜滑不会触发）；可点「撤销」回退一步。",
   },
   {
     slug: "breakout",
@@ -89,7 +89,7 @@ export const GAMES: GameItem[] = [
     href: "/games/memory",
     playable: true,
     controls: "方向键移动焦点，回车或空格翻牌；也可鼠标点。图案相同就留下。",
-    touchControls: "点两张牌配对。顶部可切换简单 / 普通 / 困难。",
+    touchControls: "点两张牌配对；键盘可移动焦点并用回车翻开。顶部可切难度。",
   },
   {
     slug: "idle-card-backends",

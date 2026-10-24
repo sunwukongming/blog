@@ -1,0 +1,45 @@
+---
+title: CDN 与缓存头实战：什么该进边车，什么必须绕开
+date: "2026-10-19"
+category: cloud
+summary: Cache-Control、CDN 分层和 HTML/API 分流比「开个 CDN」更决定体验。缓存错了比没有缓存更难查。
+---
+
+站点或静态资源上一层 CDN 之后，首字节会变快，但 **错误的缓存头会把旧 HTML、旧 API 响应钉在全球**。
+
+## 分层心智
+
+1. **浏览器缓存**：`Cache-Control` / `ETag` / `Last-Modified`。
+2. **CDN 边车**：常看 `s-maxage`、`CDN-Cache-Control`、Surrogate 头；和浏览器策略可以不同。
+3. **源站**：谁有权清除（purge）、按 path / tag 失效。
+
+HTML 入口页往往要短缓存或协商缓存；带 hash 的 JS/CSS 可以 `immutable` 一年。API 默认 **私有、不进共享缓存**，除非明确只读且可公开。
+
+## 几条我常用的
+
+```http
+# 带内容哈希的静态资源
+Cache-Control: public, max-age=31536000, immutable
+
+# 营销落地页：短 TTL + 允许 CDN 稍长
+Cache-Control: public, max-age=60, s-maxage=300
+
+# 用户相关 API
+Cache-Control: private, no-store
+```
+
+`no-cache` 不是禁止缓存，是 **每次要验证**；`no-store` 才是别存。混用这两个，排障时最容易骂街。
+
+## 失效策略
+
+- 静态资源靠 **文件名哈希**，少靠 purge。
+- HTML / 列表页靠短 TTL，或发布时按 URL / tag purge。
+- 带 Cookie 的个性化响应：`Vary: Cookie` 或干脆不走 CDN 缓存，避免把 A 的页面给 B。
+
+## 和本站的关系
+
+博客文章可静态生成，边缘缓存友好；游戏最高分只在浏览器 `localStorage`，与 CDN 无关。分清「可共享的文档」和「不可共享的状态」，缓存头就好写了。
+
+## 小结
+
+先画清资源是否可公开、是否可哈希、失效谁触发。头写对了，CDN 是加速器；写错了，它是全球级的错误放大器。

@@ -31,6 +31,7 @@ async function CategoryPanel({ params }: { params: Promise<{ slug: string }> }) 
   const category = getCategory((await params).slug);
   if (!category) notFound();
   const posts = (await getAllPosts()).filter((p) => p.category === category.slug);
+  const minutes = posts.reduce((n, p) => n + p.readingMinutes, 0);
 
   return (
     <section className="panel side" data-ui style={{ display: "grid", gap: 12 }}>
@@ -42,6 +43,10 @@ async function CategoryPanel({ params }: { params: Promise<{ slug: string }> }) 
         {category.name}
       </h1>
       <p className="lede">{category.blurb}</p>
+      <p className="cat-stats">
+        {posts.length} 篇·约 {minutes} 分钟阅读
+        {posts[0] ? `·最新 ${posts[0].date}` : ""}
+      </p>
       {posts.length ? <PostList posts={posts} summary /> : <p className="lede">这颗星球上还没有文章。</p>}
     </section>
   );

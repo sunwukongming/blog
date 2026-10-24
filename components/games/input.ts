@@ -43,12 +43,28 @@ const dirOf = (dx: number, dy: number): Dir =>
  * continuous：手指滑过一小段就立即触发，不用抬起，一次拖动里可以连续拐弯（贪吃蛇用）；
  * 否则一次滑动只在抬起时触发一次（2048 用）
  */
-export function useSwipe(onSwipe: (dir: Dir) => void, { continuous = false } = {}) {
+export function useSwipe(
+  onSwipe: (dir: Dir) => void,
+  {
+    continuous = false,
+    /** lift threshold; continuous uses moveThreshold */
+    threshold = 24,
+    moveThreshold = 18,
+    /** >1 requires dominant axis (2048 anti-mis-swipe) */
+    axisRatio = 1,
+  }: { continuous?: boolean; threshold?: number; moveThreshold?: number; axisRatio?: number } = {},
+) {
   const start = useRef<{ x: number; y: number } | null>(null);
+  const clearEnough = (dx: number, dy: number, min: number) => {
+    const ax = Math.abs(dx);
+    const ay = Math.abs(dy);
+    if (Math.max(ax, ay) < min) return false;
+    if (axisRatio > 1 && Math.max(ax, ay) < Math.min(ax, ay) * axisRatio) return false;
+    return true;
+  };
   return {
     onPointerDown: (e: PointerEvent) => {
       start.current = { x: e.clientX, y: e.clientY };
-      // 连续模式下捕获指针，手指滑出棋盘也能继续转向；按在按钮上时不捕获，否则按钮收不到 click
       if (continuous && !(e.target as Element).closest("button")) e.currentTarget.setPointerCapture?.(e.pointerId);
     },
     onPointerMove: (e: PointerEvent) => {
@@ -56,7 +72,7 @@ export function useSwipe(onSwipe: (dir: Dir) => void, { continuous = false } = {
       if (!continuous || !s) return;
       const dx = e.clientX - s.x;
       const dy = e.clientY - s.y;
-      if (Math.max(Math.abs(dx), Math.abs(dy)) < 18) return;
+      if (!clearEnough(dx, dy, moveThreshold)) return;
       onSwipe(dirOf(dx, dy));
       start.current = { x: e.clientX, y: e.clientY };
     },
@@ -66,7 +82,7 @@ export function useSwipe(onSwipe: (dir: Dir) => void, { continuous = false } = {
       if (!s || continuous) return;
       const dx = e.clientX - s.x;
       const dy = e.clientY - s.y;
-      if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) return;
+      if (!clearEnough(dx, dy, threshold)) return;
       onSwipe(dirOf(dx, dy));
     },
     onPointerCancel: () => {

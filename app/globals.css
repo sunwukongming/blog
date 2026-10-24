@@ -655,3 +655,42 @@ html:has(.page--game) { overscroll-behavior: none; }
   .game-wrap[data-game="poker"] { --chrome: 360px; }
   .pad--tetris .pad__drop { min-height: 52px; font-size: 16px; }
 }
+
+.post-filter { display: grid; gap: 12px; }
+.post-filter__controls { display: grid; gap: 10px; }
+.post-filter__search input {
+  width: 100%; box-sizing: border-box; padding: 10px 12px; border-radius: 10px;
+  border: 1px solid var(--line); background: rgb(255 255 255 / 0.04); color: var(--fg);
+  font: inherit;
+}
+.post-filter__search input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.post-filter__cats { display: flex; flex-wrap: wrap; gap: 8px; }
+.post-filter__cats .game-btn { display: inline-flex; align-items: center; gap: 6px; }
+.post-filter__count { margin: 0; font: 400 12.5px var(--font-mono), monospace; color: var(--muted); }
+.cat-stats { margin: 0; font: 400 13px var(--font-mono), monospace; color: var(--muted); }
+.categories-blurb a {
+  display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 8px;
+  max-width: 280px; border-radius: 14px; padding: 10px 14px;
+}
+.categories-blurb__text {
+  flex: 1 1 100%; font-size: 12px; color: var(--muted); line-height: 1.4;
+}
+.game-tip {
+  margin: 0 0 8px; padding: 6px 10px; border-radius: 8px;
+  font-size: 12.5px; color: var(--muted); background: rgb(255 255 255 / 0.04);
+  border: 1px solid var(--line);
+}
+.memory-card[data-focus="true"]:not(:focus-visible) {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+.memory-card:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
+.memory-card[data-matched] { animation: memory-ok 0.45s ease; }
+@keyframes memory-ok {
+  0% { filter: brightness(1); }
+  40% { filter: brightness(1.35); }
+  100% { filter: brightness(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .memory-card[data-matched] { animation: none; }
+}
+.t2048 { touch-action: none; }

@@ -1,0 +1,31 @@
+---
+title: Go Wire：依赖注入边界画在哪里
+date: "2026-10-24"
+category: backend
+summary: Wire 适合把构造图固定在 main/cmd；业务包保持 NewXxx(deps) 可测。别把 provider 散进每一个 domain 包。
+---
+
+[Google Wire](https://github.com/google/wire) 用代码生成把「谁依赖谁」在编译期钉死。好用的前提是：**注入边界清晰**。
+
+## 推荐切法
+
+| 层 | 做什么 |
+|---|---|
+| `cmd/` / `main` | `wire.Build`、组装配置、生命周期 |
+| `internal/app` | 用例编排，接收接口 |
+| `internal/adapter` | DB、HTTP、消息实现 |
+| `internal/domain` | 纯逻辑，尽量无 Wire |
+
+业务包只暴露 `NewService(repo Repo, clk Clock) *Service`；**不要**在 domain 里 `wire.ProviderSet`。
+
+## 常见坑
+
+1. **循环依赖**：往往是边界错了——把接口下沉或把用例上提。  
+2. **为了 Wire 而接口**：只有多实现或要 mock 时才抽。  
+3. **配置全塞 Context**：配置在 `main` 解析后注入字段，比到处 `MustConfig()` 清晰。
+
+## 和手动 DI 的取舍
+
+小服务手写 `main` 组装足够；模块变多、构造参数爆炸时再上 Wire。生成的 `wire_gen.go` 要进版本库，CI 跑 `wire check`。
+
+与「DTO / domain 边界」同思路：依赖方向向内，组装向外。

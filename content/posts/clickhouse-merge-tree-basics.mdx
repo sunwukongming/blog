@@ -1,0 +1,30 @@
+---
+title: ClickHouse MergeTree：分区、排序键与主键怎么选
+date: "2026-10-24"
+category: backend
+summary: 日志与分析表先想清楚 PARTITION BY 与 ORDER BY；主键几乎等于排序键前缀，乱加二级索引不如把排序键写对。
+---
+
+ClickHouse 的默认引擎是 **MergeTree** 家族。和行存 OLTP 不同，它按 **分区 + 排序键** 组织数据；查询快不快，多半取决于这两项有没有贴着过滤条件。
+
+## 分区 PARTITION BY
+
+- 常用：`toYYYYMM(ts)` / `toDate(ts)`，按时间裁剪。
+- 分区过细（例如按小时 + 高基数维度）会炸 parts 数量，合并与 `SELECT` 规划都变慢。
+- 分区过粗则无法裁剪：全表扫 parts。
+
+经验：日或月分区 + 查询几乎总带时间窗。
+
+## 排序键 ORDER BY / 主键
+
+- `ORDER BY (tenant_id, ts)` 决定磁盘上的稀疏索引与数据局部性。
+- **主键默认是排序键前缀**；不要幻想「随便加个 secondary index」就解决点查。
+- 过滤列尽量靠前；高基数列（UUID）单独放最前会拖垮压缩与跳数索引。
+
+## 实操清单
+
+1. 先写典型 `WHERE`，再反推 `ORDER BY`。  
+2. 用 `EXPLAIN` / `system.query_log` 看是否 **partition prune** 与 **primary key** 生效。  
+3. 变更排序键等于重写数据——上线前在影子表验证。
+
+和 Postgres 分区裁剪连读：都是「先裁分区，再在段内找」；ClickHouse 更依赖排序键稀疏索引，而不是 B-Tree。

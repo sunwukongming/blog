@@ -38,7 +38,9 @@ async function buildFeed(base: string) {
     <lastBuildDate>${lastBuild}</lastBuildDate>
     <managingEditor>${escape(SITE.author)} (GM Lab)</managingEditor>
     <webMaster>${escape(SITE.author)} (GM Lab)</webMaster>
+    <generator>GM Lab</generator>
     <atom:link href="${base}/feed.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="${base}/" rel="alternate" type="text/html" />
 ${items}
   </channel>
 </rss>

@@ -18,11 +18,25 @@ export async function generateMetadata({ params }: PageProps<"/blog/[slug]">): P
   const { slug } = await params;
   const post = await getPost(slug);
   if (!post) return {};
+  const url = SITE_URL ? `${SITE_URL}/blog/${slug}` : undefined;
   return {
     title: post.title,
     description: post.summary,
     authors: [{ name: SITE.author }],
-    openGraph: { type: "article", title: post.title, description: post.summary, publishedTime: post.date },
+    openGraph: {
+      type: "article",
+      title: post.title,
+      description: post.summary,
+      publishedTime: post.date,
+      siteName: SITE.name,
+      url,
+      authors: [SITE.author],
+    },
+    twitter: {
+      card: "summary",
+      title: post.title,
+      description: post.summary,
+    },
     alternates: SITE_URL ? { canonical: `/blog/${slug}` } : undefined,
   };
 }

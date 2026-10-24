@@ -243,12 +243,15 @@ export default function Poker() {
       )}
       {started && !gameOver && !victory && !blindFlash && (
         <p className="game-tip pk-blind-tip" aria-live="polite">
-          盲注级别 {table.sb}/{table.bb}
+          盲注 {table.sb}/{table.bb}
           {" · "}
           第 {table.hand} 手
           {" · "}
-          距下一次翻倍还有 {Math.max(0, nextBlindHand - table.hand)} 手
-          （每 {BLIND_EVERY} 手涨一级）
+          距翻倍 {Math.max(0, nextBlindHand - table.hand)} 手
+          （每 {BLIND_EVERY} 手）
+          {table.players.some((pl) => pl.allIn && !pl.out)
+            ? " · 有人全下：主池/边池分拆，摊牌按资格分结"
+            : " · 全下后主池+边池分结"}
         </p>
       )}
       <div className="pk-table">
@@ -304,8 +307,8 @@ export default function Poker() {
             </p>
           )}
           {started && !gameOver && !victory && !result && table.players.some((pl) => pl.allIn && !pl.out) && (
-            <p className="game-tip pk-sidepot" aria-live="polite">
-              边池说明：有人全下后，未跟满的筹码进<strong>主池</strong>，超额部分拆成<strong>边池</strong>；摊牌时按参与资格分别结算（结果条会标「主池 / 边池 n」）。
+            <p className="game-tip pk-sidepot game-tip--alert" aria-live="polite">
+              边池触发：未跟满→<strong>主池</strong>，超额→<strong>边池</strong>；与顶部盲注 tip 同屏（结果标「主池 / 边池 n」）
             </p>
           )}
           <p className="pk-msg" aria-live="polite">

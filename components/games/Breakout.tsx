@@ -47,8 +47,10 @@ type Game = {
   time: number;
   wideUntil: number;
   slowUntil: number;
+  combo: number;
+  bestCombo: number;
 };
-type Hud = { score: number; lives: number; level: number; wide: boolean; slow: boolean; balls: number; brickLeft: number; brickTotal: number; progress: number };
+type Hud = { score: number; lives: number; level: number; wide: boolean; slow: boolean; balls: number; brickLeft: number; brickTotal: number; progress: number; combo: number; bestCombo: number };
 
 
 /** breakable bricks still alive (metal ignored) */
@@ -84,7 +86,7 @@ function layBricks(level: number): Brick[] {
   return out;
 }
 
-function newGame(level: number, carry?: Pick<Game, "score" | "lives">): Game {
+function newGame(level: number, carry?: Pick<Game, "score" | "lives" | "bestCombo">): Game {
   return {
     level,
     bricks: layBricks(level),
@@ -97,6 +99,8 @@ function newGame(level: number, carry?: Pick<Game, "score" | "lives">): Game {
     time: 0,
     wideUntil: 0,
     slowUntil: 0,
+    combo: 0,
+    bestCombo: carry?.bestCombo ?? 0,
   };
 }
 
@@ -242,6 +246,8 @@ function step(g: Game, dt: number, held: number): StepResult {
           g.score += br.hp > 0 ? per / 2 : per * br.maxHp;
           if (br.hp === 0 && br.item) g.drops.push({ x: br.x + BRICK_W / 2, y: br.y + BRICK_H / 2, kind: br.item });
           if (result === "ok") result = "hit";
+          g.combo += 1;
+          if (g.combo > g.bestCombo) g.bestCombo = g.combo;
         }
         break;
       }
@@ -334,7 +340,7 @@ export default function Breakout() {
   const held = useRef({ left: false, right: false });
     const buzzMuted = useBuzzMuted();
 const [phase, setPhase] = useState<Phase>("select");
-  const [hud, setHud] = useState<Hud>({ score: 0, lives: 3, level: 0, wide: false, slow: false, balls: 1, brickLeft: 0, brickTotal: 0, progress: 0 });
+  const [hud, setHud] = useState<Hud>({ score: 0, lives: 3, level: 0, wide: false, slow: false, balls: 1, brickLeft: 0, brickTotal: 0, progress: 0, combo: 0, bestCombo: 0 });
   const [record, setRecord] = useState(false);
   const [best] = useRecord("breakout", higher);
   const [unlocked] = useRecord("breakout-unlocked", higher);
@@ -349,6 +355,8 @@ const [phase, setPhase] = useState<Phase>("select");
       wide: g.time < g.wideUntil,
       slow: g.time < g.slowUntil,
       balls: g.balls.length,
+      combo: g.combo,
+      bestCombo: g.bestCombo,
       ...bs,
     });
   };
@@ -386,6 +394,7 @@ const [phase, setPhase] = useState<Phase>("select");
     } else if (r === "miss") {
       buzz(70);
       g.lives--;
+      g.combo = 0;
       g.drops = [];
       sync();
       if (g.lives <= 0) endRun("over");
@@ -428,7 +437,7 @@ const [phase, setPhase] = useState<Phase>("select");
     };
   }, [phase]);
 
-  const start = (level: number, carry?: Pick<Game, "score" | "lives">) => {
+  const start = (level: number, carry?: Pick<Game, "score" | "lives" | "bestCombo">) => {
     game.current = newGame(level, carry);
     sync();
     setRecord(false);
@@ -436,7 +445,7 @@ const [phase, setPhase] = useState<Phase>("select");
   };
   const nextLevel = () => {
     const g = game.current;
-    start(g.level + 1, { score: g.score, lives: g.lives });
+    start(g.level + 1, { score: g.score, lives: g.lives, bestCombo: g.bestCombo });
   };
 
   const serve = () => {
@@ -519,6 +528,10 @@ const [phase, setPhase] = useState<Phase>("select");
             <span>
               分数<b>{hud.score}</b>
             </span>
+            <span title={`当前连击；本局最高 ${hud.bestCombo}`}>
+              连击<b className={hud.combo >= 5 ? "game-tip--alert" : undefined}>{hud.combo}</b>
+              {hud.bestCombo > 0 ? <small style={{ marginLeft: 4, opacity: 0.75 }}>峰{hud.bestCombo}</small> : null}
+            </span>
             <span title="剩余生命（掉球扣一命）">
               生命<b className={hud.lives <= 1 ? "game-tip--alert" : undefined}>{"♥".repeat(Math.max(0, hud.lives)) || "0"}</b>
               <small style={{ marginLeft: 4, opacity: 0.7 }}>/3</small>
@@ -559,10 +572,10 @@ const [phase, setPhase] = useState<Phase>("select");
       {(phase === "running" || phase === "aim" || phase === "paused") && (
         <p className={hud.brickLeft <= 3 && hud.brickLeft > 0 ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">
           {hud.lives <= 1
-            ? `残命 ${hud.lives} · 多球×${hud.balls} · 完成 ${hud.progress}%（剩 ${hud.brickLeft}/${hud.brickTotal}）`
+            ? `残命 ${hud.lives} · 连击 ${hud.combo}（峰 ${hud.bestCombo}）· 多球×${hud.balls} · 完成 ${hud.progress}%`
             : hud.brickLeft <= 3 && hud.brickLeft > 0
-              ? `残局：还剩 ${hud.brickLeft} 块可打碎砖 · 完成度 ${hud.progress}%${hud.balls > 1 ? ` · 多球×${hud.balls}` : ""}`
-              : `第 ${hud.level + 1} 关 · 生命 ${hud.lives}/3 · 球×${hud.balls} · 完成 ${hud.progress}%（剩 ${hud.brickLeft}/${hud.brickTotal}）· 球速约 ${Math.round(baseSpeed(hud.level))}${hud.wide ? " · 加宽" : ""}`}
+              ? `残局：还剩 ${hud.brickLeft} 块 · 连击 ${hud.combo} · 完成度 ${hud.progress}%${hud.balls > 1 ? ` · 多球×${hud.balls}` : ""}`
+              : `第 ${hud.level + 1} 关 · 连击 ${hud.combo}（峰 ${hud.bestCombo}）· 生命 ${hud.lives}/3 · 完成 ${hud.progress}% · 球速约 ${Math.round(baseSpeed(hud.level))}${hud.wide ? " · 加宽" : ""}`}
         </p>
       )}
       {(phase === "running" || phase === "aim" || phase === "paused" || phase === "select") && (

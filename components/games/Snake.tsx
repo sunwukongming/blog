@@ -34,7 +34,7 @@ type Game = {
   /** 吃到东西时的光环特效 */
   fx: { x: number; y: number; at: number; color: string }[];
 };
-type Hud = { eaten: number; score: number; seconds: number; wrap: boolean; edgeHint: string | null; speedMs: number; speedTier: string };
+type Hud = { eaten: number; score: number; seconds: number; wrap: boolean; edgeHint: string | null; speedMs: number; speedTier: string; nextSpeed: string | null };
 
 const VEC: Record<Dir, P> = { up: { x: 0, y: -1 }, down: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } };
 const OPPOSITE: Record<Dir, Dir> = { up: "down", down: "up", left: "right", right: "left" };
@@ -133,6 +133,15 @@ function speedTier(ms: number) {
   if (ms >= 85) return "快";
   if (ms >= 70) return "很快";
   return "极速";
+}
+
+/** next speed tier hint for tip line */
+function nextSpeedHint(ms: number): string | null {
+  if (ms >= 140) return `下一档「中」需步进 <140ms（当前 ${Math.round(ms)}ms）`;
+  if (ms >= 110) return `下一档「快」需步进 <110ms（当前 ${Math.round(ms)}ms）`;
+  if (ms >= 85) return `下一档「很快」需步进 <85ms（当前 ${Math.round(ms)}ms）`;
+  if (ms >= 70) return `下一档「极速」需步进 <70ms（当前 ${Math.round(ms)}ms）`;
+  return null;
 }
 
 type StepResult = "move" | "eat" | "gold" | "dead" | "clear";
@@ -345,7 +354,7 @@ export default function Snake() {
   const game = useRef<Game>(initial);
   const [mode, setMode] = useState<Mode>(initial.mode);
   const [phase, setPhase] = useState<Phase>("select");
-  const [hud, setHud] = useState<Hud>({ eaten: 0, score: 0, seconds: 0, wrap: false, edgeHint: null, speedMs: 150, speedTier: "中" });
+  const [hud, setHud] = useState<Hud>({ eaten: 0, score: 0, seconds: 0, wrap: false, edgeHint: null, speedMs: 150, speedTier: "中", nextSpeed: nextSpeedHint(150) });
   const [record, setRecord] = useState(false);
   const [unlocked] = useRecord("snake-unlocked", higher);
   const [best] = useRecord("snake", higher);
@@ -376,6 +385,7 @@ export default function Snake() {
       edgeHint: wrapHint(g),
       speedMs,
       speedTier: speedTier(speedMs),
+      nextSpeed: nextSpeedHint(speedMs),
     });
   };
 
@@ -495,7 +505,7 @@ export default function Snake() {
             <span>
               时间<b>{hud.seconds}s</b>
             </span>
-            <span title={`步进 ${hud.speedMs}ms`}>
+            <span title={hud.nextSpeed ? `步进 ${hud.speedMs}ms · ${hud.nextSpeed}` : `步进 ${hud.speedMs}ms · 已达极速`}>
               速度<b>{hud.speedTier}</b>
             </span>
             {hud.wrap && (
@@ -516,7 +526,7 @@ export default function Snake() {
             <span>
               最高<b>{best ?? 0}</b>
             </span>
-            <span title={`步进 ${hud.speedMs}ms`}>
+            <span title={hud.nextSpeed ? `步进 ${hud.speedMs}ms · ${hud.nextSpeed}` : `步进 ${hud.speedMs}ms · 已达极速`}>
               速度<b>{hud.speedTier}</b>
             </span>
           </>
@@ -537,13 +547,15 @@ export default function Snake() {
           }
           aria-live="polite"
         >
-          {hud.wrap && hud.edgeHint
-            ? `穿墙+加速：${hud.edgeHint} · 档位 ${hud.speedTier}（${hud.speedMs}ms）`
-            : hud.wrap
-              ? `穿墙模式 · 加速档 ${hud.speedTier}（${hud.speedMs}ms）${level ? ` · 目标 ${Math.min(hud.eaten, level.goal)}/${level.goal}` : " · 无尽"}`
-              : level
-                ? `第 ${levelNo} 关·${level.name}：目标 ${Math.min(hud.eaten, level.goal)}/${level.goal}${level.bonus ? " · 有金色食物" : ""} · 加速档 ${hud.speedTier}（${hud.speedMs}ms）`
-                : `无尽模式 · 加速档 ${hud.speedTier}（${hud.speedMs}ms）· 越高分越快`}
+          {`${
+            hud.wrap && hud.edgeHint
+              ? `穿墙+加速：${hud.edgeHint} · 档位 ${hud.speedTier}（${hud.speedMs}ms）`
+              : hud.wrap
+                ? `穿墙模式 · 加速档 ${hud.speedTier}（${hud.speedMs}ms）${level ? ` · 目标 ${Math.min(hud.eaten, level.goal)}/${level.goal}` : " · 无尽"}`
+                : level
+                  ? `第 ${levelNo} 关·${level.name}：目标 ${Math.min(hud.eaten, level.goal)}/${level.goal}${level.bonus ? " · 有金色食物" : ""} · 加速档 ${hud.speedTier}（${hud.speedMs}ms）`
+                  : `无尽模式 · 加速档 ${hud.speedTier}（${hud.speedMs}ms）· 越高分越快`
+          }${hud.nextSpeed ? ` · ${hud.nextSpeed}` : " · 已达极速"}`}
         </p>
       )}
       <div className="game-stage" {...swipe}>

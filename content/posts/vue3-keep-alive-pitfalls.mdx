@@ -1,0 +1,44 @@
+---
+title: Vue 3 keep-alive：缓存谁、何时销毁、和路由怎么配
+date: "2026-10-24"
+category: frontend
+summary: keep-alive 省的是挂载成本，付的是内存与陈旧状态；include/exclude、onActivated 与路由 key 要一起设计。
+---
+
+`<KeepAlive>` 包住的组件切换时不销毁，只切换激活。列表↔详情、多 Tab 表单很香，也容易把 **过期数据** 和 **泄漏监听** 留下。
+
+## 该缓存什么
+
+- 适合：重列表、带筛选的页、用户填到一半的向导。  
+- 不适合：一次性对话框、权限敏感页、订阅了全局事件却不在 `onDeactivated` 里卸的页。
+
+## 和 Vue Router
+
+```ts
+// 按路由 meta 决定是否缓存
+<KeepAlive :include="cachedNames">
+  <component :is="Component" :key="route.fullPath" />
+</KeepAlive>
+```
+
+- `include` 用 **组件 name**（不是路由 name），两边要一致。  
+- 需要「同组件不同参数强制刷新」时改 `key`；需要保留滚动/筛选时不要乱改 key。
+
+## 生命周期
+
+| 钩子 | 用途 |
+|---|---|
+| `onMounted` | 只跑一次：昂贵初始化 |
+| `onActivated` | 每次显示：拉新数据、恢复焦点 |
+| `onDeactivated` | 暂停定时器、临时解绑 |
+| `onUnmounted` | 真正销毁时清理 |
+
+`include` 变空或组件被剔出缓存时才会 `onUnmounted`——别以为切走就销毁。
+
+## 实操
+
+1. 给缓存组件显式 `name`。  
+2. 列表页在 `onActivated` 里按「是否过期」决定是否 refetch。  
+3. 内存顶不住就限制 `max`，或按路由离开一级时丢掉缓存。
+
+和 composable 边界连读：缓存的是组件实例，composable 里的模块级单例不会跟着 `onDeactivated` 自动复位。

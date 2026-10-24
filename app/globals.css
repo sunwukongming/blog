@@ -2453,3 +2453,71 @@ html:has(.page--game) { overscroll-behavior: none; }
 .tetris-preview-bar[data-i] > i {
   background: linear-gradient(90deg, #22d3ee, #06b6d4);
 }
+
+
+/* batch56: snake-level-bar / breakout-brick-bar / pk-hand-bar */
+.snake-level-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.snake-level-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #93c5fd, #3b82f6);
+  transition: width 100ms ease-out;
+}
+.snake-level-bar[data-late] > i {
+  background: linear-gradient(90deg, #f472b6, #a78bfa);
+}
+
+.breakout-brick-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.breakout-brick-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #86efac, #22c55e);
+  transition: width 100ms ease-out;
+}
+.breakout-brick-bar[data-low] > i {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+.breakout-brick-bar[data-done] > i {
+  background: linear-gradient(90deg, #34d399, #10b981);
+}
+
+.pk-hand-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.pk-hand-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #c4b5fd, #8b5cf6);
+  transition: width 100ms ease-out;
+}
+.pk-hand-bar[data-near] > i {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+}

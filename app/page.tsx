@@ -36,6 +36,7 @@ export default async function Home() {
   const playable = GAMES.filter((g) => g.playable).slice(0, 6);
   // batch45: WebSite JSON-LD 复核 sameAs / hasPart / SearchAction；与 robots host、sitemap 列表 lastmod 同源 SITE_URL
   // batch52: 再核 hasPart 含分类页 + inLanguage；SearchAction 仍指向 /blog?q=
+  // batch56: 再核 hasPart 含 blog/categories/games/archive 四页；publisher/inLanguage 未改语义
   const websiteLd = {
     "@context": "https://schema.org",
     "@type": "WebSite",

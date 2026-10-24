@@ -1,0 +1,46 @@
+---
+title: Go testing.T：Cleanup 与临时资源回收
+date: "2026-10-25"
+category: backend
+summary: 测试里开端口、建临时目录、起 goroutine，别靠 defer 散落在辅助函数里。用 t.Cleanup 注册逆序回收，和并行子测试更合拍。
+---
+
+`testing.T` 提供 **`Cleanup(func())`**：测试（含子测试）结束时按 **后注册先执行** 调用。适合把「谁创建谁登记销毁」写在一起。
+
+## 基本用法
+
+```go
+func TestServer(t *testing.T) {
+    dir := t.TempDir() // 已自带清理
+    ln, err := net.Listen("tcp", "127.0.0.1:0")
+    if err != nil {
+        t.Fatal(err)
+    }
+    t.Cleanup(func() { _ = ln.Close() })
+
+    go serve(ln)
+    // ... 断言
+}
+```
+
+辅助函数里创建资源时，把 `*testing.T` 传进去并在内部 `t.Cleanup`，调用方不必记一长串 `defer`。
+
+## 和 defer 的差别
+
+| | `defer` | `t.Cleanup` |
+|---|---|---|
+| 作用域 | 当前函数返回 | 整个测试（子测试）结束 |
+| 辅助函数 | 函数返回就跑，太早 | 可登记到测试生命周期 |
+| 并行 | 易和 `t.Parallel` 错位 | 按测试结束点回收 |
+
+`t.TempDir()` / `t.Setenv` 等已内部用 Cleanup；自定义资源显式登记即可。
+
+## 注意
+
+1. Cleanup 里不要再 `t.Fatal`；用日志或 `t.Error`。  
+2. 失败路径也要登记：先 `Cleanup` 再往下可能 `Fatal` 的逻辑。  
+3. 与 `t.Parallel()`：子测试各自 Cleanup，勿共享未同步的全局监听器。
+
+## 一句话
+
+**创建临时资源的下一行就 `t.Cleanup`**；别把销毁细节泄漏给每个调用方的 `defer`。

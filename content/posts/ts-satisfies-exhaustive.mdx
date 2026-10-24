@@ -1,0 +1,55 @@
+---
+title: TypeScript satisfies：联合穷尽检查
+date: "2026-10-25"
+category: frontend
+summary: 站内 satisfies 与 vs-as 讲保留字面量、对比断言。这篇只谈穷尽：用 satisfies 固定 Record<Union, V>，改联合时漏 key 直接红。
+---
+
+`satisfies` 常用来保留字面量。另一高频场景：**对联合类型做穷尽映射**——加枚举成员时漏改表就该编译失败。基本 / vs `as` 见站内文；本文只谈穷尽表。
+
+## 模式
+
+```ts
+type Status = "idle" | "loading" | "error";
+
+const label = {
+  idle: "空闲",
+  loading: "加载中",
+  error: "失败",
+} satisfies Record<Status, string>;
+
+// 若 Status 新增 "success" 而对象未补 key → 编译错误
+```
+
+`Record<Status, string>` 要求 **每个成员都有键**；`satisfies` 不会把 `label` 扩成索引签名，取值仍可得到具体字符串字面量（视上下文）。
+
+## 和 never 穷尽的分工
+
+```ts
+function assertNever(x: never): never {
+  throw new Error(String(x));
+}
+
+switch (status) {
+  case "idle":
+  case "loading":
+  case "error":
+    break;
+  default:
+    assertNever(status);
+}
+```
+
+- **表驱动 UI / 文案 / 图标**：`satisfies Record<Union, …>`。  
+- **分支逻辑**：`switch` + `never`。  
+- 二者都比 `as Record<…>` 安全——`as` 漏键也不报错。
+
+## 注意
+
+- 可选字段联合别硬套 `Record`；用 `Partial` 或显式 `?` 并接受非穷尽。  
+- 键来自外部字符串时先收窄，再查表。  
+- 与 `as const` 联用：先写对象，再 `satisfies`，少先 `as const` 再断言。
+
+## 一句话
+
+**联合一变，表就该红**：`satisfies Record<Union, V>` 做穷尽映射，把漏改挡在编译期。

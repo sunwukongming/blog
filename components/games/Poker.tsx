@@ -222,6 +222,26 @@ export default function Poker() {
       <div className="game-bar">
         <span>
           第<b>{table.hand}</b>手
+          <span
+            className="pk-hand-bar"
+            data-near={started && !gameOver && !victory && Math.max(0, nextBlindHand - table.hand) <= 2 || undefined}
+            title={
+              started && !gameOver && !victory
+                ? `手牌序号 ${table.hand} · 本段涨盲进度 ${Math.min(100, Math.round((((table.hand - 1) % BLIND_EVERY) + 1) / BLIND_EVERY * 100))}%（每 ${BLIND_EVERY} 手）`
+                : `手牌序号 ${table.hand}`
+            }
+            aria-label={`第 ${table.hand} 手`}
+          >
+            <i
+              style={{
+                width: `${
+                  started && !gameOver && !victory
+                    ? Math.min(100, Math.round((((table.hand - 1) % BLIND_EVERY) + 1) / BLIND_EVERY * 100))
+                    : Math.min(100, Math.round((table.hand / 40) * 100))
+                }%`,
+              }}
+            />
+          </span>
         </span>
         <span
           className={

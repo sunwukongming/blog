@@ -1,0 +1,53 @@
+---
+title: Gateway API GRPCRoute：方法匹配与 gRPC 后端
+date: "2026-10-25"
+category: devops
+summary: 站内 Gateway API 与 HTTPRoute 讲 HTTP 路径。这篇只谈 GRPCRoute：service/method 匹配、重试与后端引用，和把 gRPC 硬塞 HTTPRoute 的差别。
+---
+
+HTTP 用 `HTTPRoute`；**gRPC** 在 Gateway API 里有独立的 **`GRPCRoute`**（及实现支持的 listener 协议）。总览 / HTTP 规则见站内文；本文只谈 gRPC 路由。
+
+## 最小形状
+
+```yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: GRPCRoute
+metadata:
+  name: payments
+  namespace: app
+spec:
+  parentRefs:
+    - name: shared-gw
+      namespace: gateway-system
+      sectionName: grpc # 指向支持 h2c/TLS 的 Listener
+  hostnames: ["pay.example.com"]
+  rules:
+    - matches:
+        - method:
+            service: pay.v1.Payment
+            method: Charge # 可省略 method 表示整服务
+      backendRefs:
+        - name: pay-svc
+          port: 9000
+```
+
+## 和 HTTPRoute 的差别
+
+| | HTTPRoute | GRPCRoute |
+|---|---|---|
+| 匹配 | path / header / method(HTTP) | gRPC **service / method** |
+| 负载 | HTTP 语义 filter | gRPC 友好（超时/重试视实现） |
+| Listener | http/https | 需支持 HTTP/2（常单独 section） |
+
+把 gRPC 当「路径像 `/pay.v1.Payment/Charge`」塞进 HTTPRoute **可以在部分实现跑通**，但会丢掉方法级匹配与 gRPC 状态映射；能上 GRPCRoute 就别混。
+
+## 注意
+
+- `parentRefs.sectionName` 必须对上 Gateway 里为 gRPC 开的 Listener。  
+- 跨命名空间仍要 ReferenceGrant。  
+- 健康检查与反射（server reflection）是否经同一 Route，按网格/网关文档核对。  
+- 与 HTTPRoute 同 hostname 时，注意实现的协议分流规则。
+
+## 一句话
+
+**gRPC 走 GRPCRoute + 专用 Listener**；别用 HTTP path 技巧长期冒充方法路由。

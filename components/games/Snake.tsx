@@ -509,6 +509,18 @@ export default function Snake() {
           <>
             <span>
               第 {levelNo} 关<b>{level.name}</b>
+              <span
+                className="snake-level-bar"
+                data-late={levelNo >= Math.max(1, SNAKE_LEVELS.length - 1) || undefined}
+                title={`关卡序号 ${levelNo} / ${SNAKE_LEVELS.length}`}
+                aria-label={`第 ${levelNo} 关，共 ${SNAKE_LEVELS.length} 关`}
+              >
+                <i
+                  style={{
+                    width: `${Math.min(100, Math.round((levelNo / Math.max(1, SNAKE_LEVELS.length)) * 100))}%`,
+                  }}
+                />
+              </span>
             </span>
             <span>
               进度<b>{Math.min(hud.eaten, level.goal)}/{level.goal}</b>

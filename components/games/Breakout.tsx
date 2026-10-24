@@ -635,6 +635,22 @@ const [phase, setPhase] = useState<Phase>("select");
               <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
               砖<b className={hud.brickLeft <= 3 && hud.brickLeft > 0 ? "game-tip--alert" : undefined}>{hud.brickLeft}/{hud.brickTotal}</b>
               <span
+                className="breakout-brick-bar"
+                data-low={(hud.brickLeft <= 3 && hud.brickLeft > 0) || undefined}
+                data-done={hud.brickLeft === 0 || undefined}
+                title={`剩余砖 ${hud.brickLeft}/${hud.brickTotal}（条=已清除比例）`}
+                aria-label={`已清除砖 ${Math.max(0, hud.brickTotal - hud.brickLeft)} / ${hud.brickTotal}`}
+              >
+                <i
+                  style={{
+                    width: `${Math.min(
+                      100,
+                      Math.round(((hud.brickTotal - hud.brickLeft) / Math.max(1, hud.brickTotal)) * 100),
+                    )}%`,
+                  }}
+                />
+              </span>
+              <span
                 className="breakout-progress__bar"
                 aria-hidden="true"
                 style={{ ["--bo-pct" as string]: `${hud.progress}%` } as CSSProperties}

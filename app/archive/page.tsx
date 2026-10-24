@@ -31,6 +31,7 @@ export default async function Archive() {
   const yearCount = years.size;
   // batch44: ItemList 与 eyebrow 篇数对齐；只暴露最近 50 条避免巨大 JSON-LD
   // batch51: 再核 numberOfItems=posts.length + slice(0,50) + inLanguage；与 blog ItemList 同源 getAllPosts
+  // batch56: 再核 ItemListOrderDescending + 仅暴露 50 条；numberOfItems 仍为全文总数
   const itemListLd = {
     "@context": "https://schema.org",
     "@type": "ItemList",

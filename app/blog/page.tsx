@@ -20,6 +20,8 @@ export const metadata: Metadata = {
     card: "summary",
     title: "文章",
     description: "GM Lab 文章列表：Go / 云原生 / OpenTelemetry / 前端与数据层笔记；支持搜索与分类筛选，卡片环一页一景。",
+    // 与 openGraph.images 对齐，避免列表页被抓成无图卡片
+    images: SITE_URL ? [`${SITE_URL}/icon.svg`] : undefined,
   },
 };
 

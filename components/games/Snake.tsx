@@ -510,11 +510,13 @@ export default function Snake() {
             <span
               className={
                 hud.goldLeft != null || hud.goldEta != null || hud.wrap
-                  ? "snake-speed-gold snake-wrap-gold"
+                  ? "snake-speed-gold snake-wrap-gold snake-gold-dual"
                   : undefined
               }
               data-gold={hud.goldLeft != null || undefined}
               data-eta={hud.goldEta != null || undefined}
+              data-gold-tier={hud.goldLeft == null ? undefined : hud.goldLeft <= 2 ? "hot" : hud.goldLeft <= 5 ? "warm" : "cool"}
+              data-eta-tier={hud.goldEta == null ? undefined : hud.goldEta <= 2 ? "hot" : hud.goldEta <= 5 ? "warm" : "cool"}
               data-wrap={hud.wrap || undefined}
               data-urgent={(hud.goldLeft != null && hud.goldLeft <= 2) || (hud.goldEta != null && hud.goldEta <= 2) || undefined}
               data-edge={(hud.wrap && !!hud.edgeHint?.includes("将从")) || undefined}
@@ -546,6 +548,9 @@ export default function Snake() {
                 <>
                   <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
                   金食<b className={hud.goldLeft <= 2 ? "game-tip--alert" : undefined}>{hud.goldLeft.toFixed(1)}s</b>
+                  <small className="snake-gold-tier" data-tier={hud.goldLeft <= 2 ? "hot" : hud.goldLeft <= 5 ? "warm" : "cool"} style={{ marginLeft: 4 }}>
+                    {hud.goldLeft <= 2 ? "hot" : hud.goldLeft <= 5 ? "warm" : "cool"}
+                  </small>
                   {hud.nextSpeed ? <small style={{ marginLeft: 4, opacity: 0.7 }}>{hud.nextSpeed}</small> : <small style={{ marginLeft: 4, opacity: 0.55 }}>极速</small>}
                 </>
               )}
@@ -553,6 +558,9 @@ export default function Snake() {
                 <>
                   <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
                   距金<b className={hud.goldEta <= 2 ? "game-tip--alert" : undefined}>{hud.goldEta.toFixed(1)}s</b>
+                  <small className="snake-gold-tier" data-tier={hud.goldEta <= 2 ? "hot" : hud.goldEta <= 5 ? "warm" : "cool"} style={{ marginLeft: 4 }}>
+                    {hud.goldEta <= 2 ? "hot" : hud.goldEta <= 5 ? "warm" : "cool"}
+                  </small>
                 </>
               )}
               {hud.wrap && (
@@ -601,11 +609,13 @@ export default function Snake() {
             <span
               className={
                 hud.goldLeft != null || hud.goldEta != null
-                  ? "snake-speed-gold snake-gold-timer snake-endless-gold"
+                  ? "snake-speed-gold snake-gold-timer snake-endless-gold snake-gold-dual"
                   : undefined
               }
               data-gold={hud.goldLeft != null || undefined}
               data-eta={hud.goldEta != null || undefined}
+              data-gold-tier={hud.goldLeft == null ? undefined : hud.goldLeft <= 2 ? "hot" : hud.goldLeft <= 5 ? "warm" : "cool"}
+              data-eta-tier={hud.goldEta == null ? undefined : hud.goldEta <= 2 ? "hot" : hud.goldEta <= 5 ? "warm" : "cool"}
               data-urgent={
                 (hud.goldLeft != null && hud.goldLeft <= 2) ||
                 (hud.goldEta != null && hud.goldEta <= 2) ||
@@ -627,6 +637,9 @@ export default function Snake() {
                 <>
                   <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
                   金食<b className={hud.goldLeft <= 2 ? "game-tip--alert" : undefined}>{hud.goldLeft.toFixed(1)}s</b>
+                  <small className="snake-gold-tier" data-tier={hud.goldLeft <= 2 ? "hot" : hud.goldLeft <= 5 ? "warm" : "cool"} style={{ marginLeft: 4 }}>
+                    {hud.goldLeft <= 2 ? "hot" : hud.goldLeft <= 5 ? "warm" : "cool"}
+                  </small>
                   <small className="snake-endless-gold__tag" style={{ marginLeft: 4, opacity: 0.8 }}>无尽</small>
                   {hud.nextSpeed ? <small style={{ marginLeft: 4, opacity: 0.7 }}>{hud.nextSpeed}</small> : <small style={{ marginLeft: 4, opacity: 0.55 }}>极速</small>}
                 </>
@@ -635,6 +648,9 @@ export default function Snake() {
                 <>
                   <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
                   距金<b className={hud.goldEta <= 2 ? "game-tip--alert" : undefined}>{hud.goldEta.toFixed(1)}s</b>
+                  <small className="snake-gold-tier" data-tier={hud.goldEta <= 2 ? "hot" : hud.goldEta <= 5 ? "warm" : "cool"} style={{ marginLeft: 4 }}>
+                    {hud.goldEta <= 2 ? "hot" : hud.goldEta <= 5 ? "warm" : "cool"}
+                  </small>
                   <small className="snake-endless-gold__tag" style={{ marginLeft: 4, opacity: 0.8 }}>无尽</small>
                 </>
               )}

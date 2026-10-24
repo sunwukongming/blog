@@ -1,0 +1,44 @@
+---
+title: Postgres Hash Join：何时出现、何时被Nested Loop打脸
+date: "2026-10-25"
+category: backend
+summary: 从 EXPLAIN 读懂 Hash Join / Hash Cond：建哈希的一侧、内存 work_mem、与 Nested Loop、Merge Join 的选择。不靠神秘 hint 扩展，靠统计与谓词。
+---
+
+等值连接且内侧较大时，规划器常选 **Hash Join**：对一侧建哈希表，另一侧探测。看懂节点比找「hint 包」更有用（官方无通用 join hint）。
+
+## 读计划
+
+```text
+Hash Join  (cost=... rows=...)
+  Hash Cond: (a.id = b.a_id)
+  ->  Seq Scan on b
+  ->  Hash
+        ->  Seq Scan on a
+```
+
+- **Hash 子节点**：被建表的一侧（希望更小、更干净）。
+- **外层探测**：逐行 probe。
+- 若 `Batches > 1` / 磁盘临时文件，说明 **work_mem** 不够，哈希溢出变慢。
+
+## 何时不如 Nested Loop
+
+| 场景 | 更可能 |
+| --- | --- |
+| 外侧极少行 + 内侧索引精确 | Nested Loop |
+| 两表都大、等值、无合适序 | Hash Join |
+| 两端已按键排序 | Merge Join |
+
+统计信息过期会让「小表」估错，哈希建在大表上。先 `ANALYZE`，再考虑改写谓词或物化小结果集。
+
+## 可做的「暗示」（非 hint 语法）
+
+- 把真正小的一侧写成 CTE/`MATERIALIZED`（注意版本默认物化行为）。
+- 提高会话 `work_mem` 做一次对比实验（勿全局乱加）。
+- 保证连接列类型一致，避免隐式 cast 毁索引与估行。
+
+## 小结
+
+- Hash Join 看 Hash Cond、哪侧建表、是否落盘。
+- 调优靠统计、mem、SQL 形态，不靠神话 hint。
+- 小外大内索引点查，允许 Nested Loop 赢。

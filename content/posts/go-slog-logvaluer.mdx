@@ -1,0 +1,50 @@
+---
+title: Go slog LogValuer：复杂值自己决定怎么进日志
+date: "2026-10-25"
+category: backend
+summary: 实现 slog.LogValuer，让结构体/错误在日志里展开成 Group 或脱敏标量。对比直接 Any、替换 Attr 与自定义 Handler。
+---
+
+业务类型丢进 `slog.Any("user", u)` 时，默认反射字段名又长又可能带密钥。实现 **`slog.LogValuer`**，让类型自己返回要记录的 `slog.Value`。
+
+## 最小实现
+
+```go
+type User struct {
+    ID    string
+    Email string
+    Token string // 勿明文
+}
+
+func (u User) LogValue() slog.Value {
+    return slog.GroupValue(
+        slog.String("id", u.ID),
+        slog.String("email", maskEmail(u.Email)),
+    )
+}
+
+slog.Info("login", "user", user) // 走 LogValue，不进 Token
+```
+
+`slog` 在解析 Attr 时若发现 `LogValuer`，会调用 `LogValue()`；可返回 `Group`、标量或嵌套。
+
+## 和 Handler / ReplaceAttr
+
+| 手段 | 适合 |
+| --- | --- |
+| `LogValuer` | 类型自带的稳定投影与脱敏 |
+| `HandlerOptions.ReplaceAttr` | 全局字段改名、删 key、统一 trace |
+| 自定义 Handler | 输出格式、采样、多后端 |
+
+能在类型上收口的脱敏优先 `LogValuer`；跨类型政策放 ReplaceAttr。
+
+## 注意
+
+- `LogValue` 应尽量纯、少分配；热路径可缓存脱敏结果（注意并发）。
+- 指针接收者与值接收者要和调用方一致，避免「有时走不到」。
+- 错误类型也可 `LogValuer`：展开 `code` / `op`，避免整段 stack 刷屏。
+
+## 小结
+
+- 敏感或臃肿结构体实现 `LogValuer`，日志只留安全摘要。
+- 与 Attr 助手、Handler 流水线分工：类型内投影 vs 全局政策 vs 输出。

@@ -544,7 +544,7 @@ const [phase, setPhase] = useState<Phase>("select");
               速<b className={hud.lives <= 1 || hud.slow ? "game-tip--alert" : undefined}>{hud.ballSpeed}</b>
             </span>
             <span
-              className="breakout-progress breakout-progress-items breakout-progress-combo breakout-metal-host"
+              className="breakout-progress breakout-progress-items breakout-progress-combo breakout-metal-host breakout-combo-peak-host"
               data-low={(hud.brickLeft <= 3 && hud.brickLeft > 0) || undefined}
               data-done={hud.progress >= 100 || undefined}
               data-items={(hud.wide || hud.slow || hud.dropsAir > 0 || hud.metalLeft > 0) || undefined}
@@ -567,6 +567,22 @@ const [phase, setPhase] = useState<Phase>("select");
             >
               连击<b className={hud.combo >= 5 ? "game-tip--alert" : undefined}>{hud.combo}</b>
               {hud.bestCombo > 0 ? <small style={{ marginLeft: 2, opacity: 0.7 }}>峰{hud.bestCombo}</small> : null}
+              {hud.bestCombo > 0 ? (
+                <span
+                  className="breakout-combo-peak-bar"
+                  data-combo-peak={hud.combo >= hud.bestCombo && hud.combo > 0 || undefined}
+                  data-hot={hud.combo >= 5 || undefined}
+                  title={`连击峰条：当前 ${hud.combo} / 峰 ${hud.bestCombo}`}
+                  aria-label={`连击相对峰值 ${hud.combo}/${hud.bestCombo}`}
+                >
+                  <i
+                    className="breakout-combo-peak-bar__fill"
+                    style={{
+                      width: `${Math.min(100, Math.round((hud.combo / Math.max(1, hud.bestCombo)) * 100))}%`,
+                    }}
+                  />
+                </span>
+              ) : null}
               <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
               关卡
               <b>{hud.progress}%</b>

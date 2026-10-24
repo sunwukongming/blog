@@ -1,0 +1,47 @@
+---
+title: RedisBloom：用布隆过滤器挡掉明显不存在的键
+date: "2026-10-25"
+category: backend
+summary: BF.ADD / BF.EXISTS 做存在性初筛，降低缓存穿透。讲清误判率、容量预估、与 HyperLogLog/Set 的取舍，以及多级缓存里的位置。
+---
+
+热点里大量「查一个几乎肯定没有的 ID」会打穿到 DB。**布隆过滤器**用位图+多哈希：可能误报存在，但**不会漏报**——返回不存在就可以放心跳过存储。
+
+## RedisBloom 用法
+
+```bash
+BF.RESERVE user:bf 0.01 1000000
+BF.ADD user:bf 42
+BF.EXISTS user:bf 42   # 1
+BF.EXISTS user:bf 99   # 0 → 一定不在
+```
+
+`ERROR` 率与初始容量在 `RESERVE` 时定好；扩容用 scaling bloom（模块版本相关）或重建。
+
+## 放哪一层
+
+```
+请求 → Bloom（无则 404/空）→ 本地缓存 → Redis String → DB
+```
+
+只对「写路径会 ADD」的集合有意义；删元素是布隆的弱点（标准 BF 不支持可靠删除，需 counting / 重建）。
+
+## 对比
+
+| 结构 | 特点 |
+| --- | --- |
+| Set | 精确、占内存大 |
+| Bloom | 省内存、可误判存在 |
+| HyperLogLog | 基数估计，不做成员检测 |
+| Cuckoo（模块） | 支持删除，语义不同 |
+
+## 运维
+
+- 监控 `BF.INFO` 填满度；误判升高说明容量不够。
+- 与业务「逻辑删除」对齐：删除频繁就别硬上标准 BF。
+- 集群注意 key 与业务同 slot 或独立前缀策略。
+
+## 小结
+
+- 穿透防护：Bloom 说不在 → 直接空；说在 → 再查真源。
+- 预估容量与误差；删除多则换方案或重建。

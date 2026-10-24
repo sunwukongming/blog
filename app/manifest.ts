@@ -14,6 +14,7 @@ export default function manifest(): MetadataRoute.Manifest {
       { src: "/icon.svg", sizes: "any", type: "image/svg+xml" },
       { src: "/apple-icon", sizes: "180x180", type: "image/png" },
     ],
+    // batch40 shortcuts：与主导航对齐——文章 / 游戏 / 归档（3 项；勿加未上线路由）
     shortcuts: [
       {
         name: "文章",

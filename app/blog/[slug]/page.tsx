@@ -64,6 +64,7 @@ async function PostBody({ params }: { params: Promise<{ slug: string }> }) {
   const older = all[i + 1];
   const headings = extractHeadings(post.body);
   const pageUrl = SITE_URL ? `${SITE_URL}/blog/${slug}` : undefined;
+  // batch47: Article JSON-LD 复核 headline/dates/author/isPartOf/timeRequired；与 related ItemList 同页双脚本
   const articleLd = {
     "@context": "https://schema.org",
     "@type": "Article",

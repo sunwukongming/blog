@@ -1,0 +1,72 @@
+---
+title: K8s HPA 自定义指标：别只盯 CPU，按队列与业务 SLO 扩缩
+date: "2026-10-25"
+category: cloud
+summary: 站内另有 HPA 稳定窗文。这篇专讲 custom / external metrics：指标从哪来、怎么写、和 CPU 策略怎么共存。
+---
+
+默认 HPA 看 CPU/内存利用率，适合「算力随 QPS 涨」的服务。队列堆积、每秒订单、网关延迟分位，要用 **自定义（custom）或外部（external）指标**。
+
+## 和稳定窗文的分工
+
+| 文 | 焦点 |
+|---|---|
+| `k8s-hpa-scale-stabilization` | 扩缩抖动、`stabilizationWindowSeconds`、策略 |
+| 本文 | 指标源、`MetricSpec` 选型、与资源指标混排 |
+
+先把指标接对，再调稳定窗；否则稳的是错误信号。
+
+## 指标从哪来
+
+1. **Resource**：CPU/内存（内置）。  
+2. **Pods / Object custom**：metrics-server 扩展 API / Prometheus Adapter，按 pod 或 ingress 对象。  
+3. **External**：集群外信号（云队列深度、托管 Kafka lag），经 adapter 暴露。
+
+```yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: worker
+  minReplicas: 2
+  maxReplicas: 20
+  metrics:
+    - type: External
+      external:
+        metric:
+          name: sqs_messages_visible
+          selector:
+            matchLabels:
+              queue: checkout
+        target:
+          type: AverageValue
+          averageValue: "30"
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+```
+
+多指标时 HPA 取 **各自建议副本的最大值**（默认行为），避免「队列空但 CPU 高」缩没了算力。
+
+## 选型清单
+
+| 信号 | 指标类型 | 注意 |
+|---|---|---|
+| 消费滞后 | External / 自定义 per-pod | 目标用「每副本可消化量」，不是全局 lag 绝对值乱除 |
+| 入口 RPS | Object（Ingress） | 与副本数同向；注意熔断后 RPS 掉导致缩容雪崩 |
+| P99 延迟 | 慎用直接扩 | 延迟高可能是 DB；扩应用会更糟；优先队列/限流 |
+
+## 落地坑
+
+- Adapter 挂了 → 指标缺口 → 不扩也不缩或行为依赖版本；要告警。  
+- 标签选择器与 Prometheus 指标标签不一致 → 一直 0。  
+- 只配自定义、不设资源兜底 → 指标延迟时无安全网。
+
+## 一句话
+
+**业务压力用自定义/外部指标表达；CPU 作兜底；稳定窗单独调。** 与 HPA 稳定窗文一起读：一个管「听什么」，一个管「别听风就是雨」。

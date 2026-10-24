@@ -372,6 +372,20 @@ export default function Minesweeper() {
           {phase === "playing" && level.mines - flags <= 3 && level.mines - flags > 0 ? (
             <small style={{ marginLeft: 4, opacity: 0.85 }}>收官</small>
           ) : null}
+          <span
+            className="mine-remaining-bar"
+            data-low={phase === "playing" && level.mines - flags <= 5 && level.mines - flags > 0 || undefined}
+            data-clear={phase === "playing" && level.mines - flags <= 0 || undefined}
+            title={`剩余雷 ${Math.max(0, level.mines - flags)} / ${level.mines}（旗 ${flags}）`}
+            aria-label={`剩余雷 ${Math.max(0, level.mines - flags)}`}
+          >
+            <i
+              className="mine-remaining-bar__fill"
+              style={{
+                width: `${Math.min(100, Math.round((Math.max(0, level.mines - flags) / Math.max(1, level.mines)) * 100))}%`,
+              }}
+            />
+          </span>
         </span>
         <span
           className="mine-progress mine-open-flag mine-chord-open mine-chord-openable mine-late-openable mine-chord-peak-host"

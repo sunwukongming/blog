@@ -1,0 +1,58 @@
+---
+title: Redis Pipeline vs Lua：批圆trip 与脚本原子怎么选
+date: "2026-10-25"
+category: backend
+summary: 站内另有 Lua 原子性专文。这篇对比 Pipeline（减 RTT）与 EVAL（原子+逻辑）：何时管道够用，何时必须进脚本。
+---
+
+Pipeline 把多条命令一次性刷出，**减往返**，但不保证中间不被别人插队。Lua（`EVAL`/`EVALSHA`）在服务端 **串行原子** 执行，可带分支逻辑。
+
+## 对照
+
+| | Pipeline | Lua |
+|---|---|---|
+| 目标 | 吞吐量 / 延迟（少 RTT） | 正确性（原子读写改） |
+| 隔离 | 无；中间可见 | 脚本期间单线程原子 |
+| 逻辑 | 客户端拼结果 | 脚本内 `if` / 多 key |
+| 失败 | 单条可错，其余仍可能已执行 | 脚本报错整体回滚副作用（未写完的不提交） |
+| 运维 | 易；注意大包 | 要管脚本缓存、超时、`redis.replicate_commands` 等 |
+
+## Pipeline 够用的场景
+
+- `MGET` 可表达的批量读，或一串独立 `SET`/`HGET`。  
+- 不依赖「读完再决定写」的跨命令不变量。  
+- 客户端与 Redis 远距，RTT 是主矛盾。
+
+```text
+PIPELINED:
+  GET u:1
+  GET u:2
+  GET u:3
+```
+
+三条彼此无依赖；就算中间插了别的客户端的写，你也只是读到「各自当下」的值。
+
+## 必须 Lua 的信号
+
+1. **check-and-set**：余额够才扣、库存 >0 才减。  
+2. 多 key 要同进同退（锁 + 业务键）。  
+3. 想把竞态从客户端窗口里拿掉（见 `redis-lua-atomicity`）。
+
+```lua
+-- 伪代码：库存够才扣
+local n = redis.call('GET', KEYS[1])
+if not n or tonumber(n) < 1 then return 0 end
+return redis.call('DECR', KEYS[1])
+```
+
+## 别混用的错觉
+
+| 错觉 | 现实 |
+|---|---|
+| Pipeline = 事务 | 不是；要原子用 Lua 或 `MULTI/EXEC`（仍无隔离于脚本） |
+| Lua 一定更快 | 逻辑复杂时可能更慢；先对正确性 |
+| 大 Pipeline 无损 | 客户端内存与延迟尾部会变差；要切片 |
+
+## 一句话
+
+**少 RTT → Pipeline；要原子决策 → Lua。** 与 Lua 原子文互补：那篇讲脚本怎么写对，本文讲什么时候不该只用管道。

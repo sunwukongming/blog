@@ -1777,3 +1777,76 @@ html:has(.page--game) { overscroll-behavior: none; }
   background: linear-gradient(90deg, #f87171, #ef4444);
 }
 
+/* batch47: memory-left-bar */
+.memory-left-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.memory-left-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #94a3b8, #60a5fa);
+  transition: width 120ms ease-out;
+}
+.memory-left-bar[data-end] .memory-left-bar__fill {
+  background: linear-gradient(90deg, #fbbf24, #fb923c);
+}
+.memory-left-bar[data-urgent] .memory-left-bar__fill {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+}
+
+/* batch47: mine-remaining-bar */
+.mine-remaining-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.mine-remaining-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #f87171, #fb923c);
+  transition: width 120ms ease-out;
+}
+.mine-remaining-bar[data-low] .mine-remaining-bar__fill {
+  background: linear-gradient(90deg, #fbbf24, #f87171);
+}
+.mine-remaining-bar[data-clear] .mine-remaining-bar__fill {
+  background: linear-gradient(90deg, #34d399, #a3e635);
+  width: 0 !important;
+}
+
+/* batch47: tetris-b2b-bar */
+.tetris-b2b-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 28px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.tetris-b2b-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #64748b, #94a3b8);
+  transition: width 100ms ease-out;
+}
+.tetris-b2b-bar[data-armed] > i {
+  background: linear-gradient(90deg, #a78bfa, #f472b6);
+}
+

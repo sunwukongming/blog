@@ -728,6 +728,14 @@ export default function Tetris() {
             ) : null}
             <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
             B2B<b className={stats.b2b ? "game-tip--alert" : undefined}>{stats.b2b ? "就绪" : "—"}</b>
+            <span
+              className="tetris-b2b-bar"
+              data-armed={stats.b2b || undefined}
+              title={stats.b2b ? "B2B 已武装：下一次困难消行享加成" : "B2B 未武装"}
+              aria-label={stats.b2b ? "B2B armed" : "B2B idle"}
+            >
+              <i style={{ width: stats.b2b ? "100%" : "8%" }} />
+            </span>
             <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
             Hold
             <b className={stats.canHold === false ? undefined : "game-tip--alert"}>

@@ -1,0 +1,46 @@
+---
+title: TypeScript Branded IDs：用名义类型堵住串 ID
+date: "2026-10-25"
+category: frontend
+summary: UserId 和 OrderId 都是 string 时，编译器帮不上忙。Branded / opaque 类型用名义差把「拿错 ID」挡在编译期。
+---
+
+结构类型下 `type UserId = string` 等于没写。Branded ID 给字符串（或 number）挂一个 **只存在于类型侧** 的牌子，让 `UserId` 不能赋给 `OrderId`。
+
+## 最小写法
+
+```ts
+declare const brand: unique symbol;
+type Brand<T, B extends string> = T & { readonly [brand]: B };
+
+type UserId = Brand<string, "UserId">;
+type OrderId = Brand<string, "OrderId">;
+
+const asUserId = (s: string) => s as UserId;
+const asOrderId = (s: string) => s as OrderId;
+
+function refund(order: OrderId, user: UserId) { /* ... */ }
+
+refund(asOrderId("o_1"), asUserId("u_1")); // ok
+// refund(asUserId("u_1"), asOrderId("o_1")); // 编译错误
+```
+
+运行时仍是普通 string；牌子在擦除后消失。校验（UUID 格式、前缀）放在 `as*` 工厂里，别散落在业务里 `as`。
+
+## 和 satisfies / 可辨识联合
+
+- `satisfies` 检查对象字面量形状，不制造名义差（见站内 satisfies 文）。  
+- 可辨识联合解决「同结构不同分支」；Branded ID 解决「同底层不同身份」。常一起用：`{ type: "user"; id: UserId }`。
+
+## 实践边界
+
+| 做法 | 建议 |
+|---|---|
+| 每个实体一个 Brand | 是；共享 `Id` 又退化成 string |
+| JSON 边界 | 入站 `as*` / zod brand；出站当 string |
+| 与 ORM | 行类型用 Brand，避免 `row.id` 直接进错函数 |
+| 过度 branding | 仅对易混的跨界 ID；本地临时变量不必 |
+
+## 一句话
+
+**易混的跨聚合 ID** 用 Brand；工厂里校验，业务里只传牌子类型。比满项目 `// 注意别传错` 注释便宜。

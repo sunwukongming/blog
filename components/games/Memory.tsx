@@ -237,6 +237,20 @@ export default function Memory() {
           </b>
           {endgame ? <small style={{ marginLeft: 4, opacity: 0.85 }}>残局{leftPairs}</small> : null}
           <span
+            className="memory-left-bar"
+            data-end={endgame || undefined}
+            data-urgent={leftPairs > 0 && leftPairs <= 2 || undefined}
+            title={`剩余 ${leftPairs} 对 / ${pairs}`}
+            aria-label={`剩余 ${leftPairs} 对`}
+          >
+            <i
+              className="memory-left-bar__fill"
+              style={{
+                width: `${Math.min(100, Math.round((leftPairs / Math.max(1, pairs)) * 100))}%`,
+              }}
+            />
+          </span>
+          <span
             className="memory-endgame__bar"
             aria-hidden="true"
             style={{ ["--end-pct" as string]: `${pairs ? Math.round((matchedCount / pairs) * 100) : 0}%` } as CSSProperties}

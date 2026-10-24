@@ -16,6 +16,7 @@ export default function manifest(): MetadataRoute.Manifest {
       { src: "/apple-icon", sizes: "180x180", type: "image/png" },
     ],
     // batch40 shortcuts：与主导航对齐——文章 / 游戏 / 归档（3 项；勿加未上线路由）
+// batch47: 复核 shortcuts 仍为 blog/games/archive 三项，icons 同源 /icon.svg
     shortcuts: [
       {
         name: "文章",

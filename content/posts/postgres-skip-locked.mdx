@@ -1,0 +1,55 @@
+---
+title: Postgres FOR UPDATE SKIP LOCKED：队列式抢行
+date: "2026-10-25"
+category: backend
+summary: 咨询锁是应用级互斥；行锁 + SKIP LOCKED 是「多人抢任务行」的经典写法。讲清与 NOWAIT、普通 FOR UPDATE 的差异，以及事务短、重试与死信。
+---
+
+站内已有 **advisory locks**、**lock wait / deadlock**。这篇只谈 **`FOR UPDATE SKIP LOCKED`**：跳过已被锁住的行，立刻拿走下一行空闲任务。
+
+## 基本形
+
+```sql
+BEGIN;
+SELECT id, payload
+FROM job_queue
+WHERE status = 'ready'
+ORDER BY id
+FOR UPDATE SKIP LOCKED
+LIMIT 1;
+
+-- 应用处理… 再
+UPDATE job_queue SET status = 'done' WHERE id = $1;
+COMMIT;
+```
+
+其它会话同时跑同样语句时，不会堵在已锁行上，而是 **跳过** 去抢后面的 ready 行——天然适合多 worker 抢队列。
+
+## 和 NOWAIT / 普通 FOR UPDATE
+
+| 子句 | 行为 |
+|---|---|
+| `FOR UPDATE` | 等锁（可与 `lock_timeout` 配合） |
+| `FOR UPDATE NOWAIT` | 冲突立即报错 |
+| `FOR UPDATE SKIP LOCKED` | 冲突则跳过该行，不报错 |
+
+抢任务用 SKIP LOCKED；「必须拿到这一行」用普通 FOR UPDATE 或 NOWAIT + 重试。
+
+## 边界
+
+- 事务要 **短**：锁持有到 COMMIT/ROLLBACK；长处理应先标记 `status='running'` 再提交，工作在锁外做，失败再打回 `ready`。  
+- `ORDER BY` 要稳定，避免两 worker 总抢同一可见集合却因跳过顺序抖动。  
+- 与 **advisory lock**：咨询锁不绑行；队列行状态机用 SKIP LOCKED 更直观。  
+- 死信：`attempts` 超限改 `dead`，别让 SKIP 永远跳过却无人认领的毒丸行占着 ready（应改状态）。
+
+## 最小表
+
+```sql
+CREATE TABLE job_queue (
+  id bigserial PRIMARY KEY,
+  payload jsonb NOT NULL,
+  status text NOT NULL DEFAULT 'ready',
+  attempts int NOT NULL DEFAULT 0
+);
+CREATE INDEX ON job_queue (status, id) WHERE status = 'ready';
+```

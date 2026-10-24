@@ -1,0 +1,63 @@
+---
+title: CSS scroll-snap：轮播与分屏的吸附模式
+date: "2026-10-25"
+category: frontend
+summary: scroll-snap 让滚动停在卡片或全屏页上，而不是靠 JS 算 offset。讲清 snap-type / snap-align / 强制与邻近、和 scroll-driven animations 的分工，以及移动端惯性陷阱。
+---
+
+站内已有 **scroll-driven animations**（滚动进度驱动动画）。这篇只谈 **`scroll-snap`**：让滚动 **停靠** 在约定位置。
+
+## 最小横向轮播
+
+```css
+.scroller {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  gap: 12px;
+}
+.card {
+  flex: 0 0 80%;
+  scroll-snap-align: center;
+}
+```
+
+- **`scroll-snap-type`**：轴 + `mandatory`（必须吸）或 `proximity`（够近才吸）。  
+- **`scroll-snap-align`**：子项对齐到容器的 start / center / end。  
+- 需要「每次只翻一页」时用 `mandatory`；长文阅读里轻度吸附用 `proximity`。
+
+## 全屏竖向分屏
+
+```css
+.pages {
+  height: 100dvh;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+}
+.page {
+  height: 100dvh;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+```
+
+`scroll-snap-stop: always` 避免惯性一次跨过多页——营销落地页常用。
+
+## 和 JS 轮播
+
+原生 snap 省掉 `scrollTo` 对齐与 resize 重算；若仍要指示点，听 `scrollend`（或节流 `scroll`）读 `scrollLeft` 反推索引即可，不必每帧改 `transform`。
+
+## 边界
+
+- 子项宽度含 margin 时，吸附点可能「差一点」——用 `scroll-padding` 或把间距放在内部 padding。  
+- iOS 旧版对 `proximity` 表现不一；关键路径先 `mandatory`。  
+- 与 **scroll-driven animations**：前者管停哪，后者管滚的时候播什么；可同屏，勿混成一个属性。  
+- 无障碍：保证键盘也能滚到每项；不要靠 snap 藏掉可聚焦控件。
+
+## 对照
+
+| 机制 | 角色 |
+|---|---|
+| `scroll-snap-*` | 停靠位置 |
+| scroll-driven animations | 滚动进度 → 样式 |
+| JS `scrollTo` | 命令式对齐，作补位 |

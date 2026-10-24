@@ -574,6 +574,22 @@ export default function Snake() {
                   }}
                 />
               </span>
+              <span
+                className="snake-speed-ms-bar"
+                data-fast={hud.speedMs <= 120 || undefined}
+                data-slow={hud.speedMs >= 220 || undefined}
+                title={`步进 ${hud.speedMs}ms（满刻度按更快；基准 280→80ms）`}
+                aria-label={`步进间隔 ${hud.speedMs} 毫秒`}
+              >
+                <i
+                  style={{
+                    width: `${Math.min(
+                      100,
+                      Math.max(0, Math.round(((280 - hud.speedMs) / 200) * 100)),
+                    )}%`,
+                  }}
+                />
+              </span>
             </span>
             <span title={`蛇长 ${hud.len} 格（满刻度按 40）`}>
               长度<b>{hud.len}</b>

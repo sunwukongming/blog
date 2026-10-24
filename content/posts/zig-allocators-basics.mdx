@@ -1,0 +1,59 @@
+---
+title: Zig 分配器：Allocator 接口与常用实现
+date: "2026-10-25"
+category: backend
+summary: Zig 不藏全局堆，分配走 Allocator 接口。从 page_allocator、arena、fixed buffer 讲起，何时用 GPA，以及 errdefer 与释放成对。
+---
+
+Zig 把 **「向谁要内存」** 做成显式参数：`Allocator` 接口。库函数常收 `allocator: Allocator`，调用方决定用页分配、竞技场还是固定缓冲。
+
+## 接口长什么样
+
+```zig
+const std = @import("std");
+
+pub fn loadAll(allocator: std.mem.Allocator, path: []const u8) ![]u8 {
+    return try std.fs.cwd().readFileAlloc(allocator, path, 16 * 1024 * 1024);
+}
+```
+
+成功时返回的切片属于该 allocator；释放也要用 **同一** allocator 的 `free` / `destroy`。
+
+## 常用实现
+
+| 分配器 | 用途 |
+|---|---|
+| `std.heap.page_allocator` | 直接向 OS 要页；粗粒度、适合少次大块 |
+| `std.heap.GeneralPurposeAllocator`（GPA） | 通用堆，带泄漏检测（Debug） |
+| `std.heap.ArenaAllocator` | 多次分配、一次 `deinit` 丢掉 |
+| `std.heap.FixedBufferAllocator` | 栈上/静态缓冲，失败返回 OOM |
+
+```zig
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+defer _ = gpa.deinit();
+const allocator = gpa.allocator();
+
+var arena = std.heap.ArenaAllocator.init(allocator);
+defer arena.deinit();
+const a = arena.allocator();
+const buf = try a.alloc(u8, 1024);
+// 无需逐个 free：arena.deinit 统一收回
+```
+
+## errdefer 与成对释放
+
+```zig
+const ptr = try allocator.create(Item);
+errdefer allocator.destroy(ptr);
+ptr.* = try initItem();
+return ptr;
+```
+
+失败路径用 `errdefer` 保证不漏；成功所有权交给调用方。
+
+## 边界
+
+- **不要**假设存在隐藏的 libc `malloc` 全局策略——测试里可注入 failing allocator 做 OOM 路径。  
+- Arena 内指针在 `deinit` 后全部悬空；勿把 arena 指针存到更长生命周期结构。  
+- 跨线程共享 GPA 要看实现线程安全选项；默认偏单线程清晰。  
+- 与 C 互操作时，明确「谁分配谁释放」协议，避免 Zig allocator 与 `free(3)` 混用同一块。

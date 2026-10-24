@@ -280,6 +280,28 @@ export default function Poker() {
               }}
             />
           </span>
+          <span
+            className="pk-active-bar"
+            data-heads={table.players.filter((p) => !p.folded).length <= 2 || undefined}
+            data-multi={table.players.filter((p) => !p.folded).length >= 4 || undefined}
+            title={`未弃牌 ${table.players.filter((p) => !p.folded).length}/${table.players.length}`}
+            aria-label={`未弃牌 ${table.players.filter((p) => !p.folded).length} 人`}
+          >
+            <i
+              style={{
+                width: `${
+                  table.players.length
+                    ? Math.min(
+                        100,
+                        Math.round(
+                          (table.players.filter((p) => !p.folded).length / table.players.length) * 100,
+                        ),
+                      )
+                    : 0
+                }%`,
+              }}
+            />
+          </span>
         </span>
         <span
           className={

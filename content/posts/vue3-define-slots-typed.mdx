@@ -1,0 +1,31 @@
+---
+title: "Vue 3 defineSlots：插槽类型怎么写"
+date: "2026-10-25"
+category: frontend
+summary: "站内写过 defineEmits 元组与 defineModel get/set。这篇谈 defineSlots：给默认/具名插槽补 props 类型，方便 IDE 与 vue-tsc。"
+---
+
+在 `<script setup lang="ts">` 里，**`defineSlots`** 声明插槽及其作用域 props，让使用方 `v-slot` 得到类型提示：
+
+```ts
+const slots = defineSlots<{
+  default(props: { row: { id: string; name: string } }): any;
+  footer(props: { total: number }): any;
+}>();
+```
+
+模板中 `<slot :row="item" />` / `<slot name="footer" :total="n" />` 与上表对齐。
+
+## 边界
+
+- 返回值类型常用 `any` / `VNode[]` 占位；重点是**作用域 props**。  
+- 无作用域的具名插槽可写成 `banner(): any`。  
+- 与 **泛型组件** 可组合：`row` 的类型吃进 `T`（见 vue3-generic-component）。  
+- 运行时不生成校验；类型只服务 TS / `vue-tsc`。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| defineSlots | 本文 |
+| defineEmits / defineModel | 站内 vue3-* 文 |

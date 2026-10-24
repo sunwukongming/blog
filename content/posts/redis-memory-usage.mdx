@@ -1,0 +1,33 @@
+---
+title: "Redis MEMORY USAGE：单键内存估重"
+date: "2026-10-25"
+category: backend
+summary: "站内写过 IDLETIME 与 maxmemory-policy。这篇谈 MEMORY USAGE：估算单个 key 占用，辅助找大键与拆键。"
+---
+
+`INFO memory` 看全局；要定位**哪个键**撑大内存，用 **`MEMORY USAGE key`**（可加 `SAMPLES`）拿近似字节数。
+
+## 常用
+
+```text
+MEMORY USAGE mykey
+MEMORY USAGE mykey SAMPLES 10
+MEMORY DOCTOR
+MEMORY STATS
+```
+
+大 hash / zset / stream 上调 `SAMPLES` 可换更稳的估计（更耗 CPU）。
+
+## 边界
+
+- **估重 ≠ 精确分配器账单**：含值与部分开销，版本与编码（ziplist / listpack 等）会影响数字。  
+- 与 **IDLETIME** 联用：又大又闲的键优先 UNLINK / 拆分（见 lazyfree、policy 文）。  
+- 集群：在**持有该键的节点**上执行；不要假设任意节点都能 USAGE 到槽外键。  
+- 高频 USAGE 本身有成本；抽样 SCAN + USAGE，而不是全库扫。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| MEMORY USAGE | 本文 |
+| IDLETIME / maxmemory-policy | 站内 redis-* 文 |

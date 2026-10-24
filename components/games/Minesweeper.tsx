@@ -793,6 +793,34 @@ export default function Minesweeper() {
               }}
             />
           </span>
+          <span
+            className="mine-best-gap-bar"
+            data-lead={best != null && best > 0 && seconds > 0 && seconds <= best || undefined}
+            data-lag={best != null && best > 0 && seconds > best * 1.25 || undefined}
+            title={
+              best != null && best > 0
+                ? seconds > 0
+                  ? `相对最快 ${Math.round((best / Math.max(seconds, 0.01)) * 100)}%（PB ${best}s）`
+                  : `PB ${best}s`
+                : "相对最快 —"
+            }
+            aria-label={
+              best != null && best > 0 && seconds > 0
+                ? `当前用时相对最快 ${Math.round((best / Math.max(seconds, 0.01)) * 100)}%`
+                : "相对最快未知"
+            }
+          >
+            <i
+              className="mine-best-gap-bar__fill"
+              style={{
+                width: `${
+                  best != null && best > 0 && seconds > 0
+                    ? Math.min(100, Math.round((best / Math.max(seconds, 0.01)) * 100))
+                    : 0
+                }%`,
+              }}
+            />
+          </span>
           {best != null && phase === "playing" && best > 0 ? (
             <>
               <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>

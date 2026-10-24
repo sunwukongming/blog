@@ -1,0 +1,39 @@
+---
+title: "Go testing：t.Chdir 与工作目录隔离"
+date: "2026-10-25"
+category: backend
+summary: "站内写过 Setenv / TempDir / Deadline。这篇谈 t.Chdir：单测里切换工作目录并自动还原，方便测相对路径读写。"
+---
+
+测「读 `./config.yaml` / 写相对日志」时，若进程 cwd 不稳，断言会飘。**`t.Chdir(dir)`**（Go 1.20+）把工作目录切到 `dir`，并在测末经 Cleanup 恢复。
+
+## 写法
+
+```go
+func TestConfig(t *testing.T) {
+	dir := t.TempDir()
+	// 写入 dir/config.yaml …
+	t.Chdir(dir)
+	cfg, err := Load("config.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = cfg
+}
+```
+
+常与 **`t.TempDir()`** 搭配：先落临时树，再 Chdir 进去。
+
+## 边界
+
+- 与 **`t.Parallel()`**：并行测不要抢同一个进程 cwd；对该测禁用 Parallel，或改成绝对路径注入。  
+- 只影响**当前进程**；子进程默认继承切换后的 cwd，需心里有数。  
+- 失败路径也要能还原：`Chdir` 已挂 Cleanup，勿再手写不对称的 `os.Chdir`。  
+- 与 **Setenv** 正交：一个管环境变量，一个管目录。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| t.Chdir | 本文 |
+| t.Setenv / TempDir | 站内 go-testing-* 文 |

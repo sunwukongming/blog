@@ -4126,3 +4126,76 @@ html:has(.page--game) { overscroll-behavior: none; }
 .pk-folded-ratio-bar[data-cold] > i {
   background: linear-gradient(90deg, #86efac, #22c55e);
 }
+
+/* batch79: memory-moves-eff-bar / mine-best-gap-bar / tetris-score-line-bar */
+.memory-moves-eff-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.memory-moves-eff-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #86efac, #22c55e);
+  transition: width 100ms ease-out;
+}
+.memory-moves-eff-bar[data-hot] .memory-moves-eff-bar__fill {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+.memory-moves-eff-bar[data-low] .memory-moves-eff-bar__fill {
+  background: linear-gradient(90deg, #93c5fd, #3b82f6);
+}
+
+.mine-best-gap-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.mine-best-gap-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #a5b4fc, #6366f1);
+  transition: width 100ms ease-out;
+}
+.mine-best-gap-bar[data-lead] .mine-best-gap-bar__fill {
+  background: linear-gradient(90deg, #86efac, #22c55e);
+}
+.mine-best-gap-bar[data-lag] .mine-best-gap-bar__fill {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+}
+
+.tetris-score-line-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.tetris-score-line-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+  transition: width 100ms ease-out;
+}
+.tetris-score-line-bar[data-hot] .tetris-score-line-bar__fill {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+}
+.tetris-score-line-bar[data-low] .tetris-score-line-bar__fill {
+  background: linear-gradient(90deg, #93c5fd, #3b82f6);
+}

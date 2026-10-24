@@ -685,6 +685,32 @@ export default function Memory() {
               }}
             />
           </span>
+          <span
+            className="memory-moves-eff-bar"
+            data-hot={moves > 0 && matchedCount / moves >= 0.45 || undefined}
+            data-low={moves >= 8 && matchedCount / Math.max(1, moves) < 0.2 || undefined}
+            title={
+              moves > 0
+                ? `步效 ${Math.round((matchedCount / moves) * 100) / 100} 对/步（满刻度按 0.5）`
+                : "步效 —"
+            }
+            aria-label={
+              moves > 0
+                ? `每步约配对 ${Math.round((matchedCount / moves) * 100) / 100}`
+                : "步效未知"
+            }
+          >
+            <i
+              className="memory-moves-eff-bar__fill"
+              style={{
+                width: `${
+                  moves > 0
+                    ? Math.min(100, Math.round((matchedCount / moves / 0.5) * 100))
+                    : 0
+                }%`,
+              }}
+            />
+          </span>
         </span>
       </div>
       <p className={endgame || streak >= 2 ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">

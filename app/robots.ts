@@ -14,6 +14,7 @@ import { SITE_URL } from "@/lib/site";
 // batch64: 再核 host + sitemap.xml/feed.xml 双挂；与 games ItemList 再核对齐
 // batch66: 再核 host + sitemap.xml/feed.xml 双挂；与 games ItemList 再核对齐
 // batch68: 再核 host + sitemap.xml/feed.xml 双挂；与 games ItemList 再核对齐
+// batch70: 再核 host + sitemap.xml/feed.xml 双挂；与 games ItemList 再核对齐
 export default function robots(): MetadataRoute.Robots {
   let host: string | undefined;
   try {

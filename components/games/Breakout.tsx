@@ -682,6 +682,31 @@ const [phase, setPhase] = useState<Phase>("select");
                   }}
                 />
               </span>
+              <span
+                className="breakout-clear-pace-bar"
+                data-hot={hud.seconds > 0 && hud.progress / hud.seconds >= 4 || undefined}
+                data-slow={hud.seconds >= 25 && hud.progress / Math.max(1, hud.seconds) < 1 || undefined}
+                title={
+                  hud.seconds > 0
+                    ? `清砖配速 ${Math.round((hud.progress / hud.seconds) * 10) / 10}%/s（满刻度按 5%/s）`
+                    : "清砖配速 —"
+                }
+                aria-label={
+                  hud.seconds > 0
+                    ? `每秒约清 ${Math.round((hud.progress / hud.seconds) * 10) / 10} percent`
+                    : "清砖配速未知"
+                }
+              >
+                <i
+                  style={{
+                    width: `${
+                      hud.seconds > 0
+                        ? Math.min(100, Math.round((hud.progress / hud.seconds / 5) * 100))
+                        : 0
+                    }%`,
+                  }}
+                />
+              </span>
               <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
               速<b className={hud.lives <= 1 || hud.slow ? "game-tip--alert" : undefined}>{hud.ballSpeed}</b>
               <span

@@ -1,0 +1,34 @@
+---
+title: Postgres BRIN minmax_multi_ops：多区间摘要
+date: "2026-10-25"
+category: backend
+summary: 站内已有 minmax_ops 与 bloom_ops。这篇写 minmax_multi_ops：每页组保留多个 min/max 区间，减轻「被少数离群值撑满」的误扫。
+---
+
+经典 **minmax_ops** 每个 range 只留一对最小最大；离群点会让区间极宽、剪枝失效。**minmax_multi_ops** 为同一页组保留多段区间，等值/范围查询可跳过更多块。
+
+```sql
+CREATE INDEX ON metrics USING brin (ts minmax_multi_ops)
+  WITH (pages_per_range = 32, values_per_range = 32);
+```
+
+| | `minmax_ops` | `minmax_multi_ops` |
+|---|---|---|
+| 摘要 | 单段 [min, max] | 多段区间 |
+| 痛点 | 离群值撑满整段 | 用多段吸收尖刺 |
+| 适合 | 强相关、干净序列 | 基本有序但偶发噪点 |
+
+## 边界
+
+- 仍服务有序/近有序列上的**范围与等值**；高基数无序等值另看站内 bloom 文，本文不展开。  
+- `values_per_range` 越大摘要越细、索引越大——用 `EXPLAIN (ANALYZE, BUFFERS)` 权衡。  
+- 频繁 `UPDATE` 打乱局部性后，所有 BRIN 都变钝。  
+- 不要替代唯一约束。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| minmax_multi_ops | 本文 |
+| minmax_ops / BRIN 总览 | 站内既有 BRIN 文 |
+| bloom_ops | postgres-brin-bloom-ops |

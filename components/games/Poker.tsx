@@ -368,6 +368,28 @@ export default function Poker() {
               }}
             />
           </span>
+          <span
+            className="pk-alive-bar"
+            data-few={table.players.filter((p) => !p.out).length <= 2 || undefined}
+            data-heads={table.players.filter((p) => !p.out).length === 2 || undefined}
+            title={`仍在局 ${table.players.filter((p) => !p.out).length}/${table.players.length}`}
+            aria-label={`仍在局 ${table.players.filter((p) => !p.out).length} 人`}
+          >
+            <i
+              style={{
+                width: `${
+                  table.players.length
+                    ? Math.min(
+                        100,
+                        Math.round(
+                          (table.players.filter((p) => !p.out).length / table.players.length) * 100,
+                        ),
+                      )
+                    : 0
+                }%`,
+              }}
+            />
+          </span>
         </span>
         <span
           className={

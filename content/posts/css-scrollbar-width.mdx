@@ -1,0 +1,35 @@
+---
+title: CSS scrollbar-width：滚动条粗细
+date: "2026-10-25"
+category: frontend
+summary: 站内已有 scrollbar-color 与 gutter。这篇只写 scrollbar-width：auto / thin / none，以及和叠加滚动条的兼容。
+---
+
+`scrollbar-width` 控制经典滚动条占用：`auto` | `thin` | `none`。与 **scrollbar-color**、**scrollbar-gutter** 分工：粗细、颜色、占位。
+
+```css
+.panel { overflow: auto; scrollbar-width: thin; }
+.immersive { scrollbar-width: none; } /* 仍可滚，只是看不见条 */
+```
+
+| 值 | 直觉 |
+|---|---|
+| `auto` | 平台默认粗细 |
+| `thin` | 细条，少占布局 |
+| `none` | 隐藏经典条；滚轮/触控仍可用 |
+
+## 边界
+
+- Overlay 系统条可能忽略该属性——以真机为准。  
+- 与 `scrollbar-color` 常一起设；先定 width 再调色。  
+- 无障碍：`none` 时确保仍有非拖拽滚动方式。  
+- 打印样式常用 `none`。  
+- 精细圆角仍可能要并行 `::-webkit-scrollbar`。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| scrollbar-width | 本文 |
+| scrollbar-color | css-scrollbar-color |
+| scrollbar-gutter | css-scrollbar-gutter |

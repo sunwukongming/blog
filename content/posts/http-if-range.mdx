@@ -1,0 +1,44 @@
+---
+title: HTTP If-Range：条件分段
+date: "2026-10-25"
+category: frontend
+summary: Range 要的是「这一版的这一段」。这篇写 If-Range：ETag 或日期不匹配时改回整份 200，避免错段拼进播放器。
+---
+
+站内 **http-range-requests** 已讲 `Range` / `206`。**`If-Range`** 给分段加条件：只有资源**仍是你以为的那一版**才回部分内容，否则回整资源。
+
+## 写法
+
+```http
+GET /video.mp4 HTTP/1.1
+Range: bytes=1000000-
+If-Range: "33a64df5"
+```
+
+或：
+
+```http
+If-Range: Wed, 21 Oct 2026 07:28:00 GMT
+```
+
+| 条件 | 服务器行为 |
+|---|---|
+| `If-Range` 匹配当前 ETag/日期 | 按 `Range` 回 **206** |
+| 不匹配（资源已变） | **忽略 Range**，回 **200** 整份 |
+| 无 `Range` | `If-Range` 无意义，勿单独依赖 |
+
+与 `If-Match`（失败常 **412**）不同：`If-Range` 失败是「给你整份」，方便播放器/下载器换源重缓冲，而不是硬失败。
+
+## 边界
+
+- 值要么是 ETag，要么是 HTTP-date，不要混格式。  
+- 弱 ETag（`W/`）与 `If-Range` 的匹配规则以 RFC 9110 为准；缓存中间盒行为宜实测。  
+- 和站内 **412** / If-Match 文分工：写冲突用前置条件失败；读分段用 If-Range 降级整份。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| If-Range | 本文 |
+| Range / 206 | http-range-requests |
+| If-Match / 412 | http-if-match / http-precondition-failed |

@@ -689,6 +689,43 @@ export default function Snake() {
                 />
               </span>
             </span>
+            <span
+              title={
+                hud.len > 0
+                  ? `身长密度 ${Math.round((hud.score / hud.len) * 10) / 10} 分/格（满刻度按 40）`
+                  : "身长密度 —"
+              }
+            >
+              密度
+              <b>
+                {hud.len > 0 ? Math.round((hud.score / hud.len) * 10) / 10 : "—"}
+              </b>
+              <span
+                className="snake-density-bar"
+                data-hot={hud.len > 0 && hud.score / hud.len >= 30 || undefined}
+                data-low={hud.len >= 8 && hud.score / hud.len < 10 || undefined}
+                title={
+                  hud.len > 0
+                    ? `身长密度 ${Math.round((hud.score / hud.len) * 10) / 10} 分/格（满刻度按 40）`
+                    : "身长密度 —"
+                }
+                aria-label={
+                  hud.len > 0
+                    ? `每格约 ${Math.round((hud.score / hud.len) * 10) / 10} 分`
+                    : "身长密度未知"
+                }
+              >
+                <i
+                  style={{
+                    width: `${
+                      hud.len > 0
+                        ? Math.min(100, Math.round((hud.score / hud.len / 40) * 100))
+                        : 0
+                    }%`,
+                  }}
+                />
+              </span>
+            </span>
             </span>
             <span
               className={

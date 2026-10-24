@@ -1,0 +1,61 @@
+---
+title: React useOptimistic：乐观 UI 与回滚边界
+date: "2026-10-25"
+category: frontend
+summary: 点赞、改名、拖拽排序想先画上结果再等服务器。useOptimistic 在 Transition 里叠一层乐观态；失败时随 action 结束自动回到真实 props，别手写另一套 pending 缓存。
+---
+
+站内已有 **useTransition**、**useDeferredValue**、**useEffectEvent**。**`useOptimistic`** 专管「先显示预期结果，请求落地后再对齐真实数据」。
+
+## 最小用法
+
+```tsx
+"use client";
+import { useOptimistic, useTransition } from "react";
+
+function LikeButton({ likes, id }: { likes: number; id: string }) {
+  const [optimistic, addOptimistic] = useOptimistic(
+    likes,
+    (current, delta: number) => current + delta,
+  );
+  const [pending, startTransition] = useTransition();
+
+  return (
+    <button
+      disabled={pending}
+      onClick={() => {
+        startTransition(async () => {
+          addOptimistic(1);
+          await fetch(`/api/like/${id}`, { method: "POST" });
+          // 父级 revalidate / router.refresh 后 likes 更新，乐观层卸下
+        });
+      }}
+    >
+      {optimistic}
+    </button>
+  );
+}
+```
+
+- 第一个参数是 **权威值**（来自 props/server）。  
+- 第二个是 reducer：`(current, action) => nextOptimistic`。  
+- 在 **`startTransition` 的 action** 里调用 `addOptimistic`；action 结束后若权威值未变，UI 回到权威值。
+
+## 和手写 pending 状态
+
+自己 `useState` 一份「乐观 likes」再在 `catch` 里回滚，容易和父级 refresh、严格模式双调用打架。`useOptimistic` 把「叠层 / 卸层」绑在 Transition 生命周期上。
+
+## 边界
+
+- 必须配合 **Transition**（或 Server Action 表单的隐式 transition）；在普通事件里只调 `addOptimistic` 没有卸层时机。  
+- 乐观态是 **派生 UI**，不是新的真实来源；持久化仍以服务器为准。  
+- 列表删除/重排用 reducer 返回新数组时保持引用可预测，避免无关子树整表闪烁。  
+- 失败提示：在 action 里 `try/catch`，乐观层会回滚；另用 toast 说明即可。
+
+## 对照
+
+| API | 角色 |
+|---|---|
+| `useTransition` | 把更新标成非紧急 |
+| `useOptimistic` | 在过渡期内叠加预期 UI |
+| `useDeferredValue` | 推迟跟随时值，不做「先写后认」 |

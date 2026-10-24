@@ -744,6 +744,20 @@ export default function Tetris() {
             title={`连消|Hold：连消 ×${stats.combo}${stats.comboPeak > 1 ? ` · 峰 ${stats.comboPeak}` : ""} · B2B ${stats.b2b ? "就绪" : "—"} · Hold ${stats.canHold === false ? "冷却" : "可用"}${stats.hold ? `/${stats.hold}` : "/空"} · 距升级 ${stats.linesToLevel} · 预览 ${stats.next[0] ?? "—"} · 幽灵 ${stats.ghost} 格`}
           >
             连消<b className={stats.combo > 1 ? "game-tip--alert" : undefined}>×{stats.combo}</b>
+            <span
+              className="tetris-combo-now-bar"
+              data-hot={stats.combo >= 5 || undefined}
+              data-warm={stats.combo >= 2 && stats.combo < 5 || undefined}
+              title={`当前连消 ×${stats.combo}（满刻度按 8）`}
+              aria-label={`当前连消 ${stats.combo}`}
+            >
+              <i
+                className="tetris-combo-now-bar__fill"
+                style={{
+                  width: `${Math.min(100, Math.round((stats.combo / 8) * 100))}%`,
+                }}
+              />
+            </span>
             {stats.comboPeak > 1 ? (
               <small style={{ marginLeft: 4, opacity: 0.7 }} title={`本局连消峰值 ×${stats.comboPeak}`}>
                 峰{stats.comboPeak}

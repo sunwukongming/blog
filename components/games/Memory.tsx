@@ -485,6 +485,18 @@ export default function Memory() {
               }}
             />
           </span>
+          <span
+            className="memory-streak-now-bar"
+            data-hot={streak >= 5 || undefined}
+            data-warm={streak >= 2 && streak < 5 || undefined}
+            title={`当前连击 ×${streak}（满刻度按 5）`}
+            aria-label={`当前连击 ${streak}`}
+          >
+            <i
+              className="memory-streak-now-bar__fill"
+              style={{ width: `${Math.min(100, Math.round((streak / 5) * 100))}%` }}
+            />
+          </span>
         </span>
       </div>
       <p className={endgame || streak >= 2 ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">

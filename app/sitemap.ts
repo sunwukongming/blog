@@ -6,6 +6,7 @@ import { SITE_URL } from "@/lib/site";
 
 /** Post date is YYYY-MM-DD in Asia/Shanghai; expose a stable lastmod Instant. */
 /** Playable /games/* lastmod uses GAMES_UPDATED（lib/games.ts enrich calendar day, batch39 复核；batch42 与游戏列表 Twitter 对齐时再核；batch45 与 robots 双挂注释对齐；batch48 再核；batch58 与 categories ItemList inLanguage 对齐时再核）. */
+/** batch61: 再核 /games lastmod=GAMES_UPDATED；与 categories ItemList inLanguage 再核对齐. */
 const postDate = (d: string) => new Date(`${d}T12:00:00+08:00`);
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

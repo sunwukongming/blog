@@ -1,0 +1,58 @@
+---
+title: Kubernetes Job：ttlSecondsAfterFinished 与完成态清理
+date: "2026-10-25"
+category: cloud
+summary: backoffLimit 管失败重试；ttlSecondsAfterFinished 管成功/失败之后何时删掉 Job 对象与 Pod。讲清 TTL 控制器、和 CronJob history 的分工，避免集群堆满 Completed。
+---
+
+站内 **Job backoffLimit** 讲的是失败重试节奏。这篇只谈 **`ttlSecondsAfterFinished`**：Job **进入完成态之后** 多久被 TTL 控制器回收。
+
+## 字段语义
+
+```yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrate-once
+spec:
+  ttlSecondsAfterFinished: 300
+  backoffLimit: 1
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: migrate:1.2
+```
+
+- Job 的 `.status.completionTime`（或失败终态）写定后，计时开始。  
+- 到期后控制器删除 **Job**，级联删其 Pod（取决于 `ttl` 与级联策略）。  
+- **与 backoff 无关**：TTL 不决定要不要重试，只决定「已经结束的壳子留多久」。
+
+## 为什么要设
+
+不设 TTL 时，Completed/Failed Job 会一直占 etcd 与 `kubectl get jobs` 视野；CI 批量创建尤其明显。短 TTL（如 60–600s）够留日志拉取窗口，又避免堆积。
+
+## 和 CronJob history
+
+| 机制 | 管什么 |
+|---|---|
+| `ttlSecondsAfterFinished` | 单个 Job 完成后的对象 GC |
+| `successfulJobsHistoryLimit` / `failedJobsHistoryLimit` | CronJob 保留多少历史 Job |
+
+CronJob 先按 history limit 留/删子 Job；子 Job 上再挂 TTL 可做第二道清理。只开一边也可能够用，两边一起时先搞清谁先删。
+
+## 边界
+
+- 需要 **事后 `kubectl logs`** 时，TTL 勿短于日志采集窗口；或先把日志打到集中存储。  
+- `ttlSecondsAfterFinished: 0` 表示完成后尽快删（仍异步）。  
+- 正在跑的 Job **不受** TTL 影响；只看完成态。  
+- 删除 Job 会带走 Pod；若有未挂卷的调试文件，先别依赖集群磁盘残留。
+
+## 对照
+
+| 字段 | 角色 |
+|---|---|
+| `backoffLimit` | 失败还能重建多少次 |
+| `activeDeadlineSeconds` | 整段 Job 最多跑多久 |
+| `ttlSecondsAfterFinished` | 结束后多久删对象 |

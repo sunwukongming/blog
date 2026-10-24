@@ -2811,3 +2811,76 @@ html:has(.page--game) { overscroll-behavior: none; }
 .pk-board-bar[data-river] > i {
   background: linear-gradient(90deg, #34d399, #10b981);
 }
+
+/* batch61: memory-streak-now-bar / mine-openable-now-bar / tetris-combo-now-bar */
+.memory-streak-now-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.memory-streak-now-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #c4b5fd, #8b5cf6);
+  transition: width 100ms ease-out;
+}
+.memory-streak-now-bar[data-warm] .memory-streak-now-bar__fill {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+.memory-streak-now-bar[data-hot] .memory-streak-now-bar__fill {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+}
+
+.mine-openable-now-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.mine-openable-now-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #93c5fd, #3b82f6);
+  transition: width 100ms ease-out;
+}
+.mine-openable-now-bar[data-ready] .mine-openable-now-bar__fill {
+  background: linear-gradient(90deg, #86efac, #22c55e);
+}
+.mine-openable-now-bar[data-many] .mine-openable-now-bar__fill {
+  background: linear-gradient(90deg, #67e8f9, #06b6d4);
+}
+
+.tetris-combo-now-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.tetris-combo-now-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #c4b5fd, #a78bfa);
+  transition: width 100ms ease-out;
+}
+.tetris-combo-now-bar[data-warm] .tetris-combo-now-bar__fill {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+.tetris-combo-now-bar[data-hot] .tetris-combo-now-bar__fill {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+}

@@ -1,0 +1,51 @@
+---
+title: Go testing：TempDir 与测试隔离的最小约定
+date: "2026-10-25"
+category: backend
+summary: t.TempDir() 给每个测试一块自动清理的沙箱目录。和手工 os.MkdirTemp + Cleanup 比，少踩共享 /tmp 与并行测互踩；别和业务「工作目录」语义搅在一起。
+---
+
+站内已有 **Cleanup**、**Parallel**。这篇只谈 **`t.TempDir()`**：测试专属临时目录，结束时由 testing 框架删掉。
+
+## 基本形
+
+```go
+func TestWriteManifest(t *testing.T) {
+    dir := t.TempDir()
+    path := filepath.Join(dir, "app.json")
+    if err := os.WriteFile(path, []byte(`{"ok":true}`), 0o644); err != nil {
+        t.Fatal(err)
+    }
+    // 只读回 dir 里的文件；不要 chdir 到全局状态
+}
+```
+
+每个调用返回 **新目录**；子测试各自 `TempDir()` 互不覆盖。并行测（`t.Parallel()`）尤其依赖这层隔离。
+
+## 和 MkdirTemp + Cleanup
+
+```go
+dir, err := os.MkdirTemp("", "mytest-*")
+if err != nil {
+    t.Fatal(err)
+}
+t.Cleanup(func() { _ = os.RemoveAll(dir) })
+```
+
+能用，但要自己保证：失败路径也注册 Cleanup、别把前缀写死成会冲突的名字、别假设进程退出才删。`TempDir` 把这些收进标准库。
+
+## 边界
+
+- **不要** `os.Chdir(t.TempDir())` 除非立刻配对恢复——会污染同进程其它并行测。  
+- 需要「固定相对路径」时，在 TempDir 内再 `mkdir` 子树，断言仍用绝对路径。  
+- 超大产物或需跨测复用的夹具，不走 TempDir；用 testdata 或显式缓存目录。  
+- Windows 上偶发删除失败（文件仍被句柄占用）时，先关文件再结束测试；框架会尽力清理。
+
+## 和 Cleanup 分工
+
+| API | 角色 |
+|---|---|
+| `t.TempDir()` | 目录沙箱 + 自动删 |
+| `t.Cleanup` | 端口、goroutine、mock 时钟等任意逆序回收 |
+
+先 TempDir 拿路径，再在同作用域 `Cleanup` 关资源，比 defer 散落在 helper 更稳。

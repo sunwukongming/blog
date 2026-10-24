@@ -600,6 +600,20 @@ export default function Minesweeper() {
               }}
             />
           </span>
+          <span
+            className="mine-openable-now-bar"
+            data-ready={chordOpenable > 0 || undefined}
+            data-many={chordOpenable >= 5 || undefined}
+            title={`可翻格 ${chordOpenable}（满刻度按 8）`}
+            aria-label={`可翻 ${chordOpenable} 格`}
+          >
+            <i
+              className="mine-openable-now-bar__fill"
+              style={{
+                width: `${Math.min(100, Math.round((chordOpenable / 8) * 100))}%`,
+              }}
+            />
+          </span>
           {best != null && phase === "playing" && best > 0 ? (
             <>
               <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>

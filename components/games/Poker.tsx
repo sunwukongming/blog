@@ -226,8 +226,8 @@ export default function Poker() {
         <span
           className={
             blindFlash
-              ? "pk-blinds pk-blinds--flash pk-blinds-odds pk-blinds-stack"
-              : "pk-blinds pk-blinds-odds pk-blinds-stack"
+              ? "pk-blinds pk-blinds--flash pk-blinds-odds pk-blinds-stack pk-blind-progress-host"
+              : "pk-blinds pk-blinds-odds pk-blinds-stack pk-blind-progress-host"
           }
           data-flash={blindFlash ? "" : undefined}
           data-odds={myTurn && rules && !rules.canCheck && rules.toCall > 0 && pot > 0 ? "" : undefined}
@@ -294,6 +294,31 @@ export default function Poker() {
               </span>
             </>
           )}
+          {started && !gameOver && !victory && (
+            <>
+              <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
+              <span
+                className="pk-blind-progress"
+                data-near={Math.max(0, nextBlindHand - table.hand) <= 2 || undefined}
+                title={`距涨盲 ${Math.max(0, nextBlindHand - table.hand)} 手（每 ${BLIND_EVERY} 手翻倍）· 本段进度 ${Math.min(100, Math.round((((table.hand - 1) % BLIND_EVERY) + 1) / BLIND_EVERY * 100))}%`}
+              >
+                涨盲
+                <b className={Math.max(0, nextBlindHand - table.hand) <= 2 ? "game-tip--alert" : undefined}>
+                  {Math.max(0, nextBlindHand - table.hand)}
+                </b>
+                <small style={{ marginLeft: 2, opacity: 0.7 }}>手</small>
+                <span
+                  className="pk-blind-progress__bar"
+                  aria-hidden="true"
+                  style={
+                    {
+                      ["--pk-blind-pct" as string]: `${Math.min(100, Math.round((((table.hand - 1) % BLIND_EVERY) + 1) / BLIND_EVERY * 100))}%`,
+                    } as { [key: string]: string }
+                  }
+                />
+              </span>
+            </>
+          )}
         </span>
         {started && !gameOver && !victory && (
           <span
@@ -348,6 +373,7 @@ export default function Poker() {
           {me && !me.out && table.bb > 0
             ? ` · 你约 ${Math.max(0, Math.round((me.chips / table.bb) * 10) / 10)} BB`
             : ""}
+          {` · 涨盲进度 ${Math.min(100, Math.round((((table.hand - 1) % BLIND_EVERY) + 1) / BLIND_EVERY * 100))}%`}
           {table.players.some((pl) => pl.allIn && !pl.out)
             ? " · 有人全下：主池/边池分拆，摊牌按资格分结"
             : " · 全下后主池+边池分结"}

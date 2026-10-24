@@ -1,0 +1,48 @@
+---
+title: Kubernetes Job：backoffLimit 与重启节奏
+date: "2026-10-25"
+category: cloud
+summary: Job 失败会按 backoffLimit 重试，默认有指数退避。讲清 activeDeadlineSeconds、ttlSecondsAfterFinished 与 CronJob 并发策略，避免重试打爆下游。
+---
+
+`batch/v1 Job` 跑完即止，但失败时控制器会按 **`backoffLimit`**（默认 6）重建 Pod。重试不是立即打满，而是带退避；仍可能在错误配置下把下游打穿。
+
+## 核心字段
+
+```yaml
+apiVersion: batch/v1
+kind: Job
+spec:
+  backoffLimit: 2
+  activeDeadlineSeconds: 600
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      restartPolicy: Never  # 或 OnFailure
+      containers:
+        - name: migrate
+          image: migrate:1.2
+```
+
+| 字段 | 作用 |
+|---|---|
+| `backoffLimit` | 失败重试次数上限（与 Pod 失败计数相关） |
+| `activeDeadlineSeconds` | 整 Job 存活墙钟上限，超时标失败 |
+| `ttlSecondsAfterFinished` | 成功/失败后自动回收 Job 对象 |
+| `restartPolicy` | `Never`：每次失败新 Pod；`OnFailure`：容器级重启 |
+
+## 和 CronJob
+
+- `concurrencyPolicy`: `Forbid` / `Replace` / `Allow`——别让上一次迁移还在跑又起一轮。  
+- `startingDeadlineSeconds`：错过窗口是否还补跑。  
+- 历史：`successfulJobsHistoryLimit` / `failedJobsHistoryLimit` 避免 etcd 堆 Job。
+
+## 实践清单
+
+1. **幂等**：Job 体重试是常态；脚本必须可重复执行。  
+2. **限并发 + 限次**：`backoffLimit` 宜小；下游有配额时再加客户端限流。  
+3. **Deadline**：无 `activeDeadlineSeconds` 的挂死 Job 会占节点。  
+4. **观察**：看 Job 的 `Failed` 条件与 Pod 事件，不要只看 Cron 是否创建成功。  
+5. **sidecar/链路**：一次性任务里的遥测要能跟 `job-name` / `job-completion` 关联。
+
+把重试当一等设计，而不是「失败了再手动点」。和站内 Topology Spread、Sidecar 文一起，构成工作负载侧的完整旋钮表。

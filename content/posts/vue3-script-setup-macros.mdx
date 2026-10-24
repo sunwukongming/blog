@@ -1,0 +1,52 @@
+---
+title: Vue 3 script setup 宏：defineProps / defineEmits / defineModel
+date: "2026-10-25"
+category: frontend
+summary: 宏在编译期擦除，不必 import。理清 props 默认值、emit 类型、defineModel 双向与纯 props+emit 的取舍，以及和 TS 的常见坑。
+---
+
+`<script setup>` 里的 `defineProps`、`defineEmits`、`defineExpose`、`defineModel`、`defineOptions` 是 **编译器宏**：不导入、运行时不存在，类型却能留在 TS 里。
+
+## 常见写法
+
+```vue
+<script setup lang="ts">
+const props = withDefaults(
+  defineProps<{ size?: "sm" | "md"; label: string }>(),
+  { size: "md" },
+);
+
+const emit = defineEmits<{
+  save: [id: string];
+  cancel: [];
+}>();
+
+const model = defineModel<string>({ required: true });
+</script>
+```
+
+- **`withDefaults`**：类型版默认值；运行时版也可用 `defineProps({ size: { default: "md" } })`。  
+- **`defineModel`**：等价于 `modelValue` + `update:modelValue`（可改名），减少样板。  
+- **`defineExpose`**：父级 `ref` 能碰到的显式表面，默认不暴露。
+
+## 和站内相关文
+
+- 双向更重时看 `vue3-define-model`。  
+- 类型治理看 `vue3-typescript-governance`。  
+- 宏解决的是 **组件边界样板**，不是状态架构。
+
+## 坑
+
+| 坑 | 说明 |
+|---|---|
+| 对宏 `import` | 多余且可能误导；eslint 可禁 |
+| 解构 `props` 丢响应性 | 用 `toRefs` 或始终 `props.x` |
+| `defineModel` 滥用 | 深层双向难追；能单向就单向 |
+| 宏放进非 setup 块 | 无效 |
+
+## 何时用 defineModel
+
+- 输入框、开关、标签编辑：局部双向清晰。  
+- 跨多层：优先 provide/inject 或显式事件链，避免「隐形 v-model 隧道」。
+
+宏是语法糖，契约仍是 props/emits。先画数据方向，再选宏。

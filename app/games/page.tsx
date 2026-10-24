@@ -15,6 +15,7 @@ export const metadata: Metadata = {
     siteName: SITE.name,
     locale: "zh_CN",
     url: SITE_URL ? `${SITE_URL}/games` : undefined,
+    images: SITE_URL ? [{ url: `${SITE_URL}/icon.svg`, alt: `${SITE.name} 游戏` }] : undefined,
   },
   alternates: SITE_URL ? { canonical: "/games" } : undefined,
   twitter: {

@@ -1,0 +1,66 @@
+---
+title: Go slog 属性助手：少写重复的 String/Int64
+date: "2026-10-25"
+category: backend
+summary: 给业务字段做薄封装（UserID、TraceID、Err），让 slog 调用点短、类型稳、敏感字段可统一脱敏。对比直接 Attr 与 Group。
+---
+
+`log/slog` 的 `String`、`Int64`、`Any` 已经够用，但同一字段名在几十处手写容易漂移。一层 **Attr 助手** 把名字、类型和脱敏收口。
+
+## 薄封装
+
+```go
+package logx
+
+import "log/slog"
+
+func UserID(id string) slog.Attr { return slog.String("user_id", id) }
+func TraceID(id string) slog.Attr { return slog.String("trace_id", id) }
+
+func Err(err error) slog.Attr {
+    if err == nil {
+        return slog.Attr{}
+    }
+    return slog.String("err", err.Error())
+}
+
+func Email(raw string) slog.Attr {
+    // 统一打码，避免调用方忘记
+    return slog.String("email", maskEmail(raw))
+}
+```
+
+调用：
+
+```go
+slog.Info("checkout", logx.UserID(uid), logx.Err(err), logx.Email(mail))
+```
+
+空 `slog.Attr{}` 会被忽略，适合可选字段。
+
+## Group 与稳定前缀
+
+```go
+func HTTP(method, path string, status int) slog.Attr {
+    return slog.Group("http",
+        slog.String("method", method),
+        slog.String("path", path),
+        slog.Int("status", status),
+    )
+}
+```
+
+检索时用 `http.status` 一类路径；和站内 `go-slog-handler-pipeline`、`go-slog-structured-logging` 配套：Handler 管输出，助手管 **字段契约**。
+
+## 原则
+
+1. **名字冻结**：助手里的 key 即契约，改名要当 breaking change。  
+2. **别包业务逻辑**：助手只做类型/脱敏，不做 I/O。  
+3. **高基数小心**：`request_id` 可以；`body` 全文不要进 Attr。  
+4. **测试**：对脱敏函数单测；对关键路径用 `slog.NewJSONHandler` + buffer 断言字段存在。
+
+## 何时不必
+
+三五个调用点、字段极少——直接 `slog.String` 更清晰。助手在 **多服务共享字段字典** 或 **合规脱敏** 时才赚回复杂度。
+
+先定字段表，再写助手；不要为每个临时 debug 字段都建函数。

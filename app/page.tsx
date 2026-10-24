@@ -33,8 +33,16 @@ export default async function Home() {
     description: SITE.description,
     url: SITE_URL ?? undefined,
     author: { "@type": "Person", name: SITE.author },
-    publisher: { "@type": "Person", name: SITE.author },
+    publisher: { "@type": "Organization", name: SITE.name },
     inLanguage: "zh-CN",
+    sameAs: PROFILE.links.map((l) => l.href).filter((h) => h.startsWith("http")),
+    hasPart: SITE_URL
+      ? [
+          { "@type": "CollectionPage", name: "文章", url: `${SITE_URL}/blog` },
+          { "@type": "CollectionPage", name: "游戏", url: `${SITE_URL}/games` },
+          { "@type": "CollectionPage", name: "归档", url: `${SITE_URL}/archive` },
+        ]
+      : undefined,
     potentialAction: SITE_URL
       ? {
           "@type": "SearchAction",

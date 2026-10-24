@@ -9,6 +9,7 @@ export default function manifest(): MetadataRoute.Manifest {
     start_url: "/",
     display: "standalone",
     background_color: "#0a0c10",
+    // batch44 theme: 与站点深色壳 #0a0c10 一致（background_color + theme_color）
     theme_color: "#0a0c10",
     icons: [
       { src: "/icon.svg", sizes: "any", type: "image/svg+xml" },

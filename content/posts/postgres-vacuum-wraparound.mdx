@@ -1,0 +1,48 @@
+---
+title: Postgres XID Wraparound：VACUUM 不只是清膨胀
+date: "2026-10-25"
+category: backend
+summary: 与膨胀/清理专文区分：事务 ID 回卷强制 freeze。讲清 age(datfrozenxid)、autovacuum_freeze、手动 vacuum freeze 与只读灾难信号。
+---
+
+表膨胀专文关心「死元组占空间」；**wraparound** 关心「事务 ID 用到头」。Postgres 用 32-bit XID，必须 freeze 旧行，否则为防数据错乱会触发 **强制反回卷**——库可能进紧急模式甚至拒写。
+
+## 信号
+
+```sql
+SELECT datname, age(datfrozenxid) AS xid_age
+FROM pg_database
+ORDER BY 2 DESC;
+
+SELECT c.relname, age(c.relfrozenxid) AS xid_age
+FROM pg_class c
+JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE c.relkind = 'r'
+ORDER BY 2 DESC
+LIMIT 20;
+```
+
+`age` 逼近 `autovacuum_freeze_max_age`（常见约 2 亿）时，autovacuum 会更激进；再高则风险飙升。
+
+## 和「普通 VACUUM」差别
+
+| | 日常 VACUUM | Freeze / wraparound |
+| --- | --- | --- |
+| 目标 | 可复用空间、可见性图 | 推进 `relfrozenxid` |
+| 触发 | 死元组比例 | XID 年龄 |
+| 失败代价 | 变慢、膨胀 | **拒写 / 停库风险** |
+
+`VACUUM (FREEZE)` / 足够激进的 autovacuum worker 才推进冻结线；只跑分析或轻量 vacuum 不够。
+
+## 实操
+
+- 监控库级与大表 `age(relfrozenxid)`，进告警板。
+- 长期不改的大表也要能被 freeze（避免永久空闲表拖后腿）。
+- 紧急：维护窗 `VACUUM (FREEZE, VERBOSE)` 热点表；查清是否有 idle in transaction 钉住 xmin。
+- 调参前读清 `vacuum_freeze_min_age` / `autovacuum_freeze_max_age`，勿只会抬阈值。
+
+## 小结
+
+- Wraparound ≠ 膨胀：一个保正确性，一个保空间。
+- 看 `age(*frozenxid)`，别只看表大小。
+- 长事务与「从不 vacuum 的大表」是经典元凶。

@@ -43,6 +43,7 @@ async function buildFeed(base: string) {
     <managingEditor>${escape(SITE.author)} (GM Lab)</managingEditor>
     <webMaster>${escape(SITE.author)} (GM Lab)</webMaster>
     <generator>GM Lab</generator>
+    <!-- batch44: generator / managingEditor / webMaster 与 SITE.author 对齐；勿改成框架默认名 -->
     <docs>https://www.rssboard.org/rss-specification</docs>
     <ttl>60</ttl>
     <copyright>© ${escape(SITE.author)} · ${escape(SITE.name)}</copyright>

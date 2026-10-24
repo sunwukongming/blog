@@ -544,6 +544,19 @@ export default function Snake() {
               }
             >
               速度<b className={hud.speedTier === "极速" || hud.speedTier === "很快" ? "game-tip--alert" : undefined}>{hud.speedTier}</b>
+              <span
+                className="snake-speed-gauge"
+                data-fast={hud.speedTier === "极速" || hud.speedTier === "很快" || undefined}
+                data-tier={hud.speedTier}
+                title={`步进 ${hud.speedMs}ms · 档 ${hud.speedTier}${hud.nextSpeed ? ` · ${hud.nextSpeed}` : " · 已达极速"}`}
+                aria-label={`速度档 ${hud.speedTier} ${hud.speedMs} 毫秒`}
+              >
+                <i
+                  style={{
+                    width: `${Math.min(100, Math.max(0, Math.round(((150 - hud.speedMs) / (150 - 65)) * 100)))}%`,
+                  }}
+                />
+              </span>
               {hud.goldLeft != null && (
                 <>
                   <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
@@ -649,6 +662,19 @@ export default function Snake() {
               }
             >
               速度<b className={hud.speedTier === "极速" || hud.speedTier === "很快" ? "game-tip--alert" : undefined}>{hud.speedTier}</b>
+              <span
+                className="snake-speed-gauge"
+                data-fast={hud.speedTier === "极速" || hud.speedTier === "很快" || undefined}
+                data-tier={hud.speedTier}
+                title={`步进 ${hud.speedMs}ms · 档 ${hud.speedTier}${hud.nextSpeed ? ` · ${hud.nextSpeed}` : " · 已达极速"}`}
+                aria-label={`速度档 ${hud.speedTier} ${hud.speedMs} 毫秒`}
+              >
+                <i
+                  style={{
+                    width: `${Math.min(100, Math.max(0, Math.round(((150 - hud.speedMs) / (150 - 65)) * 100)))}%`,
+                  }}
+                />
+              </span>
               {hud.goldLeft != null && (
                 <>
                   <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>

@@ -536,7 +536,16 @@ const [phase, setPhase] = useState<Phase>("select");
             </span>
             <span title="多球与残命同屏（掉球扣一命；多球道具可叠加）">
               生命<b className={hud.lives <= 1 ? "game-tip--alert" : undefined}>{"♥".repeat(Math.max(0, hud.lives)) || "0"}</b>
-              <small style={{ marginLeft: 4, opacity: 0.7 }}>/3</small>
+              <small style={{ marginLeft: 4, opacity: 0.7 }}>/5</small>
+              <span
+                className="breakout-lives-bar"
+                data-low={hud.lives <= 1 || undefined}
+                data-mid={hud.lives === 2 || undefined}
+                title={`生命 ${hud.lives}/5（道具可回血至上限）`}
+                aria-label={`生命 ${hud.lives} 之 5`}
+              >
+                <i style={{ width: `${Math.min(100, Math.round((hud.lives / 5) * 100))}%` }} />
+              </span>
               <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
               球<b className={hud.balls > 1 ? "game-tip--alert" : undefined}>{hud.balls}</b>
               {hud.balls > 1 ? <small style={{ marginLeft: 4, opacity: 0.85 }}>多球</small> : null}

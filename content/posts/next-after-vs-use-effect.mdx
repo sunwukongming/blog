@@ -1,0 +1,54 @@
+---
+title: Next.js after() vs useEffect：服务端收尾对客户端副作用
+date: "2026-10-25"
+category: frontend
+summary: 与 after() 专文互补：对比「响后继续」的服务端 after 与浏览器 useEffect。讲清日志/通知放哪、不能把 after 当客户端生命周期。
+---
+
+`after()`（Next 服务端）让你在 **响应发送之后** 再跑一段服务端工作；`useEffect` 在 **浏览器提交 UI 之后** 跑。名字都像「之后」，边界完全不同。
+
+## 对照
+
+| | `after(fn)` | `useEffect(fn, deps)` |
+| --- | --- | --- |
+| 运行环境 | 服务器（请求上下文） | 浏览器 |
+| 时机 | 响应流结束/发出后 | 布局与绘制后的客户端 |
+| 典型 | 日志、分析、队列投递 | 订阅、DOM、客户端 fetch |
+| 失败 | 用户已拿到响应 | 可能影响交互 |
+
+```ts
+// Server Action / Route Handler
+import { after } from "next/server";
+
+export async function POST() {
+  const result = await save();
+  after(() => { void notify(result.id); }); // 不挡响应
+  return Response.json(result);
+}
+```
+
+```ts
+// Client Component
+useEffect(() => {
+  const es = new EventSource("/api/stream");
+  return () => es.close();
+}, []);
+```
+
+## 别混用的坑
+
+- 把「发邮件」塞进 `useEffect`：慢、可被挡、依赖用户开着页。
+- 在 `after` 里碰 `window` / React state：没有浏览器。
+- 用 `after` 代替事务：响已成功但 after 失败 → 要幂等与对账，不是回滚响应。
+
+## 怎么选
+
+- 与 **本次请求** 相关、可异步、服务端有凭证 → `after`。
+- 与 **组件挂载/可见性** 相关 → `useEffect`（或更现代的订阅库）。
+- 需要保证投递 → 队列 + worker，`after` 只负责 enqueue。
+
+## 小结
+
+- `after` = 服务端响后收尾；`useEffect` = 客户端生命周期。
+- 专文讲 API，本文钉对比与错放场景。
+- 关键路径勿只靠 after；要可重试的外设。

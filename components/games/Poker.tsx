@@ -352,6 +352,33 @@ export default function Poker() {
                 </b>
               </small>
             ) : null}
+            {myTurn && rules && !rules.canCheck && rules.toCall > 0 && table.bb > 0 ? (
+              <small
+                className="pk-pot-tocall-bb"
+                title={`跟注 ${rules.toCall} ≈ ${Math.max(0, Math.round((rules.toCall / table.bb) * 10) / 10)} BB`}
+              >
+                {" "}· 跟{Math.max(0, Math.round((rules.toCall / table.bb) * 10) / 10)}BB
+              </small>
+            ) : null}
+            {myTurn && rules && !rules.canCheck && rules.toCall > 0 && pot > 0 ? (
+              <span
+                className="pk-pot-odds-bar"
+                data-cheap={Math.round((rules.toCall / (pot + rules.toCall)) * 100) <= 25 || undefined}
+                data-mid={
+                  Math.round((rules.toCall / (pot + rules.toCall)) * 100) > 25 &&
+                  Math.round((rules.toCall / (pot + rules.toCall)) * 100) <= 40 || undefined
+                }
+                data-rich={Math.round((rules.toCall / (pot + rules.toCall)) * 100) > 40 || undefined}
+                title={`需胜率 ${Math.min(99, Math.round((rules.toCall / (pot + rules.toCall)) * 100))}%`}
+                aria-label={`需胜率 ${Math.min(99, Math.round((rules.toCall / (pot + rules.toCall)) * 100))} percent`}
+              >
+                <i
+                  style={{
+                    width: `${Math.min(100, Math.round((rules.toCall / (pot + rules.toCall)) * 100))}%`,
+                  }}
+                />
+              </span>
+            ) : null}
             {result && result.pots.length > 1 ? (
               <>
                 <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>

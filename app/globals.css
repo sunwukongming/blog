@@ -1541,3 +1541,79 @@ html:has(.page--game) { overscroll-behavior: none; }
 .tetris-ghost-tier[data-land] .tetris-ghost-bar > i {
   background: linear-gradient(90deg, #fbbf24, #ef4444);
 }
+
+/* batch44: snake-speed-gauge */
+.snake-speed-gauge {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.snake-speed-gauge > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #67e8f9, #34d399);
+  transition: width 120ms ease-out;
+}
+.snake-speed-gauge[data-fast] > i {
+  background: linear-gradient(90deg, #fbbf24, #f87171);
+}
+
+/* batch44: breakout lives bar */
+.breakout-lives-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 44px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.breakout-lives-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #fb7185, #f43f5e);
+  transition: width 120ms ease-out;
+}
+.breakout-lives-bar[data-mid] > i {
+  background: linear-gradient(90deg, #fbbf24, #fb7185);
+}
+.breakout-lives-bar[data-low] > i {
+  background: linear-gradient(90deg, #ef4444, #7f1d1d);
+}
+
+/* batch44: poker pot odds bar + tocall bb */
+.pk-pot-tocall-bb {
+  opacity: 0.88;
+  font-variant-numeric: tabular-nums;
+}
+.pk-pot-odds-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.pk-pot-odds-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #34d399, #60a5fa);
+  transition: width 100ms ease-out;
+}
+.pk-pot-odds-bar[data-mid] > i {
+  background: linear-gradient(90deg, #fbbf24, #60a5fa);
+}
+.pk-pot-odds-bar[data-rich] > i {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+}

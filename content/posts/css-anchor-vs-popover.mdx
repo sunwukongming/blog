@@ -1,0 +1,42 @@
+---
+title: CSS Anchor vs Popover API：定位锚点与顶层弹层
+date: "2026-10-25"
+category: frontend
+summary: 与 Anchor Positioning 专文区分：Popover 管顶层显示/灯暗模式，Anchor 管相对谁定位。可组合，但职责不同。
+---
+
+`position-anchor` / `anchor()` 解决「贴着某个元素算坐标」；**Popover API**（`popover`、`showPopover`）解决「进顶层、逃逸 stacking、灯暗背景」。菜单常两者一起用，却不是同一特性。
+
+## 分工
+
+| | Anchor Positioning | Popover |
+| --- | --- | --- |
+| 问题 | 相对锚点放置 | 显示模型 / 顶层 |
+| 关键 API | `anchor-name`、`position-anchor` | `popover="auto|manual"` |
+| 有无 JS | 可纯 CSS | 常配一点点 JS 或 invoker |
+
+```html
+<button popovertarget="menu">菜单</button>
+<div id="menu" popover anchor="btn">
+  …
+</div>
+```
+
+（具体属性名随浏览器演进，以 MDN 为准；要点是 **popover 管层，anchor 管点**。）
+
+## 何时只用不只一个
+
+- 只要工具提示贴图标 → Anchor（或旧 absolute）即可。
+- 要模态感、点外侧关闭、顶层不被 `overflow:hidden` 裁切 → Popover。
+- 下拉菜单 → Popover + Anchor 是现代默认组合。
+
+## 与旧方案
+
+- `position: fixed` + 手算 getBoundingClientRect：被 Popover+Anchor 取代大半。
+- 自建 modal div + z-index 战争：优先原生 `popover` / `<dialog>`。
+
+## 小结
+
+- Anchor ≠ Popover：定位 vs 顶层生命周期。
+- 专文讲 Anchor 语法，本文钉边界与组合。
+- 落地前核对接目标浏览器支持矩阵。

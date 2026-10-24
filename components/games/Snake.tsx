@@ -506,8 +506,14 @@ export default function Snake() {
             <span>
               时间<b>{hud.seconds}s</b>
             </span>
-            <span title={hud.nextSpeed ? `步进 ${hud.speedMs}ms · ${hud.nextSpeed}` : `步进 ${hud.speedMs}ms · 已达极速`}>
-              速度<b>{hud.speedTier}</b>
+            <span title={hud.goldLeft != null ? `速度档 ${hud.speedTier} · 金食 ${hud.goldLeft.toFixed(1)}s（一个顶三个）` : hud.nextSpeed ? `步进 ${hud.speedMs}ms · ${hud.nextSpeed}` : `步进 ${hud.speedMs}ms · 已达极速`}>
+              速度<b className={hud.speedTier === "极速" || hud.speedTier === "很快" ? "game-tip--alert" : undefined}>{hud.speedTier}</b>
+              {hud.goldLeft != null && (
+                <>
+                  <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
+                  金食<b className={hud.goldLeft <= 2 ? "game-tip--alert" : undefined}>{hud.goldLeft.toFixed(1)}s</b>
+                </>
+              )}
             </span>
             {hud.wrap && (
               <span
@@ -527,19 +533,20 @@ export default function Snake() {
             <span>
               最高<b>{best ?? 0}</b>
             </span>
-            <span title={hud.nextSpeed ? `步进 ${hud.speedMs}ms · ${hud.nextSpeed}` : `步进 ${hud.speedMs}ms · 已达极速`}>
-              速度<b>{hud.speedTier}</b>
+            <span
+              className={hud.goldLeft != null ? "snake-gold-timer" : undefined}
+              data-urgent={(hud.goldLeft != null && hud.goldLeft <= 2) || undefined}
+              title={hud.goldLeft != null ? `速度档 ${hud.speedTier} · 金食 ${hud.goldLeft.toFixed(1)}s（一个顶三个）` : hud.nextSpeed ? `步进 ${hud.speedMs}ms · ${hud.nextSpeed}` : `步进 ${hud.speedMs}ms · 已达极速`}
+            >
+              速度<b className={hud.speedTier === "极速" || hud.speedTier === "很快" ? "game-tip--alert" : undefined}>{hud.speedTier}</b>
+              {hud.goldLeft != null && (
+                <>
+                  <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
+                  金食<b className={hud.goldLeft <= 2 ? "game-tip--alert" : undefined}>{hud.goldLeft.toFixed(1)}s</b>
+                </>
+              )}
             </span>
           </>
-        )}
-        {hud.goldLeft != null && (phase === "running" || phase === "paused") && (
-          <span
-            className="snake-gold-timer"
-            data-urgent={hud.goldLeft <= 2 || undefined}
-            title={hud.wrap ? "金食+穿墙同屏：金色剩余（一个顶三个）" : "金色食物剩余时间（一个顶三个）"}
-          >
-            金色<b className={hud.goldLeft <= 2 ? "game-tip--alert" : undefined}>{hud.goldLeft.toFixed(1)}s</b>
-          </span>
         )}
         <span className="spacer" />
         {(phase === "running" || phase === "paused") && (

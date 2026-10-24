@@ -1,0 +1,44 @@
+---
+title: Go slog Handler 流水线：挂钩、过滤与输出形状
+date: "2026-10-24"
+category: backend
+summary: 结构化日志入门之外，用 Handler 中间层做字段注入、按级别丢弃与格式切换；自定义 Handler 要遵守 Enabled/Handle/WithAttrs 契约。
+---
+
+`log/slog` 的记录路径是 **Logger → Handler**。业务文打字段；横切诉求（trace id、脱敏、采样）放在 Handler 链，而不是每个 `Info` 复制。
+
+## 管道思维
+
+```text
+Logger.Info
+  → middleware Handler（补 attrs / 改级别）
+    → JSON/Text Handler（写 stdout 或采集端）
+```
+
+`slog.New(h)` 只认一个根 Handler；要多层就自己包：
+
+```go
+type Hook struct{ next slog.Handler }
+func (h Hook) Enabled(ctx context.Context, l slog.Level) bool {
+  return h.next.Enabled(ctx, l)
+}
+func (h Hook) Handle(ctx context.Context, r slog.Record) error {
+  r.AddAttrs(slog.String("service", "api"))
+  return h.next.Handle(ctx, r)
+}
+func (h Hook) WithAttrs(a []slog.Attr) slog.Handler {
+  return Hook{next: h.next.WithAttrs(a)}
+}
+func (h Hook) WithGroup(name string) slog.Handler {
+  return Hook{next: h.next.WithGroup(name)}
+}
+```
+
+## 实践
+
+1. **Enabled** 里做采样/级别门闸，避免无用 `Handle` 分配。  
+2. `WithAttrs` / `WithGroup` 必须返回新包装，保持不可变语义。  
+3. 与上下文：从 `ctx` 取 trace id 在 `Handle` 注入；别把 ctx 塞进全局 Logger。  
+4. 测试用 `slog.NewJSONHandler(&buf, nil)` 断言关键字段。
+
+和「slog 结构化入门」互补：那边讲 API 与级别；这里讲 **Handler 如何叠**.

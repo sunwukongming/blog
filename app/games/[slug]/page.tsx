@@ -19,6 +19,7 @@ export async function generateMetadata({ params }: PageProps<"/games/[slug]">): 
   return {
     title: game.title,
     description,
+    alternates: url ? { canonical: url } : undefined,
     openGraph: { title, description, type: "website", siteName: SITE.name, url },
     twitter: { card: "summary", title, description },
   };
@@ -38,8 +39,26 @@ async function GameBody({ params }: { params: Promise<{ slug: string }> }) {
   const game = getPlayable((await params).slug);
   if (!game) notFound();
 
+  const pageUrl = SITE_URL ? `${SITE_URL}/games/${game.slug}` : `/games/${game.slug}`;
+  const gameLd = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: game.title,
+    description: game.summary,
+    url: pageUrl,
+    applicationCategory: "GameApplication",
+    operatingSystem: "Any",
+    inLanguage: "zh-CN",
+    isPartOf: SITE_URL ? { "@type": "WebSite", name: SITE.name, url: SITE_URL } : undefined,
+    author: { "@type": "Person", name: SITE.author },
+  };
+
   return (
     <div className="game-wrap" data-game={game.slug}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(gameLd) }}
+      />
       <header className="game-head">
         <Link href="/games" className="back">
           ← 游戏

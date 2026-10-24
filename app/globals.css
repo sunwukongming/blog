@@ -740,7 +740,9 @@ html:has(.page--game) { overscroll-behavior: none; }
 .share-x:hover { color: var(--fg); text-decoration: underline; }
 .pk-blinds { display: inline-flex; align-items: baseline; gap: 2px; }
 .pk-blinds__next { font: 400 11px var(--font-mono), monospace; color: var(--muted); }
-.pk-blinds--flash b { color: var(--accent); animation: pk-blind-pulse 0.9s ease-in-out 2; }
+.pk-blinds--flash b { color: var(--accent); animation: pk-blind-pulse 0.7s ease-in-out 3; }
+.pk-blinds[data-flash] { outline: 1px solid color-mix(in oklab, var(--accent) 55%, transparent); border-radius: 4px; padding: 0 4px; }
+.pk-blind-flash-tip { font-weight: 600; letter-spacing: 0.01em; }
 .pk-pot-hint { font: 400 11px var(--font-mono), monospace; color: var(--muted); }
 .pk-odds { margin: 6px 0 0; text-align: center; }
 

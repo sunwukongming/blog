@@ -1,0 +1,38 @@
+---
+title: Vue 3 defineModel：双向绑定少写一层样板
+date: "2026-10-24"
+category: frontend
+summary: defineModel 把 props + emit('update:x') 收成一个 ref；适合输入型子组件。注意默认值、修饰符与多个 model 命名。
+---
+
+以前手写 `modelValue` + `update:modelValue` 很啰嗦。`defineModel` 把读写收成一个可写 ref。
+
+## 基本
+
+```vue
+<script setup lang="ts">
+const model = defineModel<string>({ required: true });
+</script>
+<template>
+  <input v-model="model" />
+</template>
+```
+
+父级仍 `v-model` 即可。
+
+## 多模型与默认
+
+```ts
+const title = defineModel<string>("title", { default: "" });
+const open = defineModel<boolean>("open");
+```
+
+对应 `v-model:title` / `v-model:open`。`default` 只在父未传时生效，和 props 默认值同类语义。
+
+## 注意
+
+1. 子组件应把 `model` 当受控值，避免再复制一份本地 state 打架。  
+2. 修饰符（`lazy` 等）经 `defineModel` 的选项或解构 `modelModifiers`（以当前文档为准）。  
+3. 与 `v-model` 自定义组件的旧写法可渐进替换，不必一次清完。
+
+适合设计系统里的 Input、Select、Drawer；复杂表单仍可上层用表单库，底层控件用 `defineModel`。

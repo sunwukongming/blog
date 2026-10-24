@@ -1,0 +1,32 @@
+---
+title: Postgres BRIN：大表按块摘要的索引
+date: "2026-10-24"
+category: backend
+summary: BRIN 适合天然有序的大表（时间序列、日志）；存的是页组 min/max，不是每行指针。和 B-tree 选型文不同：这里只讲何时上 BRIN、pages_per_range 与维护。
+---
+
+已有「索引怎么选」偏 B-tree/部分/覆盖。本文只谈 **BRIN（Block Range Index）**。
+
+## 它存什么
+
+BRIN 给 **连续页范围** 存摘要（常见是 min/max）。查询先排除不可能命中的页组，再回表。体积远小于 B-tree，代价是相关性差时几乎无效。
+
+## 何时合适
+
+- 堆表大致按过滤列 **追加有序**（`created_at`、序列 ID、ingest 时间）。  
+- 表很大（数十 GB+），B-tree 维护与缓存压力明显。  
+- 查询是范围扫描：`WHERE ts BETWEEN …`。
+
+无序更新打散物理顺序 → BRIN 选择性塌缩，应改用 B-tree 或先聚类/分区。
+
+## 旋钮
+
+```sql
+CREATE INDEX ON events USING brin (ts) WITH (pages_per_range = 128);
+```
+
+`pages_per_range` 越大索引越小、越粗；过粗会多读页。变更大量堆后考虑 `brin_summarize_new_values` / `VACUUM` 推动摘要更新。
+
+## 别和分区搞混
+
+分区裁剪按边界丢分区；BRIN 在分区（或大堆）内部再滤页组。时间分区 + 分区内 BRIN 是常见组合，不是二选一。

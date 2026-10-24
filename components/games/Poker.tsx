@@ -87,15 +87,16 @@ export default function Poker() {
 
   useEffect(() => {
     if (table.hand > 0 && table.sb > prevSb.current) {
-      const msg = `盲注上涨 → ${table.sb}/${table.bb}`;
+      const from = prevSb.current;
+      const msg = `⚡ 盲注闪涨 ${from} → ${table.sb}/${table.bb} · 下涨第${nextBlindHand}手`;
       setBlindFlash(msg);
-      buzz([25, 35, 25]);
+      buzz([30, 40, 30, 40, 50]);
       prevSb.current = table.sb;
-      const id = window.setTimeout(() => setBlindFlash(null), 4000);
+      const id = window.setTimeout(() => setBlindFlash(null), 6500);
       return () => clearTimeout(id);
     }
     prevSb.current = table.sb;
-  }, [table.hand, table.sb, table.bb]);
+  }, [table.hand, table.sb, table.bb, nextBlindHand]);
 
   const update = (fn: (t: Table) => void) => {
     const next = structuredClone(table);
@@ -222,13 +223,15 @@ export default function Poker() {
         <span>
           第<b>{table.hand}</b>手
         </span>
-        <span className={blindFlash ? "pk-blinds pk-blinds--flash" : "pk-blinds"} title={`每 ${BLIND_EVERY} 手翻倍`}>
+        <span className={blindFlash ? "pk-blinds pk-blinds--flash" : "pk-blinds"} title={blindFlash ? blindFlash : `每 ${BLIND_EVERY} 手翻倍`} data-flash={blindFlash ? "" : undefined}>
           盲注<b>
             {table.sb}/{table.bb}
           </b>
-          {started && !gameOver && !victory && (
+          {blindFlash ? (
+            <small className="pk-blinds__next"> · 闪涨中</small>
+          ) : started && !gameOver && !victory ? (
             <small className="pk-blinds__next"> · 下涨第{nextBlindHand}手</small>
-          )}
+          ) : null}
         </span>
         {myTurn && rules && !rules.canCheck && rules.toCall > 0 && pot > 0 && (
           <span
@@ -251,8 +254,10 @@ export default function Poker() {
       </div>
 
       {blindFlash && (
-        <p className="game-tip game-tip--alert" aria-live="assertive">
-          {blindFlash}（每 {BLIND_EVERY} 手翻倍）
+        <p className="game-tip game-tip--alert pk-blind-flash-tip" data-blind-flash="" aria-live="assertive" role="status">
+          {blindFlash}
+          {" · "}
+          每 {BLIND_EVERY} 手翻倍 · 顶栏盲注同步闪烁
         </p>
       )}
       {started && !gameOver && !victory && !blindFlash && (

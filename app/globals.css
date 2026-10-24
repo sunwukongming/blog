@@ -1014,3 +1014,18 @@ html:has(.page--game) { overscroll-behavior: none; }
   border-radius: 6px;
   padding-inline: 4px;
 }
+
+/* batch33: Memory best on end-combo, Mines chord|open, Tetris combo|hold */
+.memory-end-combo[data-best][data-both] {
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--accent) 60%, #7af5c0);
+}
+.mine-chord-open[data-ready] {
+  box-shadow: 0 0 0 1px color-mix(in oklab, #7af5c0 55%, transparent);
+  border-radius: 6px;
+  padding-inline: 4px;
+}
+.tetris-combo-hold[data-combo] {
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--accent) 45%, transparent);
+  border-radius: 6px;
+  padding-inline: 4px;
+}

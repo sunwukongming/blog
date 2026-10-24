@@ -73,10 +73,16 @@ async function PostBody({ params }: { params: Promise<{ slug: string }> }) {
     dateModified: post.date,
     inLanguage: "zh-CN",
     author: { "@type": "Person", name: SITE.author },
-    publisher: { "@type": "Organization", name: SITE.name },
+    publisher: {
+      "@type": "Organization",
+      name: SITE.name,
+      url: SITE_URL ?? undefined,
+    },
     mainEntityOfPage: pageUrl ? { "@type": "WebPage", "@id": pageUrl } : undefined,
+    isPartOf: SITE_URL ? { "@type": "WebSite", name: SITE.name, url: SITE_URL } : undefined,
     articleSection: category?.name ?? post.category,
     wordCount: post.readingMinutes ? post.readingMinutes * 400 : undefined,
+    timeRequired: post.readingMinutes ? `PT${post.readingMinutes}M` : undefined,
     url: pageUrl,
   };
   const relatedLd =
@@ -85,6 +91,9 @@ async function PostBody({ params }: { params: Promise<{ slug: string }> }) {
           "@context": "https://schema.org",
           "@type": "ItemList",
           name: `相关推荐 · ${post.title}`,
+          description: "同站相关文章续读",
+          numberOfItems: related.length,
+          itemListOrder: "https://schema.org/ItemListOrderAscending",
           itemListElement: related.map((r, idx) => ({
             "@type": "ListItem",
             position: idx + 1,

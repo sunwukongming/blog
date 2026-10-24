@@ -680,32 +680,23 @@ export default function Tetris() {
         <span>
           等级<b>{stats.level}</b>
         </span>
-        <span title="连消与 B2B 同屏：连续消行累加；Tetris/T-Spin 武装 B2B">
-          连消<b className={stats.combo > 1 ? "game-tip--alert" : undefined}>×{stats.combo}</b>
-          <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
-          B2B<b className={stats.b2b ? "game-tip--alert" : undefined}>{stats.b2b ? "就绪" : "—"}</b>
-        </span>
-        {(phase === "running" || phase === "paused") && (
-          <span title="幽灵块落点距离（格）">
-            幽灵<b>{stats.ghost}</b>
-          </span>
-        )}
-        {(phase === "running" || phase === "paused") && (
+        {(phase === "running" || phase === "paused") ? (
           <span
             className={
               stats.canHold === false
-                ? "tetris-hold-hud tetris-hold-preview tetris-hold-hud--cool"
-                : "tetris-hold-hud tetris-hold-preview game-tip--alert"
+                ? "tetris-hold-hud tetris-combo-hold tetris-hold-preview tetris-hold-hud--cool"
+                : "tetris-hold-hud tetris-combo-hold tetris-hold-preview game-tip--alert"
             }
             data-ready={stats.canHold || undefined}
             data-cool={stats.canHold === false || undefined}
+            data-combo={stats.combo > 1 || undefined}
             data-preview={stats.next[0] || undefined}
-            title={
-              stats.canHold === false
-                ? `Hold 冷却：落地后恢复${stats.hold ? ` · 槽 ${stats.hold}` : " · 槽空"} · 预览下一块 ${stats.next[0] ?? "—"}`
-                : `Hold 可用：C/Shift 交换${stats.hold ? ` · 槽 ${stats.hold}` : " · 空槽存入"} · 预览下一块 ${stats.next[0] ?? "—"}`
-            }
+            title={`连消|Hold：连消 ×${stats.combo} · B2B ${stats.b2b ? "就绪" : "—"} · Hold ${stats.canHold === false ? "冷却" : "可用"}${stats.hold ? `/${stats.hold}` : "/空"} · 预览 ${stats.next[0] ?? "—"} · 幽灵 ${stats.ghost} 格`}
           >
+            连消<b className={stats.combo > 1 ? "game-tip--alert" : undefined}>×{stats.combo}</b>
+            <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
+            B2B<b className={stats.b2b ? "game-tip--alert" : undefined}>{stats.b2b ? "就绪" : "—"}</b>
+            <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
             Hold
             <b className={stats.canHold === false ? undefined : "game-tip--alert"}>
               {stats.canHold === false ? "冷却" : "可用"}
@@ -716,9 +707,14 @@ export default function Tetris() {
             <b className={stats.next[0] === "I" || stats.next[0] === "T" ? "game-tip--alert" : undefined}>
               {stats.next[0] ?? "—"}
             </b>
-            {stats.next.length > 1 ? (
-              <small style={{ marginLeft: 4, opacity: 0.65 }}>{stats.next.slice(1, 3).join("→")}</small>
-            ) : null}
+            <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
+            幽灵<b>{stats.ghost}</b>
+          </span>
+        ) : (
+          <span title="连消与 B2B 同屏：连续消行累加；Tetris/T-Spin 武装 B2B">
+            连消<b className={stats.combo > 1 ? "game-tip--alert" : undefined}>×{stats.combo}</b>
+            <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
+            B2B<b className={stats.b2b ? "game-tip--alert" : undefined}>{stats.b2b ? "就绪" : "—"}</b>
           </span>
         )}
         <span className="spacer" />
@@ -735,9 +731,7 @@ export default function Tetris() {
       )}
       {phase === "running" && !stats.clearTip && (
         <p className={stats.b2b || stats.combo > 1 || stats.canHold || stats.next[0] === "I" || stats.next[0] === "T" ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">
-          {`Hold+预览：${stats.canHold === false ? "冷却" : "可用"}${stats.hold ? `/${stats.hold}` : "/空"} · 下一块 ${stats.next[0] ?? "—"}${stats.next.length > 1 ? ` · 队列 ${stats.next.join("→")}` : ""}`}
-          {" · "}
-          {`连消 ×${stats.combo} · B2B ${stats.b2b ? "就绪" : "未武装"}`}
+          {`连消|Hold：×${stats.combo} · B2B ${stats.b2b ? "就绪" : "未武装"} · Hold ${stats.canHold === false ? "冷却" : "可用"}${stats.hold ? `/${stats.hold}` : "/空"} · 预览 ${stats.next[0] ?? "—"}${stats.next.length > 1 ? ` · ${stats.next.join("→")}` : ""}`}
           {" · 幽灵 "}
           {stats.ghost}
           {" 格"}

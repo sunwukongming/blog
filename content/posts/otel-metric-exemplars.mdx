@@ -1,0 +1,31 @@
+---
+title: OpenTelemetry Metric Exemplars：指标上挂住示例 Trace
+date: "2026-10-24"
+category: cloud
+summary: Exemplar 把直方图/计数桶与当时的 trace/span 关联，告警时能跳进慢请求。讲清何时记录、与采样关系，以及后端存储是否接得住。
+---
+
+平均值好看、尾延迟难看时，你需要「这个桶里到底是哪次请求」。**Exemplar** 在数据点上附带 trace id / span id（及过滤属性）。
+
+## 它解决什么
+
+```text
+http.server.duration{le=1s} → 某次观测附带 trace_id=abc
+```
+
+从 Grafana / Prometheus 点进示例 → 打开对应 Trace。比「再翻一遍日志」短。
+
+## 实践要点
+
+1. **采样**：Exemplars 通常只在被采到的 span 上有意义；全量指标 + 1% trace 时，示例可能稀疏，要接受。  
+2. SDK：确保 Meter 与 Tracer 同源，并打开 exemplar 过滤（如只对错误或高延迟）。  
+3. 后端：Prometheus 远程写、OTLP 管线要声明支持 exemplars；旧栈会静默丢。  
+4. 基数：示例属性别再塞高基数标签，指标爆炸问题同样适用。
+
+## 和站内 baggage / Event 文
+
+Baggage 传业务上下文；Event/Attribute 丰富单次 span；**Exemplar** 把聚合指标钉回某次 span。三者分层，不要互相替代。
+
+## 小结
+
+Exemplar 是指标到链路的桥。先确认存储与 UI 能展示，再在高延迟/错误桶上启用；用它做告警下钻，而不是当全量采样的替身。

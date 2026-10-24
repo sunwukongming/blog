@@ -1,0 +1,36 @@
+---
+title: Postgres Hash 索引：等值查询的窄门
+date: "2026-10-24"
+category: backend
+summary: 与 B-tree、表达式、部分、覆盖、GIN、BRIN 区分：Hash 索引只服务等值，无排序无范围；讲清何时可能更瘦，以及为何多数场景仍选 B-tree。
+---
+
+`WHERE id = $1` 且永不 `ORDER BY` / 范围时，理论上 **Hash 索引** 更对口。Postgres 的 Hash 已 WAL 安全，但生态与灵活性仍远不如 B-tree。
+
+## 怎么建
+
+```sql
+CREATE INDEX ON sessions USING hash (token);
+-- 等值：
+SELECT * FROM sessions WHERE token = $1;
+```
+
+- **只支持 `=`**（以及某些内部等值场景）；`<` `BETWEEN` `LIKE 'a%'` 都走不了。  
+- 不能直接当排序键；需要有序扫描仍用 B-tree。  
+- 唯一约束在 Hash 上可用，但工具链与文档示例仍以 B-tree 为主。
+
+## 和其他索引怎么分
+
+| 手段 | 擅长 |
+|---|---|
+| B-tree | 等值 + 范围 + 排序，默认首选 |
+| 表达式 / 部分 / 覆盖 | 函数谓词、热子集、少回表 |
+| GIN | JSONB/数组包含 |
+| BRIN | 物理有序大表粗过滤 |
+| **Hash** | 纯等值、不想为排序付 B-tree 枝干成本时的备选 |
+
+实测常与 B-tree **差不多或略差**（缓存、填充、膨胀路径不同）。上线前用同一负载对比 `EXPLAIN (ANALYZE, BUFFERS)`，别凭感觉换。
+
+## 小结
+
+Hash 是等值窄门，不是通用加速器。新项目默认 B-tree；仅在证明范围/排序永不需要、且体积或缓存命中有可测收益时再考虑 Hash。

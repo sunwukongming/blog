@@ -223,15 +223,16 @@ export default function Memory() {
           data-endgame={endgame || undefined}
           data-combo={streak >= 2 || undefined}
           data-both={(endgame && streak >= 2) || undefined}
+          data-best={shownBest != null || undefined}
           data-level={streak >= 5 ? "hot" : streak >= 3 ? "warm" : streak >= 2 ? "on" : undefined}
           title={
             endgame && streak >= 2
-              ? `残局+连击：剩 ${leftPairs} 对 · 已配 ${matchedCount}/${pairs} · 连击 ×${streak}${bestStreak > 1 ? ` · 峰 ${bestStreak}` : ""}`
+              ? `双高+最少步：剩 ${leftPairs} 对 · ×${streak}${bestStreak > 1 ? ` · 峰 ${bestStreak}` : ""} · 最少 ${shownBest ?? "—"} 步`
               : endgame
-                ? `残局：还剩 ${leftPairs} 对 · 已配 ${matchedCount}/${pairs} · 连击 ${streak}`
+                ? `残局：还剩 ${leftPairs} 对 · 连击 ${streak} · 最少 ${shownBest ?? "—"}`
                 : bestStreak > 1
-                  ? `本局连击 ${streak} · 本档峰 ${bestStreak} · 已配 ${matchedCount}/${pairs}`
-                  : `已配 ${matchedCount}/${pairs} · 连击 ${streak}（翻错清零）`
+                  ? `连击 ${streak} · 峰 ${bestStreak} · 最少 ${shownBest ?? "—"} · 已配 ${matchedCount}/${pairs}`
+                  : `已配 ${matchedCount}/${pairs} · 连击 ${streak} · 最少 ${shownBest ?? "—"}（翻错清零）`
           }
         >
           配对<b>
@@ -252,17 +253,16 @@ export default function Memory() {
             aria-hidden="true"
             style={{ ["--combo-pct" as string]: `${Math.min(100, streak * 20)}%` } as CSSProperties}
           />
+          <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
+          最少<b className={shownBest != null && moves > 0 && moves <= shownBest ? "game-tip--alert" : undefined}>{shownBest ?? "—"}</b>
         </span>
         <span>
           时间<b>{seconds}</b>
         </span>
-        <span>
-          最少<b>{shownBest ?? "—"}</b>
-        </span>
       </div>
       <p className={endgame || streak >= 2 ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">
         {endgame && streak >= 2
-          ? `残局+连击：${matchedCount}/${pairs}（${pairs ? Math.round((matchedCount / pairs) * 100) : 0}%）· 剩 ${leftPairs} · ×${streak}${bestStreak > 1 ? `（峰 ${bestStreak}）` : ""} · 焦点 第${focusRow}行${focusCol}列`
+          ? `双高+最少步：${matchedCount}/${pairs}（${pairs ? Math.round((matchedCount / pairs) * 100) : 0}%）· 剩 ${leftPairs} · ×${streak}${bestStreak > 1 ? `（峰 ${bestStreak}）` : ""} · 最少 ${shownBest ?? "—"} · 焦点 第${focusRow}行${focusCol}列`
           : endgame
           ? `残局进度：${matchedCount}/${pairs}（${pairs ? Math.round((matchedCount / pairs) * 100) : 0}%）· 剩 ${leftPairs} 对 · 焦点 第${focusRow}行${focusCol}列 · 连击 ${streak}${bestStreak > 1 ? `（峰 ${bestStreak}）` : ""}`
           : streak >= 5

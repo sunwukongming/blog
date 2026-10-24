@@ -33,7 +33,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly" as const,
       priority: 0.8,
     })),
-    ...CATEGORIES.map((c) => ({ url: `${SITE_URL}/categories/${c.slug}`, ...(latest ? { lastModified: latest } : {}) })),
+    ...CATEGORIES.map((c) => ({
+      url: `${SITE_URL}/categories/${c.slug}`,
+      ...(latest ? { lastModified: latest } : {}),
+      changeFrequency: "weekly" as const,
+      priority: 0.65,
+    })),
     ...GAMES.filter((g) => g.playable).map((g) => ({
       url: `${SITE_URL}/games/${g.slug}`,
       lastModified: postDate(GAMES_UPDATED),

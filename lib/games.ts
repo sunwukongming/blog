@@ -12,6 +12,9 @@ export type GameItem = {
   touchControls?: string;
 };
 
+/** Sitemap lastmod for /games/* playable routes (enrich date, Asia/Shanghai calendar day). */
+export const GAMES_UPDATED = "2026-10-24";
+
 /** 游戏页条目：做过的项目与实验室小品 */
 export const GAMES: GameItem[] = [
   {

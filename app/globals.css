@@ -741,6 +741,9 @@ html:has(.page--game) { overscroll-behavior: none; }
 .pk-blinds { display: inline-flex; align-items: baseline; gap: 2px; }
 .pk-blinds__next { font: 400 11px var(--font-mono), monospace; color: var(--muted); }
 .pk-blinds--flash b { color: var(--accent); animation: pk-blind-pulse 0.9s ease-in-out 2; }
+.pk-pot-hint { font: 400 11px var(--font-mono), monospace; color: var(--muted); }
+.pk-odds { margin: 6px 0 0; text-align: center; }
+
 @keyframes pk-blind-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.45; }

@@ -48,7 +48,17 @@ type Game = {
   wideUntil: number;
   slowUntil: number;
 };
-type Hud = { score: number; lives: number; level: number; wide: boolean; slow: boolean; balls: number };
+type Hud = { score: number; lives: number; level: number; wide: boolean; slow: boolean; balls: number; brickLeft: number; brickTotal: number; progress: number };
+
+
+/** breakable bricks still alive (metal ignored) */
+function brickStats(g: Game) {
+  const breakable = g.bricks.filter((br) => !br.metal);
+  const total = breakable.length;
+  const left = breakable.filter((br) => br.hp > 0).length;
+  const progress = total === 0 ? 100 : Math.round(((total - left) / total) * 100);
+  return { brickLeft: left, brickTotal: total, progress };
+}
 
 const baseSpeed = (level: number) => 320 + level * 25;
 const ballSpeed = (g: Game) => baseSpeed(g.level) * (g.time < g.slowUntil ? 0.7 : 1);
@@ -324,14 +334,23 @@ export default function Breakout() {
   const held = useRef({ left: false, right: false });
     const buzzMuted = useBuzzMuted();
 const [phase, setPhase] = useState<Phase>("select");
-  const [hud, setHud] = useState<Hud>({ score: 0, lives: 3, level: 0, wide: false, slow: false, balls: 1 });
+  const [hud, setHud] = useState<Hud>({ score: 0, lives: 3, level: 0, wide: false, slow: false, balls: 1, brickLeft: 0, brickTotal: 0, progress: 0 });
   const [record, setRecord] = useState(false);
   const [best] = useRecord("breakout", higher);
   const [unlocked] = useRecord("breakout-unlocked", higher);
 
   const sync = () => {
     const g = game.current;
-    setHud({ score: g.score, lives: g.lives, level: g.level, wide: g.time < g.wideUntil, slow: g.time < g.slowUntil, balls: g.balls.length });
+    const bs = brickStats(g);
+    setHud({
+      score: g.score,
+      lives: g.lives,
+      level: g.level,
+      wide: g.time < g.wideUntil,
+      slow: g.time < g.slowUntil,
+      balls: g.balls.length,
+      ...bs,
+    });
   };
 
   useEffect(() => {
@@ -503,6 +522,12 @@ const [phase, setPhase] = useState<Phase>("select");
             <span>
               生命<b>{"♥".repeat(Math.max(0, hud.lives)) || "0"}</b>
             </span>
+            <span title="可打碎砖剩余 / 本关总数">
+              剩余砖<b>{hud.brickLeft}/{hud.brickTotal}</b>
+            </span>
+            <span>
+              完成<b>{hud.progress}%</b>
+            </span>
           </>
         )}
         {(hud.wide || hud.slow) && (
@@ -527,11 +552,10 @@ const [phase, setPhase] = useState<Phase>("select");
         )}
       </div>
       {(phase === "running" || phase === "aim" || phase === "paused") && (
-        <p className="game-tip" aria-live="polite">
-          第 {hud.level + 1} 关难度：球速约 {Math.round(baseSpeed(hud.level))} · 球拍宽{" "}
-          {Math.round(Math.max(64, 88 - hud.level * 3))}
-          {hud.wide ? "（已加宽）" : ""} · # 金属打不碎
-          {hud.balls > 1 ? ` · 多球×${hud.balls}` : ""}
+        <p className={hud.brickLeft <= 3 && hud.brickLeft > 0 ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">
+          {hud.brickLeft <= 3 && hud.brickLeft > 0
+            ? `残局：还剩 ${hud.brickLeft} 块可打碎砖 · 完成度 ${hud.progress}%`
+            : `第 ${hud.level + 1} 关 · 完成 ${hud.progress}%（剩 ${hud.brickLeft}/${hud.brickTotal}）· 球速约 ${Math.round(baseSpeed(hud.level))} · 拍宽 ${Math.round(Math.max(64, 88 - hud.level * 3))}${hud.wide ? "（已加宽）" : ""}${hud.balls > 1 ? ` · 多球×${hud.balls}` : ""}`}
         </p>
       )}
       <div

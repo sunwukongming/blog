@@ -277,7 +277,18 @@ export default function Poker() {
               <PlayingCard key={i} card={table.board[i]} glow={table.board[i] && isGlow(table.board[i])} />
             ))}
           </div>
-          <p className="pk-pot">底池 {pot}</p>
+          <p className="pk-pot">
+            底池 {pot}
+            {started && !gameOver && !victory && me && !me.out && me.chips > 0 && (
+              <small className="pk-pot-hint"> · 约占你筹码 {Math.min(999, Math.round((pot / me.chips) * 100))}%</small>
+            )}
+          </p>
+          {myTurn && rules && !rules.canCheck && rules.toCall > 0 && pot > 0 && (
+            <p className="game-tip game-tip--alert pk-odds" aria-live="polite">
+              跟注 {rules.toCall} · 底池 {pot}
+              （打平约需 {Math.min(99, Math.round((rules.toCall / (pot + rules.toCall)) * 100))}% 胜率）
+            </p>
+          )}
           <p className="pk-msg" aria-live="polite">
             {message}
           </p>

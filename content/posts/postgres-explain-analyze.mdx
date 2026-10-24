@@ -1,0 +1,31 @@
+---
+title: Postgres EXPLAIN ANALYZE：先看真实行数，再吵索引
+date: "2026-10-24"
+category: backend
+summary: 计划行数和实际行数差一个数量级时，加索引往往治标。养成看 rows、buffers、时间占比的习惯，比背优化器术语有用。
+---
+
+慢查询来了，第一反应常是「缺索引」。有时对，有时只是 **统计信息过时、谓词写歪、或嵌套循环被低估**。`EXPLAIN (ANALYZE, BUFFERS)` 把「以为」和「实际」摆在一起。
+
+## 最小阅读顺序
+
+1. **实际总时间**与最贵节点（Sort / Hash / Nested Loop / Seq Scan）。  
+2. **rows 估计 vs 实际**：差一个数量级以上，先修统计/条件，再谈索引。  
+3. **Buffers**：`shared hit/read`——是 CPU 算得慢，还是在扫盘。  
+4. 是否意外的 **Seq Scan 大表**、重复的 Filter 掉大量行。
+
+`ANALYZE` 会真执行；生产大表用副本或加 `LIMIT` 的等价语句，并注意写语句的副作用。
+
+## 常见误判
+
+| 现象 | 别急着 | 更可能 |
+|---|---|---|
+| Seq Scan | 立刻建索引 | 表很小、或选择性极差，扫表更便宜 |
+| Nested Loop + 内表实际很大 | 怪优化器 | 外表行数低估，导致循环爆炸 |
+| Sort 很贵 | 加内存瞎调 | 缺合适索引支撑 `ORDER BY` / 去重 |
+
+## 和业务的接口
+
+把「慢 SQL + EXPLAIN 摘要」写进工单模板：语句（脱敏）、参数、计划片段、实际 rows。比「感觉慢」好推进。定期 `ANALYZE`、关注自动 vacuum，比周末批量建奇异索引更稳。
+
+索引文章（`postgres-index-choices`）讲选型；这篇讲 **先量再改**。两者一起用。

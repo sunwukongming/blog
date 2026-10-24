@@ -4,7 +4,10 @@ import GameBest from "@/components/games/GameBest";
 import GameIcon from "@/components/games/GameIcon";
 import { GAMES, gamesByStatus, type GameItem } from "@/lib/games";
 
-export const metadata: Metadata = { title: "游戏" };
+export const metadata: Metadata = {
+  title: "游戏",
+  description: "GM Lab 桌上小游戏：贪吃蛇、俄罗斯方块、2048、打砖块、扫雷、德州扑克与记忆翻牌；本机纪录存浏览器，可直接在站内玩。",
+};
 
 const STATUS_LABEL: Record<GameItem["status"], string> = {
   lab: "实验室",

@@ -1,0 +1,36 @@
+---
+title: CSS Anchor Positioning：弹出层终于可以少绑一点 JS
+date: "2026-10-24"
+category: frontend
+summary: anchor 把「相对谁定位」写进 CSS。Tooltip、菜单、select 浮层少一次测距，但要会处理溢出、回退与无障碍。
+---
+
+长年靠 `getBoundingClientRect` + `position: fixed` 算弹出层坐标，滚动和 resize 还要再挂监听。**CSS Anchor Positioning** 想把这件事收进样式：先给锚点 `anchor-name`，浮层用 `position-anchor` / `anchor()` 对齐。
+
+## 适合什么
+
+- Tooltip、下拉、上下文菜单、表单校验气泡  
+- 锚点与浮层同树或可声明关联、不需要复杂碰撞求解的场景  
+
+不适合：强依赖测量内容高度再二次布局、或必须跨 Shadow / iframe 精细控制的老组件——仍可能要 JS 兜底。
+
+## 写法心智
+
+1. 锚点：`anchor-name: --btn;`  
+2. 浮层：`position: absolute; position-anchor: --btn;`，再用 `top: anchor(bottom)`、`left: anchor(center)` 等。  
+3. 用 `@position-try` / `position-try-fallbacks` 处理贴边翻转，而不是手写四个方向 if。
+
+## 落地注意
+
+| 点 | 说明 |
+|---|---|
+| 支持度 | 渐进增强：不支持时回到现有 JS 定位或纯静态布局 |
+| 溢出 | 视口裁切、滚动容器、`overflow: hidden` 祖先仍会坑人 |
+| 无障碍 | 焦点陷阱、Esc 关闭、`aria-expanded` 不因换 CSS 而省略 |
+| 与容器查询 | 可组合，但别在同一元素上堆到难以调试 |
+
+## 和 Portal 的关系
+
+很多 UI 库把菜单挂到 `body` 是为了躲 `overflow`。Anchor 能减少「为了定位而 Portal」的动机，但 **层叠上下文与裁切** 问题还在：该 Portal 还是 Portal，只是坐标可以少算一轮。
+
+先在内部工具或营销页的轻量浮层试点，设计系统级 Select/Popover 等浏览器与团队熟悉后再收。

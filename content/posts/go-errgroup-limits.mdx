@@ -1,0 +1,41 @@
+---
+title: Go errgroup：并发上限与取消，别只图写起来短
+date: "2026-10-24"
+category: backend
+summary: errgroup 把多任务错误与取消串起来很方便。忘了限流或没把 ctx 传到叶子，一样能打爆依赖或留下孤儿 goroutine。
+---
+
+`golang.org/x/sync/errgroup` 适合「一组工作，谁先错就取消其余」。比手写 `WaitGroup + 错误通道` 短，但短不等于安全。
+
+## 三件套
+
+1. **`WithContext`**：任务返回 error 时取消兄弟任务。  
+2. **把 `ctx` 传到每个 I/O**：HTTP、DB、gRPC 都认取消，否则 `Wait` 返回了后台还在打。  
+3. **并发上限**：`SetLimit(n)`（或自管 semaphore）。对下游的扇出没有 n，等于无界压测别人。
+
+```go
+g, ctx := errgroup.WithContext(r.Context())
+g.SetLimit(8)
+for _, id := range ids {
+  id := id
+  g.Go(func() error {
+    return fetch(ctx, id) // 必须尊重 ctx
+  })
+}
+if err := g.Wait(); err != nil { /* ... */ }
+```
+
+## 常见坑
+
+| 坑 | 后果 |
+|---|---|
+| `Go` 里忽略 ctx | 取消无效，泄漏与重复计费 |
+| 无 SetLimit 打第三方 | 突发 429/连接打满 |
+| 把非致命错误当失败 | 整组取消，误伤可降级路径 |
+| 在 `Go` 里再开不管的 goroutine | Wait 结束仍有尾巴 |
+
+## 和 semaphore / worker pool
+
+固定 worker 池适合「长期同一类任务」；errgroup 适合「这一次请求内的一批」。可以组合：池负责全局上限，errgroup 负责这次的取消语义。
+
+与 `go-concurrency-pitfalls`、`go-context-cancellation` 同一条线：并发原语要配 **边界与生命周期**，不配「少写几行」。

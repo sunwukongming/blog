@@ -58,7 +58,9 @@ export default function Memory() {
   const cardRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   const matchedCount = useMemo(() => cards.filter((c) => c.matched).length / 2, [cards]);
+  const leftPairs = pairs - matchedCount;
   const won = matchedCount === pairs;
+  const endgame = running && !won && leftPairs > 0 && leftPairs <= 3;
 
   useEffect(() => {
     if (!running || won) return;
@@ -212,6 +214,11 @@ export default function Memory() {
           最少<b>{shownBest ?? "—"}</b>
         </span>
       </div>
+      {endgame && (
+        <p className="game-tip game-tip--alert" aria-live="polite">
+          残局：还剩 {leftPairs} 对 · 步数 {moves} · 少翻错更能刷新纪录
+        </p>
+      )}
       <div
         className="memory"
         role="grid"
@@ -260,11 +267,13 @@ export default function Memory() {
       <p className="game-hint" aria-live="polite">
         {won
           ? `全部配对，用了 ${moves} 步、${seconds} 秒${bestStreak > 1 ? `，最高连击 ×${bestStreak}` : ""}${shownBest !== null && moves <= shownBest ? "，新纪录！" : "。"}`
-          : streak >= 2
-            ? `连击 ×${streak}！连续配对会累加；翻错就清零。`
-            : shownBest !== null
-              ? `${diff.label}本机最少 ${shownBest} 步。连续配对可连击；方向键移动，Home/End 跳首尾，回车或空格翻牌。`
-              : "连续配对会显示连击。方向键移动焦点，Home/End 跳首尾，回车或空格翻牌；也可点选。步数越少越好。"}
+          : endgame
+            ? `残局提示：还剩 ${leftPairs} 对未翻开，优先回忆已见过的符号。`
+            : streak >= 2
+              ? `连击 ×${streak}！连续配对会累加；翻错就清零。`
+              : shownBest !== null
+                ? `${diff.label}本机最少 ${shownBest} 步。连续配对可连击；方向键移动，Home/End 跳首尾，回车或空格翻牌。`
+                : "连续配对会显示连击。方向键移动焦点，Home/End 跳首尾，回车或空格翻牌；也可点选。步数越少越好。"}
       </p>
     </div>
   );

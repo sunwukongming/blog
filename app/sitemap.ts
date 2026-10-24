@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { CATEGORIES } from "@/lib/categories";
-import { GAMES } from "@/lib/games";
+import { GAMES, GAMES_UPDATED } from "@/lib/games";
 import { getAllPosts } from "@/lib/posts";
 import { SITE_URL } from "@/lib/site";
 
@@ -24,7 +24,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...CATEGORIES.map((c) => ({ url: `${SITE_URL}/categories/${c.slug}`, ...(latest ? { lastModified: latest } : {}) })),
     ...GAMES.filter((g) => g.playable).map((g) => ({
       url: `${SITE_URL}/games/${g.slug}`,
-      ...(latest ? { lastModified: latest } : {}),
+      lastModified: postDate(GAMES_UPDATED),
     })),
   ];
 }

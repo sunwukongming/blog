@@ -3,7 +3,7 @@ import GameBest from "@/components/games/GameBest";
 import PostList from "@/components/PostList";
 import { GAMES } from "@/lib/games";
 import { getAllPosts } from "@/lib/posts";
-import { PROFILE, SITE } from "@/lib/site";
+import { PROFILE, SITE, SITE_URL } from "@/lib/site";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -15,8 +15,21 @@ export const metadata: Metadata = {
 export default async function Home() {
   const posts = await getAllPosts();
   const playable = GAMES.filter((g) => g.playable).slice(0, 6);
+  const websiteLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: SITE.name,
+    description: SITE.description,
+    url: SITE_URL ?? undefined,
+    author: { "@type": "Person", name: SITE.author },
+    inLanguage: "zh-CN",
+  };
   return (
     <main data-world="room" className="page page--split">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteLd) }}
+      />
       <section className="hero" aria-labelledby="intro">
         <p className="eyebrow">你好，我是</p>
         <h1 id="intro" className="display">

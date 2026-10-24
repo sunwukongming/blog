@@ -227,7 +227,12 @@ export default function Memory() {
         </p>
       )}
       <p className="game-tip" aria-live="polite">
-        各难度最少步数：
+        本局连击 <b className={streak >= 2 ? "game-tip--alert" : undefined}>{streak}</b>
+        {bestStreak > 1 ? `（最高 ${bestStreak}）` : ""}
+        {" · "}
+        本难度最少 <b>{shownBest ?? "—"}</b> 步
+        {" · "}
+        各难度：
         {allDiffBests.map((x, i) => (
           <span key={DIFFS[i].key}>
             {i > 0 ? " · " : ""}

@@ -318,10 +318,16 @@ export default function Minesweeper() {
         <span className="spacer" />
         <span
           className="mine-remaining"
-          data-low={phase === "playing" && level.mines - flags <= 3 && level.mines - flags > 0 ? true : undefined}
-          title="剩余雷数 = 本局雷数 − 已插旗"
+          data-low={phase === "playing" && level.mines - flags <= 5 && level.mines - flags > 0 ? true : undefined}
+          title="剩余雷数 = 本局雷数 − 已插旗；≤5 时高亮提醒收官"
         >
-          剩余雷<b>{level.mines - flags}</b>
+          剩余雷
+          <b className={phase === "playing" && level.mines - flags <= 3 && level.mines - flags > 0 ? "game-tip--alert" : undefined}>
+            {level.mines - flags}
+          </b>
+          {phase === "playing" && level.mines - flags <= 3 && level.mines - flags > 0 ? (
+            <small style={{ marginLeft: 4, opacity: 0.85 }}>收官</small>
+          ) : null}
         </span>
         <span
           className="mine-progress"
@@ -379,14 +385,16 @@ export default function Minesweeper() {
         ))}
       </div>
       {(phase === "ready" || phase === "playing") && (
-        <p className={lateClear ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">
+        <p className={lateClear || (phase === "playing" && level.mines - flags <= 3 && level.mines - flags > 0) ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">
           {phase === "ready"
             ? "首击安全区：第一下落点及其周围不会埋雷，可放心开图。"
             : lateClear
               ? `收官：还剩 ${safeLeft} 格安全区未开 · 开图 ${safeProgress}% · 剩余雷标记 ${level.mines - flags}`
-              : safeOpen === 0
-                ? `首击安全区已生效 · 开图 0%（安全格 0/${safeTotal}）· 旗 ${flags}/${level.mines}`
-                : `开图 ${safeProgress}%（安全格 ${safeOpen}/${safeTotal}）· 旗 ${flags}/${level.mines}`}
+              : phase === "playing" && level.mines - flags <= 3 && level.mines - flags > 0
+                ? `剩余雷仅 ${level.mines - flags} · 开图 ${safeProgress}%（安全格 ${safeOpen}/${safeTotal}）· 旗位对齐后再 chord`
+                : safeOpen === 0
+                  ? `首击安全区已生效 · 开图 0%（安全格 0/${safeTotal}）· 旗 ${flags}/${level.mines}`
+                  : `开图 ${safeProgress}%（安全格 ${safeOpen}/${safeTotal}）· 旗 ${flags}/${level.mines}`}
         </p>
       )}
       <div className="game-bar">

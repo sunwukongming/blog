@@ -1,0 +1,27 @@
+---
+title: Postgres 分区裁剪：谓词对不上就等于没分区
+date: "2026-10-24"
+category: backend
+summary: 声明式分区要靠查询谓词命中分区键才能 prune。函数包一层、类型不匹配、OR 乱写，都会变成扫所有子表。
+---
+
+按时间/租户分区后，若 `EXPLAIN` 仍出现所有子表，多半是 **分区裁剪失败**，不是 vacuum 没跑。
+
+## 常见杀手
+
+1. `WHERE date_trunc('day', ts) = ...` 而分区键是 `ts`——函数包住列。  
+2. 分区键是 `timestamptz`，谓词却拿 `text` 比较。  
+3. `OR` 两侧只有一边能约束分区键。  
+4. 绑定参数类型与分区键不一致（偶发）。
+
+用 `EXPLAIN (ANALYZE, BUFFERS)` 看 `Partitions removed` / 实际扫描的子表。
+
+## 做法
+
+| 目标 | 建议 |
+|---|---|
+| 热查询 | 谓词直接写分区列范围 |
+| 多维过滤 | 分区键放最高频维度，其余靠索引 |
+| 旧数据 | detach / drop 整分区，比大 DELETE 干净 |
+
+与 `postgres-explain-analyze`、`postgres-index-choices` 连读：计划里先确认 prune，再谈索引是不是多余。

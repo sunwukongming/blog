@@ -1,0 +1,28 @@
+---
+title: React useDeferredValue：让紧急输入先画，列表稍后跟上
+date: "2026-10-24"
+category: frontend
+summary: 输入框保持即时，用 deferred 值驱动重过滤/重渲染列表。和 useTransition 同属并发故事，别拿来藏真正的性能债。
+---
+
+搜索框每键一次就过滤上千行时，输入会「粘」。`useDeferredValue(query)` 让 **紧急更新**（输入框）先提交，**延迟更新**（大列表）在空闲时用旧值过渡到新值。
+
+## 形状
+
+```tsx
+const deferred = useDeferredValue(query);
+const rows = useMemo(() => filter(all, deferred), [all, deferred]);
+// input 仍绑 query；列表绑 deferred
+```
+
+配合 `isPending`（`query !== deferred`）可加淡遮罩，表明列表尚未跟上。
+
+## 别误解
+
+| 误解 | 实际 |
+|---|---|
+| 能替代虚拟列表 | 只是错峰渲染，数据量过大仍要虚拟化 |
+| 可乱砍 memo | 依赖仍要诚实 |
+| 与 useEffectEvent 同类 | 一个管更新优先级，一个管 Effect 事件闭包 |
+
+与 `react-use-effect-event`、`frontend-perf-budget-lcp-inp` 互补：交互卡顿先分优先级，再砍长任务。

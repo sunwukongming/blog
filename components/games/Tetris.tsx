@@ -686,6 +686,15 @@ export default function Tetris() {
             B2B<b>就绪</b>
           </span>
         )}
+        {(phase === "running" || phase === "paused") && (
+          <span
+            title={stats.canHold === false ? "当前块已用过 Hold，落地后恢复" : "C / Shift 可与暂存交换"}
+            className={stats.canHold === false ? undefined : "game-tip--alert"}
+          >
+            Hold<b>{stats.canHold === false ? "已用" : "可用"}</b>
+            {stats.hold ? <small style={{ marginLeft: 4, opacity: 0.75 }}>{stats.hold}</small> : null}
+          </span>
+        )}
         <span className="spacer" />
         {(phase === "running" || phase === "paused") && (
           <button type="button" className="game-btn" onClick={toggle}>
@@ -702,7 +711,7 @@ export default function Tetris() {
         <p className="game-tip" aria-live="polite">
           预览 {stats.next.join("→")}
           {stats.hold ? ` · 暂存 ${stats.hold}` : " · 暂存空"}
-          {stats.canHold === false ? "（本块已用过 Hold）" : " · 可 Hold"}
+          {stats.canHold === false ? " · Hold 已用（落地后恢复）" : " · Hold 可用"}
           {stats.b2b ? " · B2B 就绪" : ""}
           {stats.combo > 1 ? ` · 连消×${stats.combo}` : ""}
         </p>

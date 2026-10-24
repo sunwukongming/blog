@@ -1,0 +1,26 @@
+---
+title: Go JSON：标准库 encoding/json 与更快迭代器的取舍
+date: "2026-10-24"
+category: backend
+summary: 多数服务先把 encoding/json 用对；真要换 jsoniter / sonic 等，先用 benchmark 钉住热路径，并接受行为差异与维护成本。
+---
+
+JSON 编解码常出现在 CPU profile 前列，于是有人直接换「更快的 JSON」。先问：**是不是真热点**，以及换库后语义是否仍一致。
+
+## 先做的
+
+1. 减少多余 `Marshal`：能流式 / 预分配 buffer 就别反复拼字符串。  
+2. 结构体标签与 `omitempty` 是否制造额外反射。  
+3. `json.Decoder` 流式读大数组，避免整包进内存。
+
+标准库从 Go 1.x 起持续优化；很多「慢」其实是分配与业务拷贝。
+
+## 换库时
+
+| 维度 | 注意 |
+|---|---|
+| 行为 | 数字精度、`null`、大小写、未知字段 |
+| 生态 | 与 codegen、validator 的集成 |
+| 运维 | 多一个 CGO/汇编依赖的升级与 CVE 面 |
+
+用 `testing.B` 在真实 payload 上比，而不是博客微基准。与 `go-dto-domain-boundary` 连读：DTO 变瘦往往比换 JSON 库更赚。

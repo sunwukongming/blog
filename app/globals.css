@@ -273,22 +273,40 @@ html:has(.page--game) { overscroll-behavior: none; }
 .pad button.pad__text { font-size: 14px; font-weight: 600; }
 
 /* 俄罗斯方块：棋盘 1:2，右边一栏放下一个和最高分；宽度按视口高度反推 */
-.game-wrap[data-game="tetris"] { width: min(100%, max(300px, calc((100svh - var(--chrome)) / 2 + 120px))); --chrome: 280px; }
-.tetris { display: grid; grid-template-columns: 1fr 72px; gap: 12px; align-items: start; }
-.game-stage.tetris-board { aspect-ratio: 1 / 2; }
+.game-wrap[data-game="tetris"] {
+  /* boardH ≈ 100svh - chrome; width ≈ boardH/2 + side(72) + gap */
+  --chrome: 190px;
+  width: min(100%, max(240px, calc((100svh - var(--chrome)) / 2 + 84px)));
+}
+.tetris { display: grid; grid-template-columns: minmax(0, 1fr) 72px; gap: 10px; align-items: start; width: 100%; }
+.game-stage.tetris-board {
+  aspect-ratio: 1 / 2;
+  width: min(100%, calc((100svh - var(--chrome)) / 2));
+  max-height: calc(100svh - var(--chrome));
+  height: auto;
+  justify-self: stretch;
+}
 .tetris-side { display: grid; gap: 6px; font: 400 12px var(--font-mono), monospace; color: var(--muted); }
 .tetris-side b { color: var(--fg); font-size: 15px; font-variant-numeric: tabular-nums; }
 .tetris-next { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; padding: 6px; margin-bottom: 8px; border: 1px solid var(--line); border-radius: 8px; }
 .tetris-next i { aspect-ratio: 1; border-radius: 2px; background: rgb(255 255 255 / 0.04); }
 
 /* 打砖块：4:5 竖版 */
-.game-wrap[data-game="breakout"] { width: min(100%, max(300px, calc((100svh - 260px) * 0.8))); }
-.game-stage.breakout { aspect-ratio: 4 / 5; }
+.game-wrap[data-game="breakout"] {
+  --chrome: 200px;
+  width: min(100%, max(260px, calc((100svh - var(--chrome)) * 0.8)));
+}
+.game-stage.breakout {
+  aspect-ratio: 4 / 5;
+  width: min(100%, calc((100svh - var(--chrome)) * 0.8));
+  max-height: calc(100svh - var(--chrome));
+  height: auto;
+}
 .breakout-hint { position: absolute; left: 0; right: 0; bottom: 16%; margin: 0; text-align: center; font-size: 13px; color: var(--muted); pointer-events: none; }
 @media (pointer: coarse) {
   .dpad, .pad { display: grid; }
   .game-wrap[data-game="snake"] { --chrome: 380px; }
-  .game-wrap[data-game="tetris"] { --chrome: 370px; }
+  .game-wrap[data-game="tetris"] { --chrome: 320px; }
 }
 @media (max-width: 640px) {
   .game-panel { padding: 8px; border-radius: 12px; }
@@ -318,8 +336,14 @@ html:has(.page--game) { overscroll-behavior: none; }
   position: relative; aspect-ratio: 1; overflow: hidden; container-type: inline-size;
   border: 1px solid var(--line); border-radius: 10px; background: color-mix(in srgb, var(--bg) 90%, black);
   touch-action: none; user-select: none; -webkit-user-select: none;
+  min-width: 0; /* canvas width/height attrs must not inflate grid min-content */
 }
-.game-stage canvas { display: block; width: 100%; height: 100%; }
+.game-stage canvas {
+  /* absolute: HTML width/height attrs must not contribute min-content (was blowing Tetris to ~2k px) */
+  position: absolute; inset: 0; display: block; width: 100%; height: 100%; min-width: 0;
+}
+.game, .tetris { min-width: 0; max-width: 100%; }
+.page--game .game-panel { min-width: 0; max-width: 100%; overflow: hidden; }
 .game-overlay {
   position: absolute; inset: 0; z-index: 2; display: grid; place-content: center; justify-items: center; gap: 10px;
   padding: 16px; text-align: center; background: color-mix(in srgb, var(--bg) 78%, transparent);
@@ -4198,4 +4222,75 @@ html:has(.page--game) { overscroll-behavior: none; }
 }
 .tetris-score-line-bar[data-low] .tetris-score-line-bar__fill {
   background: linear-gradient(90deg, #93c5fd, #3b82f6);
+}
+
+
+/* short screens: hide enrich meters + compact HUD so Tetris/Breakout fit one view.
+   Fat game-bar min-content was also inflating .game width (~800px) and wrapping into
+   a tall multi-row chrome that blew the --chrome budget. */
+@media (max-height: 900px) {
+  /* any enrich meter / fill / coolbar inside the top bar */
+  .game-bar [class*="-bar"],
+  .game-bar [class*="coolbar"],
+  .game-bar [class*="-fill"],
+  .breakout-progress__bar,
+  .tetris-level-fill,
+  .tetris-hold-coolbar {
+    display: none !important;
+  }
+  /* Tetris mega cluster (连消|B2B|Hold|预览|幽灵|距升级) — biggest wrap culprit */
+  .game-wrap[data-game="tetris"] .tetris-hold-hud {
+    display: none !important;
+  }
+  .game-tip.breakout-items { display: none; }
+  .page--game .game-tip { display: none; }
+  .page--game .game-hint { display: none; }
+  .game-bar {
+    gap: 6px 10px;
+    flex-wrap: nowrap;
+    overflow: hidden;
+    max-width: 100%;
+    min-width: 0;
+  }
+  .game-wrap, .game, .tetris {
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+  }
+  .tetris-side { font-size: 11px; gap: 4px; }
+  .tetris-next { padding: 4px; margin-bottom: 4px; }
+  .tetris-side .tetris-next-queue .tetris-next[data-queue="next"] { display: none; }
+}
+@media (max-height: 900px) {
+  /* chrome ≈ nav offset + compact one-row bar + gaps (bar no longer multi-wrap) */
+  .game-wrap[data-game="tetris"] { --chrome: 150px; }
+  .game-wrap[data-game="breakout"] { --chrome: 160px; }
+  /* Breakout in-game HUD is label-heavy; clip to one row like Tetris */
+  .game-wrap[data-game="breakout"] .game-bar {
+    max-height: 34px;
+    overflow: hidden;
+    flex-wrap: nowrap;
+  }
+  .page--game {
+    padding-bottom: calc(4px + env(safe-area-inset-bottom, 0px));
+  }
+  html:has(.page--game) {
+    overflow-x: hidden;
+  }
+}
+@media (max-height: 800px) {
+  .game-wrap[data-game="tetris"] { --chrome: 140px; }
+  .game-wrap[data-game="breakout"] { --chrome: 155px; }
+  .page--game {
+    padding-bottom: 0;
+  }
+  /* hard-stop tiny leftover document scroll on 768-class laptops */
+  html:has(.page--game) {
+    overflow-y: hidden;
+    height: 100%;
+  }
+  body:has(.page--game) {
+    overflow-y: hidden;
+    height: 100%;
+  }
 }

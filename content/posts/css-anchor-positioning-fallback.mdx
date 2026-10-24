@@ -1,0 +1,45 @@
+---
+title: CSS Anchor Positioning：position-try / fallback 链
+date: "2026-10-25"
+category: frontend
+summary: 站内 Anchor 与 Popover 对比讲场景取舍。这篇只谈锚定定位的 fallback：空间不够时如何用 position-try 换边，避免菜单裁切。
+---
+
+Anchor Positioning 让浮层相对锚点摆放。总览/与 Popover 见站内文；本文只谈 **放不下时的 fallback 链**。
+
+## 为什么要 fallback
+
+`position-area` / 边 inset 把气泡钉在按钮下方时，靠近视口底会 **裁切或溢出**。`position-try-fallbacks`（及 `position-try`）按序尝试备选方案，直到放得下或用尽。
+
+```css
+.menu {
+  position: absolute;
+  position-anchor: --btn;
+  position-area: block-end span-inline-end;
+  position-try-fallbacks: flip-block, flip-inline, flip-block flip-inline;
+}
+```
+
+（具体属性名随浏览器版本略有差异；以当前 CSS Anchor 草稿/实现为准。）
+
+## 链怎么排
+
+1. **主位置**：产品默认（如下方起）。  
+2. **flip-block / flip-inline**：上下或左右对调。  
+3. **更小尺寸或移入视口** 的 try 选项（若实现支持）。  
+4. 最后仍溢出：接受滚动容器或缩小内容，而不是无限加 try。
+
+## 和 Popover / Anchor 文
+
+- 要不要用 Popover API、谁管层叠，见 vs-popover。  
+- **本文只谈 try/fallback 顺序与裁切**。
+
+## 注意
+
+- 旧浏览器无 Anchor 时准备绝对定位兜底。  
+- fallback 会改变视觉边，焦点管理与箭头方向要跟着变。  
+- 与 `overflow: hidden` 祖先叠加时，先修含滚动的祖先再怪定位。
+
+## 一句话
+
+**先定主锚位置，再用 position-try 做翻转链**；裁切优先换边，而不是加大 `z-index`。

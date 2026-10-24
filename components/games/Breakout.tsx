@@ -533,6 +533,21 @@ const [phase, setPhase] = useState<Phase>("select");
             </span>
             <span>
               分数<b>{hud.score}</b>
+              <span
+                className="breakout-score-bar"
+                data-hot={hud.score >= 2000 || undefined}
+                title={`分数 ${hud.score}（满刻度按 本关×800 与 500 取大）`}
+                aria-label={`分数 ${hud.score}`}
+              >
+                <i
+                  style={{
+                    width: `${Math.min(
+                      100,
+                      Math.round((hud.score / Math.max(500, (hud.level + 1) * 800)) * 100),
+                    )}%`,
+                  }}
+                />
+              </span>
             </span>
             <span title="多球与残命同屏（掉球扣一命；多球道具可叠加）">
               生命<b className={hud.lives <= 1 ? "game-tip--alert" : undefined}>{"♥".repeat(Math.max(0, hud.lives)) || "0"}</b>

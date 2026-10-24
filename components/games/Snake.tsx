@@ -666,6 +666,37 @@ export default function Snake() {
                       <small> · 开</small>
                     )}
                   </span>
+                  <span
+                    className="snake-edge-bar"
+                    data-edge={hud.edgeHint?.includes("将从") || undefined}
+                    data-near={hud.edgeHint?.includes("靠") || undefined}
+                    title={
+                      hud.edgeHint?.includes("将从")
+                        ? `边缘条 edge：${hud.edgeHint}`
+                        : hud.edgeHint?.includes("靠")
+                          ? `边缘条 near：${hud.edgeHint}`
+                          : "边缘条 safe：穿墙开、未贴边"
+                    }
+                    aria-label={
+                      hud.edgeHint?.includes("将从")
+                        ? "穿墙边缘危险"
+                        : hud.edgeHint?.includes("靠")
+                          ? "穿墙近缘"
+                          : "穿墙安全"
+                    }
+                  >
+                    <i
+                      style={{
+                        width: `${
+                          hud.edgeHint?.includes("将从")
+                            ? 100
+                            : hud.edgeHint?.includes("靠")
+                              ? 60
+                              : 20
+                        }%`,
+                      }}
+                    />
+                  </span>
                 </>
               )}
             </span>

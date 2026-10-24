@@ -1,0 +1,39 @@
+---
+title: K8s Ephemeral Containers：往正在跑的 Pod 里塞调试容器
+date: "2026-10-25"
+category: cloud
+summary: 站内 ephemeral-storage 讲的是临时磁盘配额。这篇只谈 ephemeral containers：kubectl debug、与普通容器的差异、以及不能当 Sidecar 滥用的边界。
+---
+
+**Ephemeral container** 是往 **已存在的 Pod** 里临时附加的调试容器，不重启 Pod、不进 `spec.containers` 常态。磁盘配额见站内 ephemeral-storage；本文只谈调试容器。
+
+## 典型用法
+
+```bash
+kubectl debug -it POD --image=busybox:1.36 --target=APP_CONTAINER
+# 或自定义 profile / share process namespace
+```
+
+- 用于：进不了原镜像（distroless）、看网络/挂载、抓一次现场。  
+- 生命周期：随调试会话；API 里挂在 `ephemeralContainers`，**不能**用常规 rollout 管理。
+
+## 和普通 / Sidecar 的差别
+
+| | 业务容器 | Sidecar | Ephemeral |
+|---|---|---|---|
+| 声明 | Pod 模板 | 模板或原生 sidecar | 运行时附加 |
+| 重启 Pod | 改模板要重建 | 同左 | **不需要** |
+| 用途 | 服务 | 代理/采集 | **临时排障** |
+
+原生 Sidecar（`restartPolicy: Always` init）见站内 Sidecar 文；别把 ephemeral 当长期伴生进程。
+
+## 注意
+
+1. 集群要开特性/足够新的 apiserver；RBAC 需 `pods/ephemeralcontainers`。  
+2. 安全策略（PSA、PSS）可能禁附加；生产先确认。  
+3. 共享进程命名空间、挂载是否可见取决于 `--target` 与能力。  
+4. **不是**修 ephemeral-storage `Evicted` 的手段。
+
+## 一句话
+
+**kubectl debug 附加、用完即走**；排障用 ephemeral container，配额问题仍看 ephemeral-storage。

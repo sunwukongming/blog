@@ -59,6 +59,7 @@ async function CategoryPanel({ params }: { params: Promise<{ slug: string }> }) 
   const minutes = posts.reduce((n, p) => n + p.readingMinutes, 0);
   const pageUrl = SITE_URL ? `${SITE_URL}/categories/${category.slug}` : `/categories/${category.slug}`;
   // batch49: CollectionPage JSON-LD 复核 numberOfItems/isPartOf/about + mainEntity ItemList
+  // batch54: 再核 inLanguage=zh-CN、numberOfItems 与 mainEntity.ItemList 对齐；未改字段语义
   const collectionLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",

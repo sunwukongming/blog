@@ -275,6 +275,24 @@ export default function Poker() {
                       ? "中性"
                       : "偏贵"}
                 </small>
+                <span
+                  className="pk-odds-bar"
+                  data-tier={
+                    Math.round((rules.toCall / (pot + rules.toCall)) * 100) <= 25
+                      ? "low"
+                      : Math.round((rules.toCall / (pot + rules.toCall)) * 100) <= 40
+                        ? "mid"
+                        : "high"
+                  }
+                  title={`需胜率条 ${Math.min(99, Math.round((rules.toCall / (pot + rules.toCall)) * 100))}%`}
+                  aria-label={`需胜率 ${Math.min(99, Math.round((rules.toCall / (pot + rules.toCall)) * 100))} 百分之`}
+                >
+                  <i
+                    style={{
+                      width: `${Math.min(100, Math.round((rules.toCall / (pot + rules.toCall)) * 100))}%`,
+                    }}
+                  />
+                </span>
               </span>
             </>
           )}

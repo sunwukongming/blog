@@ -2308,3 +2308,74 @@ html:has(.page--game) { overscroll-behavior: none; }
 .tetris-level-bar[data-huge] > i {
   background: linear-gradient(90deg, #f87171, #ef4444);
 }
+
+
+/* batch54: snake-edge-bar / breakout-score-bar / pk-odds-bar */
+.snake-edge-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.snake-edge-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #34d399, #22c55e);
+  transition: width 100ms ease-out;
+}
+.snake-edge-bar[data-near] > i {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+.snake-edge-bar[data-edge] > i {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+}
+
+.breakout-score-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.breakout-score-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #93c5fd, #3b82f6);
+  transition: width 100ms ease-out;
+}
+.breakout-score-bar[data-hot] > i {
+  background: linear-gradient(90deg, #f472b6, #a78bfa);
+}
+
+.pk-odds-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.pk-odds-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #86efac, #22c55e);
+  transition: width 100ms ease-out;
+}
+.pk-odds-bar[data-tier="mid"] > i {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+.pk-odds-bar[data-tier="high"] > i {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+}

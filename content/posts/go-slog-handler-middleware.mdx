@@ -1,0 +1,56 @@
+---
+title: Go slog Handler 中间件：包装 Handler 做横切
+date: "2026-10-25"
+category: backend
+summary: 站内 handler 流水线与 Attr 助手讲组合与字段。这篇只谈中间件式包装：在 Handle 前后加采样、红线字段过滤、或统一加 request_id，而不改业务 Log 调用。
+---
+
+`slog.Handler` 可以 **套娃**：外层实现 `Enabled`/`Handle`/`WithAttrs`/`WithGroup`，内层交给真实 JSON/Text Handler。流水线拼装见站内 pipeline 文；本文只谈 **中间件包装模式**。
+
+## 最小形状
+
+```go
+type Middleware func(slog.Handler) slog.Handler
+
+func RedactSecret(next slog.Handler) slog.Handler {
+    return &redactHandler{next: next}
+}
+
+type redactHandler struct{ next slog.Handler }
+
+func (h *redactHandler) Enabled(ctx context.Context, l slog.Level) bool {
+    return h.next.Enabled(ctx, l)
+}
+func (h *redactHandler) Handle(ctx context.Context, r slog.Record) error {
+    r.Attrs(func(a slog.Attr) bool {
+        if a.Key == "password" { /* 改写 Record 或跳过 */ }
+        return true
+    })
+    return h.next.Handle(ctx, r)
+}
+func (h *redactHandler) WithAttrs(as []slog.Attr) slog.Handler {
+    return &redactHandler{next: h.next.WithAttrs(as)}
+}
+func (h *redactHandler) WithGroup(g string) slog.Handler {
+    return &redactHandler{next: h.next.WithGroup(g)}
+}
+```
+
+挂载：`slog.New(RedactSecret(Sample(slog.NewJSONHandler(os.Stdout, nil))))`。
+
+## 适合放中间件的事
+
+- 强制字段：`service`、`env`（也可用 `WithAttrs` 一次挂上）。  
+- **采样**：高基数 debug 按比例丢弃（`Enabled` 里做）。  
+- **脱敏**：token、手机号。  
+- 从 context 抽 `trace_id` 写入 Record。
+
+## 和 pipeline / Attr 文
+
+- 多 Handler fan-out、级别分流 → pipeline。  
+- 单个 Attr 构造 → attr-helpers。  
+- **本文：同一条链上的 Wrapper**。
+
+## 一句话
+
+**Handler 包装 = 日志版中间件**；改横切别去改每一处 `slog.Info`。

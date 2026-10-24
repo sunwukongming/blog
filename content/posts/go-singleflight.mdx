@@ -1,0 +1,58 @@
+---
+title: Go singleflight：DoChan、Forget 与共享错误
+date: "2026-10-25"
+category: backend
+summary: 站内 coalesce 文讲击穿合并的基本 Do。这篇补 DoChan 流式等待、Forget 丢弃飞行中结果、以及 shared 标志与 panic 如何传给等待方。
+---
+
+站内 **go-singleflight-coalesce** 已覆盖 `Do` 合并回源。本文补 **`DoChan` / `Forget` / 返回值里的 shared**，方便在超时取消与主动失效时用对 API。
+
+## Do 回顾与 shared
+
+```go
+v, err, shared := g.Do(key, fn)
+```
+
+第三个返回值 **`shared`**：为 true 表示你不是唯一执行者，结果来自别人的那一次飞行。打点时区分「自己打到 DB」与「搭车」很有用。
+
+## DoChan
+
+```go
+ch := g.DoChan(key, fn)
+select {
+case r := <-ch:
+    // r.Val, r.Err, r.Shared
+case <-ctx.Done():
+    // 调用方超时：飞行中的 fn 仍可能跑完并缓存结果给后来者
+    return ctx.Err()
+}
+```
+
+`DoChan` 适合 **不想阻塞在 Do 上**、要自己 `select` 超时的场景。注意：你的 goroutine 取消 **不会** 自动取消 `fn`；需要 `fn` 自己听 `context`。
+
+## Forget
+
+```go
+g.Forget(key)
+```
+
+丢掉该 key 的 **进行中或已结束仍被记住的** 飞行记录，让下一次 `Do` 重新执行。缓存层已判定结果坏了（例如半包写入）时，避免后来者继续共享脏值。
+
+## panic 与错误
+
+`fn` 里 `panic` 会传给所有等待方（再 panic）；`error` 也会共享。别在 `fn` 里吞掉应让等待方知道的失败，除非你有意「失败也合并」。
+
+## 边界
+
+- key 粒度太粗会把 unrelated 请求绑在一起；太细则合并率低。  
+- 与 `errgroup`：errgroup 管一组任务的取消/等待；singleflight 管 **同 key 去重**。  
+- 不是分布式锁；多进程各自一份 `Group`。  
+- 长时间 `fn` + 大量等待者会堆积 goroutine，必要时在 `fn` 入口限时。
+
+## 对照
+
+| API | 角色 |
+|---|---|
+| `Do` | 阻塞等共享结果 |
+| `DoChan` | 信道 + 自管超时 |
+| `Forget` | 丢掉飞行记录 |

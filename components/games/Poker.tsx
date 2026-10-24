@@ -302,6 +302,28 @@ export default function Poker() {
               }}
             />
           </span>
+          <span
+            className="pk-fold-bar"
+            data-heavy={table.players.filter((p) => p.folded).length >= Math.ceil(table.players.length * 0.6) || undefined}
+            data-none={table.players.filter((p) => p.folded).length === 0 || undefined}
+            title={`已弃牌 ${table.players.filter((p) => p.folded).length}/${table.players.length}`}
+            aria-label={`已弃牌 ${table.players.filter((p) => p.folded).length} 人`}
+          >
+            <i
+              style={{
+                width: `${
+                  table.players.length
+                    ? Math.min(
+                        100,
+                        Math.round(
+                          (table.players.filter((p) => p.folded).length / table.players.length) * 100,
+                        ),
+                      )
+                    : 0
+                }%`,
+              }}
+            />
+          </span>
         </span>
         <span
           className={

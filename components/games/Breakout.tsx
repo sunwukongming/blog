@@ -626,6 +626,19 @@ const [phase, setPhase] = useState<Phase>("select");
                   }}
                 />
               </span>
+              <span
+                className="breakout-clear-bar"
+                data-done={hud.progress >= 100 || undefined}
+                data-late={hud.progress >= 70 && hud.progress < 100 || undefined}
+                title={`清砖进度 ${hud.progress}%（剩 ${hud.brickLeft}/${hud.brickTotal}）`}
+                aria-label={`清砖 ${hud.progress} percent`}
+              >
+                <i
+                  style={{
+                    width: `${Math.min(100, Math.max(0, Math.round(hud.progress)))}%`,
+                  }}
+                />
+              </span>
               <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
               速<b className={hud.lives <= 1 || hud.slow ? "game-tip--alert" : undefined}>{hud.ballSpeed}</b>
               <span

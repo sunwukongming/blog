@@ -27,6 +27,7 @@ export const metadata: Metadata = {
     // batch55: ItemList 补 inLanguage=zh-CN；numberOfItems 仍=playable.length
     // batch60: 再核 ItemList 仅 playable + inLanguage；与 categories/sitemap 注释对齐
     // batch62: 再核 ItemList playable + inLanguage；与 robots host/sitemap 再核对齐
+    // batch64: 再核 ItemList 仅 playable + inLanguage；与 robots 双挂再核对齐
     images: SITE_URL ? [`${SITE_URL}/icon.svg`] : undefined,
   },
 };

@@ -590,6 +590,31 @@ export default function Snake() {
                   }}
                 />
               </span>
+              <span
+                className="snake-score-pace-bar"
+                data-hot={hud.seconds > 0 && hud.score / hud.seconds >= 40 || undefined}
+                data-slow={hud.seconds >= 15 && hud.score / Math.max(1, hud.seconds) < 8 || undefined}
+                title={
+                  hud.seconds > 0
+                    ? `得分配速 ${Math.round((hud.score / hud.seconds) * 10) / 10}/s（满刻度按 50/s）`
+                    : "得分配速 —"
+                }
+                aria-label={
+                  hud.seconds > 0
+                    ? `每秒约 ${Math.round((hud.score / hud.seconds) * 10) / 10} 分`
+                    : "得分配速未知"
+                }
+              >
+                <i
+                  style={{
+                    width: `${
+                      hud.seconds > 0
+                        ? Math.min(100, Math.round((hud.score / hud.seconds / 50) * 100))
+                        : 0
+                    }%`,
+                  }}
+                />
+              </span>
             </span>
             <span title={`蛇长 ${hud.len} 格（满刻度按 40）`}>
               长度<b>{hud.len}</b>

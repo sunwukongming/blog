@@ -1,0 +1,49 @@
+---
+title: CSS / HTML popover=hint：兴趣提示层
+date: "2026-10-25"
+category: frontend
+summary: 站内已有 anchor 与 popover 对照。这篇聚焦 hint 型弹层：popover=hint、兴趣调用（interest invokers）与手动 popover 的分工，以及无障碍与触控。
+---
+
+站内 **css-anchor-vs-popover** 讲定位与普通 popover。**`popover="hint"`**（与兴趣调用草案/实现）面向 **短暂提示**：悬停或聚焦时出现，不抢模态焦点。
+
+## 标记
+
+```html
+<button interestfor="tip">规格</button>
+<div id="tip" popover="hint">含税到岸价，运输 3–5 日</div>
+```
+
+或在支持的浏览器里用兴趣属性把调用者与 hint 层关联。hint 层：
+
+- 默认 **非模态**，不吃 `inert` 整页；  
+- 适合补充分，不适合确认对话框（用 `popover` / `<dialog>`）。
+
+## 与 manual / auto popover
+
+| 类型 | 典型用途 |
+|---|---|
+| `popover="auto"` | 点开菜单、轻量面板，开一个关其它 auto |
+| `popover="manual"` | 完全由脚本控制 |
+| `popover="hint"` | 兴趣/悬停提示，弱打断 |
+
+hint 不应承担表单提交确认；键盘用户需要能聚焦到触发器并读到提示（或等价 `aria-describedby`）。
+
+## 定位
+
+hint 常配合 **CSS anchor** 贴靠触发器；无 anchor 时用现有 `position` + 脚本。避免 hint 遮住触发器本身导致闪烁循环。
+
+## 边界
+
+- 触控无悬停：需点击切换或始终可见的说明，不能只靠 hint。  
+- 内容过长时改用 auto popover 或独立页面。  
+- 浏览器支持仍在演进：生产路径保留 `title` / 可见帮助文案作降级。  
+- 与 **scroll-snap / 动画**：hint 开关别绑在滚动中间态，以免误触。
+
+## 对照
+
+| 机制 | 角色 |
+|---|---|
+| `popover=hint` | 弱提示层 |
+| `popover=auto` | 轻面板 |
+| `<dialog>` | 模态流程 |

@@ -3030,3 +3030,76 @@ html:has(.page--game) { overscroll-behavior: none; }
 .tetris-ghost-depth-bar[data-deep] .tetris-ghost-depth-bar__fill {
   background: linear-gradient(90deg, #86efac, #22c55e);
 }
+
+/* batch64: snake-score-pace-bar / breakout-clear-bar / pk-fold-bar */
+.snake-score-pace-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.snake-score-pace-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+  transition: width 100ms ease-out;
+}
+.snake-score-pace-bar[data-hot] > i {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+}
+.snake-score-pace-bar[data-slow] > i {
+  background: linear-gradient(90deg, #93c5fd, #3b82f6);
+}
+
+.breakout-clear-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.breakout-clear-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #93c5fd, #3b82f6);
+  transition: width 100ms ease-out;
+}
+.breakout-clear-bar[data-late] > i {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+.breakout-clear-bar[data-done] > i {
+  background: linear-gradient(90deg, #86efac, #22c55e);
+}
+
+.pk-fold-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.pk-fold-bar > i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #c4b5fd, #8b5cf6);
+  transition: width 100ms ease-out;
+}
+.pk-fold-bar[data-none] > i {
+  background: linear-gradient(90deg, #86efac, #22c55e);
+}
+.pk-fold-bar[data-heavy] > i {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+}

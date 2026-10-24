@@ -1,0 +1,45 @@
+---
+title: HTTP Cache-Control 指令：max-age、s-maxage 与 no-store
+date: "2026-10-25"
+category: frontend
+summary: 站内已有 revalidation 与 Vary。这篇只拆响应里的 Cache-Control 指令本身：谁可缓存、缓存多久、能否用过期副本，以及和 Next 应用缓存的边界。
+---
+
+站内 **http-cache-revalidation**、**Vary** 讲校验与键变体。这篇只谈响应头 **`Cache-Control`** 里常见 **指令** 的含义。
+
+## 常见指令
+
+```http
+Cache-Control: public, max-age=60, s-maxage=300, stale-while-revalidate=30
+```
+
+| 指令 | 含义 |
+|---|---|
+| `max-age=N` | 浏览器等共享/私有缓存认为新鲜的秒数 |
+| `s-maxage=N` | **只对共享缓存**（CDN）覆盖 max-age |
+| `public` / `private` | 能否进共享缓存；`private` 常配用户个性化 |
+| `no-store` | 不要写入缓存（敏感响应） |
+| `no-cache` | 可存，但每次先校验再当新鲜用 |
+| `must-revalidate` | 过期后必须校验，不能偷用陈旧 |
+| `stale-while-revalidate=N` | 过期后 N 秒内可先返回陈旧，同时后台再验证 |
+
+`immutable` 适合带内容哈希的静态资源：认为 URL 不变则体不变，减少条件请求。
+
+## 和应用层缓存
+
+`Cache-Control` 是 **HTTP 语义**，给浏览器与 CDN 看。Next 的 `"use cache"` / `unstable_cache` 是 **应用进程内/平台** 缓存，不自动等价于你把 `max-age` 写进 HTML 文档响应。页面 ISR 与 CDN 指令要分开设计。
+
+## 边界
+
+- `no-cache` ≠ `no-store`：前者要再验证，后者根本别存。  
+- 带 `Set-Cookie` 或 `Authorization` 的响应当心被共享缓存误存；默认偏 `private`。  
+- 只写 `max-age` 不写 `public` 时，共享缓存行为依实现而定——CDN 文档要核对。  
+- 调试时看实际响应，别只看框架「默认缓存」文案。
+
+## 对照
+
+| 话题 | 文 |
+|---|---|
+| 指令语义 | 本文 |
+| 再验证 / ETag | http-cache-revalidation |
+| 键变体 | http-cache-vary |

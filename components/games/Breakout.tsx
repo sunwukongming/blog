@@ -2,7 +2,7 @@
 
 import { useEffect, useEffectEvent, useRef, useState, type PointerEvent } from "react";
 import { BREAKOUT_LEVELS } from "./breakoutLevels";
-import { buzz, higher, saveRecord, useKeys, useRecord } from "./input";
+import { buzz, higher, saveRecord, setBuzzMuted, useBuzzMuted, useKeys, useRecord } from "./input";
 import LevelSelect from "./LevelSelect";
 
 // 逻辑坐标，画的时候按画布宽度缩放
@@ -281,7 +281,8 @@ export default function Breakout() {
   const [initial] = useState(() => newGame(0));
   const game = useRef<Game>(initial);
   const held = useRef({ left: false, right: false });
-  const [phase, setPhase] = useState<Phase>("select");
+    const buzzMuted = useBuzzMuted();
+const [phase, setPhase] = useState<Phase>("select");
   const [hud, setHud] = useState<Hud>({ score: 0, lives: 3, level: 0, wide: false, slow: false });
   const [record, setRecord] = useState(false);
   const [best] = useRecord("breakout", higher);
@@ -470,7 +471,15 @@ export default function Breakout() {
           </span>
         )}
         <span className="spacer" />
-        {(phase === "running" || phase === "aim" || phase === "paused") && (
+                <button
+          type="button"
+          className="game-btn"
+          aria-pressed={buzzMuted}
+          onClick={() => setBuzzMuted(!buzzMuted)}
+        >
+          {buzzMuted ? "震动关" : "震动开"}
+        </button>
+{(phase === "running" || phase === "aim" || phase === "paused") && (
           <button type="button" className="game-btn" onClick={toggle}>
             {phase === "paused" ? "继续" : "暂停"}
           </button>

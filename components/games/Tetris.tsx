@@ -19,13 +19,17 @@ type Game = {
   board: (Kind | null)[];
   piece: Piece;
   bag: Kind[];
+  /** side hold slot; null when empty */
+  hold: Kind | null;
+  /** false after a hold until current piece locks */
+  canHold: boolean;
   score: number;
   lines: number;
   level: number;
   clearFx: ClearFx | null;
   dropFx: DropFx | null;
 };
-type Stats = { score: number; lines: number; level: number; next: Kind };
+type Stats = { score: number; lines: number; level: number; next: Kind; hold: Kind | null; canHold: boolean };
 
 const KINDS: Kind[] = ["I", "O", "T", "S", "Z", "J", "L"];
 // 每种方块在自己旋转框里的初始格子
@@ -80,6 +84,8 @@ function newGame(): Game {
     board: Array(W * H).fill(null),
     piece: spawn(bag.shift()!),
     bag,
+    hold: null,
+    canHold: true,
     score: 0,
     lines: 0,
     level: 1,
@@ -116,6 +122,23 @@ const dropDistance = (g: Game) => {
   return d;
 };
 
+/** Hold / swap current piece; once per piece until lock */
+function swapHold(g: Game) {
+  if (!g.canHold) return false;
+  const cur = g.piece.kind;
+  if (g.hold == null) {
+    if (g.bag.length < 7) g.bag = refill(g.bag);
+    g.hold = cur;
+    g.piece = spawn(g.bag.shift()!);
+  } else {
+    const kept = g.hold;
+    g.hold = cur;
+    g.piece = spawn(kept);
+  }
+  g.canHold = false;
+  return true;
+}
+
 /** 固定当前方块、消行、出下一块；返回 false 表示堆到顶了 */
 function lock(g: Game) {
   const { piece } = g;
@@ -139,6 +162,7 @@ function lock(g: Game) {
   }
   if (g.bag.length < 7) g.bag = refill(g.bag);
   g.piece = spawn(g.bag.shift()!);
+  g.canHold = true;
   return !collides(g.board, g.piece);
 }
 
@@ -228,13 +252,14 @@ function draw(el: HTMLCanvasElement | null, g: Game, showPiece: boolean, view?: 
   for (const [cx, cy] of piece.cells) block(px + cx, py + cy, COLORS[piece.kind]);
 }
 
-type Action = "left" | "right" | "rotate" | "down" | "drop";
+type Action = "left" | "right" | "rotate" | "down" | "drop" | "hold";
 const PAD: [Action, string, string][] = [
   ["left", "←", "左移"],
   ["rotate", "旋转", "旋转"],
   ["down", "↓", "下移"],
   ["drop", "落底", "直接落下"],
   ["right", "→", "右移"],
+  ["hold", "Hold", "暂存 / 交换"],
 ];
 const REPEAT: Partial<Record<Action, true>> = { left: true, right: true, down: true };
 const KEY_ACTION: Record<string, Action> = {
@@ -253,6 +278,9 @@ const KEY_ACTION: Record<string, Action> = {
   s: "down",
   S: "down",
   " ": "drop",
+  c: "hold",
+  C: "hold",
+  Shift: "hold",
 };
 
 export default function Tetris() {
@@ -260,7 +288,7 @@ export default function Tetris() {
   const [initial] = useState(newGame);
   const game = useRef<Game>(initial);
   const [phase, setPhase] = useState<Phase>("ready");
-  const [stats, setStats] = useState<Stats>({ score: 0, lines: 0, level: 1, next: initial.bag[0] });
+  const [stats, setStats] = useState<Stats>({ score: 0, lines: 0, level: 1, next: initial.bag[0], hold: null, canHold: true });
   const [record, setRecord] = useState(false);
   const [best, submitBest] = useRecord("tetris", (next, prev) => next > prev);
   const repeat = useRef<number | null>(null);
@@ -272,7 +300,7 @@ export default function Tetris() {
 
   const sync = () => {
     const g = game.current;
-    setStats({ score: g.score, lines: g.lines, level: g.level, next: g.bag[0] });
+    setStats({ score: g.score, lines: g.lines, level: g.level, next: g.bag[0], hold: g.hold, canHold: g.canHold });
   };
 
   useEffect(() => {
@@ -365,7 +393,9 @@ export default function Tetris() {
     if (a === "left") move(g, -1, 0);
     else if (a === "right") move(g, 1, 0);
     else if (a === "rotate") rotate(g);
-    else if (a === "down") {
+    else if (a === "hold") {
+      if (swapHold(g)) buzz(10);
+    } else if (a === "down") {
       if (move(g, 0, 1)) g.score += 1;
     } else {
       const d = dropDistance(g);
@@ -512,6 +542,18 @@ export default function Tetris() {
           )}
         </div>
         <div className="tetris-side">
+          <span>暂存</span>
+          <div
+            className="tetris-next"
+            data-dim={stats.canHold === false ? "true" : undefined}
+            aria-label={stats.hold ? `暂存 ${stats.hold} 形` : "暂存为空"}
+          >
+            {Array.from({ length: 8 }, (_, i) => {
+              const kind = stats.hold;
+              const on = kind ? SHAPES[kind].some(([x, y]) => x === i % 4 && y === Math.floor(i / 4)) : false;
+              return <i key={i} style={on && kind ? { background: COLORS[kind] } : undefined} />;
+            })}
+          </div>
           <span>下一个</span>
           <div className="tetris-next" aria-label={`下一个是 ${stats.next} 形`}>
             {Array.from({ length: 8 }, (_, i) => {
@@ -549,7 +591,7 @@ export default function Tetris() {
           {phase === "paused" ? "继续" : "暂停"}
         </button>
       </div>
-      <p className="game-hint when-touch">棋盘滑动：左右移动，上滑旋转，下滑直接落底；下方 ↓ 加速，也可点暂停。</p>
+      <p className="game-hint when-touch">棋盘滑动：左右移动，上滑旋转，下滑落底；下方 Hold 暂存，↓ 加速，可点暂停。</p>
     </div>
   );
 }

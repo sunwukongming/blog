@@ -91,8 +91,39 @@ export function useSwipe(
   };
 }
 
-/** 手机上轻震一下；不支持的设备（包括 iOS Safari）直接忽略 */
+const BUZZ_MUTE_KEY = "gm-lab:buzz-muted";
+
+export function isBuzzMuted() {
+  try {
+    return localStorage.getItem(BUZZ_MUTE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function setBuzzMuted(muted: boolean) {
+  try {
+    localStorage.setItem(BUZZ_MUTE_KEY, muted ? "1" : "0");
+  } catch {}
+  buzzMuteListeners.forEach((l) => l());
+}
+
+const buzzMuteListeners = new Set<() => void>();
+
+export function subscribeBuzzMute(onStore: () => void) {
+  buzzMuteListeners.add(onStore);
+  return () => {
+    buzzMuteListeners.delete(onStore);
+  };
+}
+
+export function useBuzzMuted() {
+  return useSyncExternalStore(subscribeBuzzMute, () => isBuzzMuted(), () => false);
+}
+
+/** vibrate; no-op when muted or unsupported */
 export function buzz(ms: number | number[]) {
+  if (isBuzzMuted()) return;
   try {
     navigator.vibrate?.(ms);
   } catch {}

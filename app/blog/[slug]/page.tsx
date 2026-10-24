@@ -62,7 +62,7 @@ async function PostBody({ params }: { params: Promise<{ slug: string }> }) {
         <h1 className="display">{post.title}</h1>
         {post.summary && <p className="lede">{post.summary}</p>}
       </header>
-      {headings.length >= 3 && <Toc headings={headings} />}
+      {headings.length >= 2 && <Toc headings={headings} />}
       <article className="panel article prose" data-ui>
         <MdxContent source={post.body} />
       </article>

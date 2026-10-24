@@ -576,7 +576,7 @@ html:has(.page--game) { overscroll-behavior: none; }
 .pad--tetris {
   grid-template-columns: repeat(3, 1fr);
   grid-template-areas:
-    ". rotate ."
+    "hold rotate ."
     "left down right"
     "drop drop pause";
 }
@@ -694,3 +694,13 @@ html:has(.page--game) { overscroll-behavior: none; }
   .memory-card[data-matched] { animation: none; }
 }
 .t2048 { touch-action: none; }
+
+.toc--collapsible details { margin: 0; }
+.toc--collapsible summary.toc__title {
+  cursor: pointer; list-style: none; user-select: none;
+  margin: 0 0 6px; font: 600 12px/1.4 var(--font-mono), monospace;
+  letter-spacing: 0.08em; color: color-mix(in oklab, var(--muted) 70%, var(--fg));
+}
+.toc--collapsible summary.toc__title::-webkit-details-marker { display: none; }
+.toc a { color: color-mix(in oklab, var(--muted) 55%, var(--fg)); }
+.tetris-next[data-dim="true"] { opacity: 0.55; }

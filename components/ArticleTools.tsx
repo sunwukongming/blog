@@ -69,21 +69,23 @@ export function Toc({ headings }: { headings: Heading[] }) {
   }, [headings]);
 
   return (
-    <nav ref={root} className="toc" aria-label="目录" data-ui>
-      <p className="toc__title">目录</p>
-      <ol>
-        {headings.map((h) => (
-          <li key={h.id} data-depth={h.depth}>
-            <a
-              href={`#${h.id}`}
-              aria-current={active === h.id ? "location" : undefined}
-              onClick={() => setActive(h.id)}
-            >
-              {h.text}
-            </a>
-          </li>
-        ))}
-      </ol>
+    <nav ref={root} className="toc toc--collapsible" aria-label="目录" data-ui>
+      <details open>
+        <summary className="toc__title">目录 · {headings.length} 节</summary>
+        <ol>
+          {headings.map((h) => (
+            <li key={h.id} data-depth={h.depth}>
+              <a
+                href={`#${h.id}`}
+                aria-current={active === h.id ? "location" : undefined}
+                onClick={() => setActive(h.id)}
+              >
+                {h.text}
+              </a>
+            </li>
+          ))}
+        </ol>
+      </details>
     </nav>
   );
 }

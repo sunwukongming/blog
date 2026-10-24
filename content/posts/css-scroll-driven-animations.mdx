@@ -1,0 +1,32 @@
+---
+title: CSS Scroll-Driven Animations：进度跟滚动走，少绑一层 JS
+date: "2026-10-24"
+category: frontend
+summary: animation-timeline: scroll() / view() 让淡入、进度条、视差可以声明式完成。注意无障碍、性能与不支持时的回退。
+---
+
+滚动联动动画以前多半是 `scroll` 监听 + `requestAnimationFrame`。**Scroll-Driven Animations** 把时间轴接到滚动容器或元素可见进度上，样式里就能写。
+
+## 两种时间轴
+
+- `animation-timeline: scroll()`：相对滚动容器的滚动量。  
+- `animation-timeline: view()`：相对元素进入/离开视口的进度（适合揭示动画）。
+
+配 `animation-range` 可裁一段进度，避免整页滚完才播完。
+
+## 适用与不适用
+
+适合：阅读进度、章节淡入、轻量视差、目录高亮的辅助动效。  
+谨慎：关键信息只靠动画出现、大幅 layout 抖动、低端机上的滤镜连环画。
+
+`prefers-reduced-motion: reduce` 时应减弱或关掉；这是可访问性默认项，不是可选项。
+
+## 工程笔记
+
+| 点 | 说明 |
+|---|---|
+| 支持度 | 渐进增强；不支持时保持静态终态或短 CSS transition |
+| 性能 | 优先 `transform` / `opacity`；少改 height 触发布局 |
+| 与锚点滚动 | `scroll-behavior`、scroll margin 与 timeline 一起测 |
+
+和 `css-anchor-positioning` 一样：能进 CSS 的交互态就别再挂全局监听，但 **回退与减少动态** 要先写进组件契约。

@@ -36,6 +36,10 @@ type Game = {
   lastWasRotate: boolean;
   /** latest clear announcement */
   clearTip: string | null;
+  /** consecutive line-clear locks */
+  combo: number;
+  /** last clear was difficult (Tetris / T-Spin) — arms Back-to-Back */
+  b2bArmed: boolean;
 };
 type Stats = {
   score: number;
@@ -45,6 +49,8 @@ type Stats = {
   hold: Kind | null;
   canHold: boolean;
   clearTip: string | null;
+  combo: number;
+  b2b: boolean;
 };
 
 const KINDS: Kind[] = ["I", "O", "T", "S", "Z", "J", "L"];
@@ -115,6 +121,8 @@ function newGame(): Game {
     lockResets: 0,
     lastWasRotate: false,
     clearTip: null,
+    combo: 0,
+    b2bArmed: false,
   };
 }
 
@@ -223,17 +231,27 @@ function lock(g: Game) {
     const shift = Array<number>(H).fill(0);
     keptRows.forEach((oldY, i) => (shift[cleared + i] = cleared + i - oldY));
     g.clearFx = { rows: rows.flatMap((r, y) => (r.every((c) => c !== null) ? [y] : [])), shift, at: performance.now() };
+    const difficult = tspin || cleared >= 4;
+    const b2b = difficult && g.b2bArmed;
+    g.combo += 1;
     const base = LINE_SCORE[cleared] * g.level;
-    g.score += tspin ? base + 400 * g.level * cleared : base;
+    let gained = tspin ? base + 400 * g.level * cleared : base;
+    if (b2b) gained = Math.floor(gained * 1.5);
+    if (g.combo > 1) gained += 50 * (g.combo - 1) * g.level;
+    g.score += gained;
     g.lines += cleared;
     g.level = 1 + Math.floor(g.lines / 10);
-    g.clearTip = tspin
+    const core = tspin
       ? cleared >= 2
         ? `T-Spin ${CLEAR_NAMES[cleared]}`
         : "T-Spin 单消！"
       : CLEAR_NAMES[cleared];
+    const parts = [b2b ? "Back-to-Back" : null, core, g.combo > 1 ? `连消 ×${g.combo}` : null].filter(Boolean);
+    g.clearTip = parts.join(" · ");
+    g.b2bArmed = difficult;
   } else {
     g.clearTip = null;
+    g.combo = 0;
   }
   g.lastWasRotate = false;
   if (g.bag.length < 7) g.bag = refill(g.bag);
@@ -376,6 +394,8 @@ export default function Tetris() {
     hold: null,
     canHold: true,
     clearTip: null,
+    combo: 0,
+    b2b: false,
   });
   const [record, setRecord] = useState(false);
   const [best, submitBest] = useRecord("tetris", (next, prev) => next > prev);
@@ -396,6 +416,8 @@ export default function Tetris() {
       hold: g.hold,
       canHold: g.canHold,
       clearTip: g.clearTip,
+      combo: g.combo,
+      b2b: g.b2bArmed,
     });
   };
 
@@ -428,7 +450,13 @@ export default function Tetris() {
     if (!lock(g)) return gameOver();
     if (g.lines > before) {
       const n = g.lines - before;
-      buzz(g.clearTip?.startsWith("T-Spin") || n >= 4 ? [20, 30, 20, 40] : 25);
+      buzz(
+        g.clearTip?.includes("Back-to-Back") || g.clearTip?.startsWith("T-Spin") || n >= 4
+          ? [20, 30, 20, 40]
+          : g.combo > 1
+            ? [15, 25, 15]
+            : 25,
+      );
     }
     sync();
   };
@@ -648,6 +676,16 @@ export default function Tetris() {
         <span>
           等级<b>{stats.level}</b>
         </span>
+        {stats.combo > 1 && (
+          <span>
+            连消<b>×{stats.combo}</b>
+          </span>
+        )}
+        {stats.b2b && (
+          <span title="下一次 Tetris / T-Spin 将触发 Back-to-Back">
+            B2B<b>就绪</b>
+          </span>
+        )}
         <span className="spacer" />
         {(phase === "running" || phase === "paused") && (
           <button type="button" className="game-btn" onClick={toggle}>
@@ -750,7 +788,7 @@ export default function Tetris() {
           {phase === "paused" ? "继续" : "暂停"}
         </button>
       </div>
-      <p className="game-hint when-mouse">旋转后卡住 T 形再消行可触发 T-Spin 提示；一次消 4 行是 Tetris。</p>
+      <p className="game-hint when-mouse">连续消行有连消加成；Tetris / T-Spin 可累积 Back-to-Back。旋转卡住 T 形再消行可 T-Spin。</p>
       <p className="game-hint when-touch">棋盘滑动：左右移动，上滑旋转，下滑落底；下方 Hold 暂存，↓ 加速，可点暂停。消行与 T-Spin 有顶部提示。</p>
     </div>
   );

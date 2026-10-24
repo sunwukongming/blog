@@ -10,7 +10,7 @@ export const SITE_URL = siteUrl ? siteUrl.replace(/\/$/, "") : null;
 export const SITE = {
   name: "GM Lab",
   description:
-    "GM Lab：一间可点的书房，里面是 Go / 云原生 / OpenTelemetry 与前端笔记，桌上还有几个能直接玩的小游戏。",
+    "GM Lab：可点的 3D 书房——电脑进 Go / 云原生 / OpenTelemetry 与前端笔记，手柄打开桌上小游戏，书架与地球仪通往分类与归档。",
   author: "GM",
 };
 

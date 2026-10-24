@@ -1,0 +1,28 @@
+---
+title: Kubernetes NetworkPolicy 入门：先默认拒绝，再按端口放行
+date: "2026-10-24"
+category: cloud
+summary: NetworkPolicy 不是「装了 CNI 就安全」。明确 podSelector、ingress/egress 与命名空间边界，比复制一份 allow-all 示例更重要。
+---
+
+集群里服务默认往往 **东西向全通**。NetworkPolicy 用标签选择器收敛谁可以连谁。没有支持策略的 CNI，YAML 只是摆设。
+
+## 最小心智模型
+
+1. **选中谁**：`podSelector`（空选择器有时表示命名空间内全部，务必读清实现）。  
+2. **方向**：`Ingress` / `Egress` 分开写。  
+3. **对端**：另一个 podSelector、namespaceSelector，或 ipBlock。  
+4. **端口与协议**：只开需要的；别 `except` 出意外大洞。
+
+默认拒绝的套路：先在命名空间落到「无策略时隔离」的模式（视 CNI/控制器而定），再为前端→API、API→DB 写显式放行。
+
+## 常见坑
+
+| 坑 | 结果 |
+|---|---|
+| 只写 Ingress 忘了 DNS/egress | Pod 解析失败或拉不到镜像依赖 |
+| 用 `0.0.0.0/0` 图省事 | 策略形同虚设 |
+| 标签漂移 | 新副本对不上选择器，间歇 503 |
+| 与 Service mesh 叠加 | 两套策略语义要画清楚，避免互相「以为对方管了」 |
+
+与 `k8s-probes-resources`、`k8s-graceful-drain` 同一层：流量与生命周期都要有边界。策略变更走小流量命名空间验证，再推广。

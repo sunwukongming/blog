@@ -9,6 +9,10 @@ const escape = (s: string) =>
 async function buildFeed(base: string) {
   "use cache";
   const posts = await getAllPosts();
+  const latest = posts[0]?.date;
+  const lastBuild = latest
+    ? new Date(`${latest}T00:00:00+08:00`).toUTCString()
+    : new Date().toUTCString();
   const items = posts
     .map((p) => {
       const link = `${base}/blog/${p.slug}`;
@@ -31,6 +35,7 @@ async function buildFeed(base: string) {
     <link>${base}</link>
     <description>${escape(SITE.description)}</description>
     <language>zh-CN</language>
+    <lastBuildDate>${lastBuild}</lastBuildDate>
     <atom:link href="${base}/feed.xml" rel="self" type="application/rss+xml" />
 ${items}
   </channel>

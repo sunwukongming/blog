@@ -1,0 +1,27 @@
+---
+title: OpenTelemetry Baggage 与 Attributes：别把上下文当指标维度
+date: "2026-10-24"
+category: cloud
+summary: Baggage 跨进程传播业务键；Attributes 描述当前 span/metric。混用会把高基数标签打进后端，或让敏感字段跟着请求走完全网。
+---
+
+排障时常见两种「带点上下文」的方式：span/metric 上的 **Attributes**，以及沿用 W3C Baggage 传播的键值。名字像，职责不同。
+
+## 分工
+
+| | Attributes | Baggage |
+|---|---|---|
+| 作用域 | 当前信号（这个 span / 这个点） | 随上下文向下游传播 |
+| 典型内容 | `http.route`、`db.system`、错误类型 | `tenant`、`feature_flag`、关联单号（慎） |
+| 风险 | 高基数炸存储与查询 | 泄露 PII、被无关服务误读进属性 |
+
+Baggage **不会**自动变成 span attribute；要显式拷贝。反过来，把所有 attribute 塞进 baggage 等于让每个下游都背你的字典。
+
+## 实践建议
+
+1. 传播键白名单：只放下游决策真正需要的（如租户、金丝雀桶）。  
+2. 禁止在 baggage 放 token、邮箱、原文 SQL。  
+3. 写入 metric 维度前先问：基数是否可控？能否先聚合再标签？  
+4. 与采样（见 `otel-sampling-tradeoffs`）分开想：没采到的 span 仍可能已传播 baggage。
+
+追踪怎么铺见 `otel-tracing-in-prod`。本文只钉死：**传播通道 ≠ 遥测维度**。

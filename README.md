@@ -50,11 +50,11 @@ summary: 一句话摘要
 
 ## 内容进度
 
-本地持续 enrichment。第十二批：Redis Streams vs Kafka、Go slog、Next PPR、Tetris T-Spin / Snake 穿墙 HUD。第十三批：CSS Anchor、EXPLAIN ANALYZE、errgroup；Breakout/Poker/Memory HUD。第十四批：HTTP 再验证、Go 表驱动夹具、Vue Suspense；扫雷开图进度、2048 下一档/可合并提示；/blog description 与游戏页 OG/Twitter。
+本地持续 enrichment。第十二批：Redis Streams vs Kafka、Go slog、Next PPR、Tetris T-Spin / Snake 穿墙 HUD。第十三批：CSS Anchor、EXPLAIN ANALYZE、errgroup；Breakout/Poker/Memory HUD。第十四批：HTTP 再验证、表驱动夹具、Vue Suspense；扫雷/2048 HUD。第十五批：OTel baggage、CSS scroll-driven、NetworkPolicy；Tetris B2B/连消、Snake 加速档；首页 description 对齐与 feed lastBuildDate。
 
 ## SEO 与订阅
 
-- `/feed.xml`：RSS 订阅（item 含 author，摘要用 CDATA）
+- `/feed.xml`：RSS（author、CDATA 摘要、channel lastBuildDate）
 - `/archive`：按年折叠归档，带 SEO description
 - `/sitemap.xml`、`/robots.txt`：给搜索引擎（文章 lastmod 用发布日，列表页用最新文章日）
 - 首页、分类、文章列表与游戏列表页带 description；游戏详情 OG/Twitter 摘要
@@ -101,8 +101,8 @@ lib/og.tsx                  分享图模板
 - 扫雷：chord；安全格开图 % + 收官 tip；剩余雷少时高亮
 - 德州扑克：盲注翻倍提示；底池占筹码比例与跟注打平胜率提示
 - 打砖块：多球（M）、剩余砖/完成度 HUD、关卡难度提示（球速/拍宽）
-- 俄罗斯方块：锁定延迟 + Hold/幽灵/预览；消行与 T-Spin 顶部提示（角落判定）
-- 贪吃蛇穿墙关：边框脉冲 + 顶栏「穿墙」徽章 + 贴边出口方向提示
+- 俄罗斯方块：锁定延迟 + Hold/幽灵；T-Spin、连消与 Back-to-Back 提示
+- 贪吃蛇：穿墙 HUD + 加速档（步进 ms）提示；关卡/无尽均显示
 - `components/games/snakeLevels.ts`：20×20 地图，`#` 墙，`S` 蛇头（左边两格要空着，开局向右走）；`goal` 吃够多少过关，`speed` 开局速度，`wrap` 能否穿墙，`bonus` 是否刷金色食物
 - `components/games/breakoutLevels.ts`：每行 10 格，`1` 普通砖，`2` / `3` 硬砖，`#` 金属块（打不碎），`W` / `S` / `L` / `M` 带道具的砖（M=多球）
 

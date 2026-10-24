@@ -34,7 +34,7 @@ type Game = {
   /** 吃到东西时的光环特效 */
   fx: { x: number; y: number; at: number; color: string }[];
 };
-type Hud = { eaten: number; score: number; seconds: number; wrap: boolean; edgeHint: string | null };
+type Hud = { eaten: number; score: number; seconds: number; wrap: boolean; edgeHint: string | null; speedMs: number; speedTier: string };
 
 const VEC: Record<Dir, P> = { up: { x: 0, y: -1 }, down: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } };
 const OPPOSITE: Record<Dir, Dir> = { up: "down", down: "up", left: "right", right: "left" };
@@ -125,6 +125,15 @@ const interval = (g: Game) =>
   g.mode.kind === "level"
     ? Math.max(60, SNAKE_LEVELS[g.mode.index].speed - g.eaten * 2)
     : Math.max(65, 150 - g.score * 3);
+
+
+function speedTier(ms: number) {
+  if (ms >= 140) return "慢";
+  if (ms >= 110) return "中";
+  if (ms >= 85) return "快";
+  if (ms >= 70) return "很快";
+  return "极速";
+}
 
 type StepResult = "move" | "eat" | "gold" | "dead" | "clear";
 
@@ -336,7 +345,7 @@ export default function Snake() {
   const game = useRef<Game>(initial);
   const [mode, setMode] = useState<Mode>(initial.mode);
   const [phase, setPhase] = useState<Phase>("select");
-  const [hud, setHud] = useState<Hud>({ eaten: 0, score: 0, seconds: 0, wrap: false, edgeHint: null });
+  const [hud, setHud] = useState<Hud>({ eaten: 0, score: 0, seconds: 0, wrap: false, edgeHint: null, speedMs: 150, speedTier: "中" });
   const [record, setRecord] = useState(false);
   const [unlocked] = useRecord("snake-unlocked", higher);
   const [best] = useRecord("snake", higher);
@@ -358,12 +367,15 @@ export default function Snake() {
 
   const sync = () => {
     const g = game.current;
+    const speedMs = interval(g);
     setHud({
       eaten: g.eaten,
       score: g.score,
       seconds: Math.floor(g.time),
       wrap: g.wrap,
       edgeHint: wrapHint(g),
+      speedMs,
+      speedTier: speedTier(speedMs),
     });
   };
 
@@ -483,6 +495,9 @@ export default function Snake() {
             <span>
               时间<b>{hud.seconds}s</b>
             </span>
+            <span title={`步进 ${hud.speedMs}ms`}>
+              速度<b>{hud.speedTier}</b>
+            </span>
             {hud.wrap && (
               <span
                 className="snake-wrap-badge"
@@ -501,6 +516,9 @@ export default function Snake() {
             <span>
               最高<b>{best ?? 0}</b>
             </span>
+            <span title={`步进 ${hud.speedMs}ms`}>
+              速度<b>{hud.speedTier}</b>
+            </span>
           </>
         )}
         <span className="spacer" />
@@ -510,14 +528,20 @@ export default function Snake() {
           </button>
         )}
       </div>
-      {level && (phase === "running" || phase === "paused") && (
+      {(phase === "running" || phase === "paused") && (
         <p
-          className={hud.wrap && hud.edgeHint?.includes("将从") ? "game-tip game-tip--alert" : "game-tip"}
+          className={
+            (hud.wrap && hud.edgeHint?.includes("将从")) || hud.speedTier === "极速" || hud.speedTier === "很快"
+              ? "game-tip game-tip--alert"
+              : "game-tip"
+          }
           aria-live="polite"
         >
           {hud.wrap && hud.edgeHint
-            ? hud.edgeHint
-            : `第 ${levelNo} 关·${level.name}：目标 ${Math.min(hud.eaten, level.goal)}/${level.goal}${level.bonus ? " · 有金色食物" : ""}`}
+            ? `${hud.edgeHint} · 速度${hud.speedTier}（${hud.speedMs}ms）`
+            : level
+              ? `第 ${levelNo} 关·${level.name}：目标 ${Math.min(hud.eaten, level.goal)}/${level.goal}${level.bonus ? " · 有金色食物" : ""} · 加速档 ${hud.speedTier}（${hud.speedMs}ms）`
+              : `无尽模式 · 加速档 ${hud.speedTier}（${hud.speedMs}ms）· 越高分越快`}
         </p>
       )}
       <div className="game-stage" {...swipe}>

@@ -145,6 +145,11 @@ export default function Minesweeper() {
 
   const { level, cells, phase } = game;
   const flags = cells.filter((c) => c.flag).length;
+  const safeTotal = level.w * level.h - level.mines;
+  const safeOpen = cells.filter((c) => c.open && !c.mine).length;
+  const safeProgress = safeTotal === 0 ? 100 : Math.round((safeOpen / safeTotal) * 100);
+  const safeLeft = safeTotal - safeOpen;
+  const lateClear = phase === "playing" && safeLeft > 0 && safeLeft <= Math.max(5, Math.ceil(safeTotal * 0.12));
   const seconds = Math.floor(
     phase === "playing" ? Math.max(0, now - game.startedAt) / 1000 : phase === "ready" ? 0 : (game.endedAt - game.startedAt) / 1000,
   );
@@ -317,8 +322,15 @@ export default function Minesweeper() {
           title="剩余雷数 = 本局雷数 − 已插旗"
         >
           剩余雷<b>{level.mines - flags}</b>
+        </span>
+        <span
+          className="mine-progress"
+          data-late={lateClear || undefined}
+          title="安全格开图进度（不含雷）"
+        >
+          开图<b>{safeProgress}%</b>
           <small>
-            {Math.round((cells.filter((c) => c.open).length / (level.w * level.h)) * 100)}%
+            {safeOpen}/{safeTotal}
           </small>
         </span>
         <span>
@@ -366,6 +378,13 @@ export default function Minesweeper() {
           </button>
         ))}
       </div>
+      {phase === "playing" && (
+        <p className={lateClear ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">
+          {lateClear
+            ? `收官：还剩 ${safeLeft} 格安全区未开 · 开图 ${safeProgress}% · 剩余雷标记 ${level.mines - flags}`
+            : `开图 ${safeProgress}%（安全格 ${safeOpen}/${safeTotal}）· 旗 ${flags}/${level.mines}`}
+        </p>
+      )}
       <div className="game-bar">
         <button type="button" className="game-btn" aria-pressed={flagMode} onClick={() => setFlagMode(!flagMode)}>
           <FlagIcon /> 插旗模式
@@ -383,16 +402,20 @@ export default function Minesweeper() {
             : (
               <>
                 <span className="when-mouse">
-                  {phase === "playing" && level.mines - flags <= 3 && level.mines - flags > 0
-                    ? `还剩 ${level.mines - flags} 颗雷。中键或双击已翻数字可快速翻周围（旗数要对齐）。`
-                    : best !== null
-                      ? `${level.label}最快 ${best} 秒。点/中键/双击已翻数字可 chord；回车翻开，空格或 F 插旗。`
-                      : "点已翻数字、中键或双击可 chord（旗数=数字）。回车翻开，空格/F 插旗。第一下安全区。"}
+                  {lateClear
+                    ? `开图 ${safeProgress}%，还剩 ${safeLeft} 格。中键或双击已翻数字 chord（旗数对齐）收官更快。`
+                    : phase === "playing" && level.mines - flags <= 3 && level.mines - flags > 0
+                      ? `还剩 ${level.mines - flags} 颗雷。中键或双击已翻数字可快速翻周围（旗数要对齐）。`
+                      : best !== null
+                        ? `${level.label}最快 ${best} 秒。点/中键/双击已翻数字可 chord；回车翻开，空格或 F 插旗。`
+                        : "点已翻数字、中键或双击可 chord（旗数=数字）。回车翻开，空格/F 插旗。第一下安全区。"}
                 </span>
                 <span className="when-touch">
-                  {phase === "playing" && level.mines - flags <= 3 && level.mines - flags > 0
-                    ? `还剩 ${level.mines - flags} 颗雷。点已翻开的数字（旗数对齐）可一次翻周围。`
-                    : `${best !== null ? `${level.label}最快 ${best} 秒。` : ""}轻点翻开，长按插旗；点已翻数字可 chord。第一下安全区。`}
+                  {lateClear
+                    ? `开图 ${safeProgress}%，还剩 ${safeLeft} 格。点已翻数字（旗数对齐）chord 收官。`
+                    : phase === "playing" && level.mines - flags <= 3 && level.mines - flags > 0
+                      ? `还剩 ${level.mines - flags} 颗雷。点已翻开的数字（旗数对齐）可一次翻周围。`
+                      : `${best !== null ? `${level.label}最快 ${best} 秒。` : ""}轻点翻开，长按插旗；点已翻数字可 chord。第一下安全区。`}
                 </span>
               </>
             )}

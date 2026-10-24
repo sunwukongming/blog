@@ -752,6 +752,14 @@ html:has(.page--game) { overscroll-behavior: none; }
   color: var(--accent);
   font-weight: 600;
 }
+.mine-progress {
+  display: inline-flex; align-items: baseline; gap: 4px;
+  font: 400 12px var(--font-mono), monospace; color: var(--muted);
+}
+.mine-progress b { color: var(--fg); font-size: 15px; font-variant-numeric: tabular-nums; }
+.mine-progress small { opacity: 0.75; }
+.mine-progress[data-late] b { color: var(--accent); }
+
 .snake-wrap-badge {
   display: inline-flex; align-items: center; gap: 4px;
   padding: 2px 8px; border-radius: 999px;

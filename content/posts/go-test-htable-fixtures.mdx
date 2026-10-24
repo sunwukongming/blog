@@ -1,0 +1,34 @@
+---
+title: Go 测试里的表驱动与夹具：少复制，多把案例写清楚
+date: "2026-10-24"
+category: backend
+summary: table-driven 把输入/期望摆成表；夹具负责造数与清理。两者分开，比在每个 TestXxx 里复制三段 setup 好维护。
+---
+
+Go 社区常说 table-driven tests：一个 `for _, tc := range cases` 跑完分支。真正拖慢套件的，往往是 **每个案例都重新发明构造数据的方式**。
+
+## 表驱动写什么
+
+每行至少：
+
+- 名称（`name` / `t.Run`）  
+- 输入与期望  
+- 可选：`wantErr`、超时、特性开关  
+
+断言失败时带上 `tc.name`，CI 日志才读得下去。
+
+## 夹具放哪
+
+| 层级 | 做法 |
+|---|---|
+| 纯函数 | 表内字面量即可 |
+| 需要临时目录 / 文件 | `t.TempDir()`，案例共享 helper |
+| DB / Redis | 测试容器或 build tag；`t.Cleanup` 回滚 |
+
+Helper 返回「已就绪的依赖 + cleanup」，不要返回全局可变单例。并发表用 `t.Parallel()` 时，夹具必须隔离。
+
+## 和 golden file
+
+输出量大时用 golden（`*-golden.json`）+ 更新开关；小结构体仍适合写在表里。别让 golden 变成「看不懂就 `-update`」的逃逸口——review 要看 diff。
+
+表驱动管 **案例矩阵**，夹具管 **环境寿命**。拆开之后，加一条回归通常只是多一行表。

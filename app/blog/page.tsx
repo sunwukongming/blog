@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import PostFilter from "@/components/PostFilter";
 import { getAllPosts } from "@/lib/posts";
 
-export const metadata: Metadata = { title: "文章" };
+export const metadata: Metadata = {
+  title: "文章",
+  description: "GM Lab 文章列表：Go、云原生、可观测与前端笔记；支持搜索与按分类筛选，每篇对应卡片环上的一张卡。",
+};
 
 export default async function BlogIndex() {
   const posts = await getAllPosts();

@@ -1,0 +1,30 @@
+---
+title: Vue 3 Suspense 与 async setup：边界要画在页面而不是每个组件
+date: "2026-10-24"
+category: frontend
+summary: async setup 能等数据再挂载，但 Suspense 嵌套过深会把加载态碎成一片。优先在路由/页面级挂 fallback，子组件保持同步。
+---
+
+`<Suspense>` 让组件树可以「先出壳、再等异步子孙」。`setup` 写成 `async` 并 `await` 请求，是常见用法——也是瀑布与闪烁的来源。
+
+## 推荐边界
+
+1. **页面 / 路由级** 包一层 Suspense，fallback 用骨架或路由级 Loading。  
+2. 叶子展示组件尽量 **同步 setup**；数据用父级注入、props，或明确的 `v-if`。  
+3. 多个独立异步块：多个 Suspense 或顶层一次并行拉齐，避免父等子、子再等孙的串行链。
+
+## 和 router、SSR
+
+- 路由 `beforeEnter` / loader 能解决的，不必再让每个面板 `async setup`。  
+- SSR/流式场景要确认版本与实验特性；客户端-only 的异步块用 `<ClientOnly>` 或显式挂载时机。  
+- 错误用 `onErrorCaptured` 或错误边界组件，别让未捕获 rejection 白屏。
+
+## 常见味道
+
+| 味道 | 更好的做法 |
+|---|---|
+| 每个卡片都 async setup | 列表接口一次返回，卡片同步渲染 |
+| fallback 只有「加载中」三字 | 骨架对齐最终布局，减 CLS |
+| 取消请求靠运气 | 用 `AbortController` 或作用域 effect 清理 |
+
+与 `vue3-composable-boundaries` 一致：异步是依赖方向问题，不只是语法糖。把 Suspense 当 **页面缝**，不要当每个小组件的默认外壳。

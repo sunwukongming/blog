@@ -50,14 +50,14 @@ summary: 一句话摘要
 
 ## 内容进度
 
-本地持续 enrichment。第十二批：Redis Streams vs Kafka、Go slog、Next PPR、Tetris T-Spin / Snake 穿墙 HUD。第十三批：CSS Anchor、EXPLAIN ANALYZE、errgroup；Breakout 完成度、Poker 底池、Memory 残局；游戏页 description 与 sitemap 游戏 lastmod。
+本地持续 enrichment。第十二批：Redis Streams vs Kafka、Go slog、Next PPR、Tetris T-Spin / Snake 穿墙 HUD。第十三批：CSS Anchor、EXPLAIN ANALYZE、errgroup；Breakout/Poker/Memory HUD。第十四批：HTTP 再验证、Go 表驱动夹具、Vue Suspense；扫雷开图进度、2048 下一档/可合并提示；/blog description 与游戏页 OG/Twitter。
 
 ## SEO 与订阅
 
 - `/feed.xml`：RSS 订阅（item 含 author，摘要用 CDATA）
 - `/archive`：按年折叠归档，带 SEO description
 - `/sitemap.xml`、`/robots.txt`：给搜索引擎（文章 lastmod 用发布日，列表页用最新文章日）
-- 首页、分类页与游戏列表页带 description，便于搜索摘要
+- 首页、分类、文章列表与游戏列表页带 description；游戏详情 OG/Twitter 摘要
 - 可玩游戏路由 sitemap lastmod 使用 `GAMES_UPDATED`
 - 每篇文章自动生成 1200×630 的分享图（`app/blog/[slug]/opengraph-image.tsx`），中文字体在构建时从 Google Fonts 按需下载
 
@@ -98,7 +98,7 @@ lib/og.tsx                  分享图模板
 贪吃蛇和打砖块的关卡都是字符画，改完刷新就能玩：
 
 - 记忆翻牌：连击 + 残局（剩 ≤3 对）提示
-- 扫雷：中键/双击/点数字 chord；剩余雷数带开图进度，少雷时高亮
+- 扫雷：chord；安全格开图 % + 收官 tip；剩余雷少时高亮
 - 德州扑克：盲注翻倍提示；底池占筹码比例与跟注打平胜率提示
 - 打砖块：多球（M）、剩余砖/完成度 HUD、关卡难度提示（球速/拍宽）
 - 俄罗斯方块：锁定延迟 + Hold/幽灵/预览；消行与 T-Spin 顶部提示（角落判定）

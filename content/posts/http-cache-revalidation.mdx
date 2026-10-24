@@ -1,0 +1,34 @@
+---
+title: HTTP 缓存与再验证：max-age 之外还要会说 must-revalidate
+date: "2026-10-24"
+category: frontend
+summary: 静态资源与 HTML 的缓存策略不同。分清新鲜期、再验证与协商缓存，比一律 no-store 或超长 max-age 都少踩坑。
+---
+
+CDN 和浏览器都在缓存。出问题的多半不是「会不会缓存」，而是 **过期之后怎么再验证、谁有权继续用旧副本**。
+
+## 三条时间线
+
+1. **新鲜期内**（`max-age` / `s-maxage`）：可以直接用本地/边缘副本。  
+2. **过期后**：按策略再验证（`If-None-Match` / `If-Modified-Since`）或直接打源。  
+3. **再验证结果**：`304` 续命，或 `200` 换新正文。
+
+`must-revalidate` / `proxy-revalidate` 说的是：过期后 **不得** 在未验证时继续当新鲜用。API 与 HTML 常比带 hash 的 JS/CSS 更需要这一类约束。
+
+## 典型搭配
+
+| 资源 | 常见策略 |
+|---|---|
+| `/assets/[hash].js` | 长 `max-age` + `immutable` |
+| HTML / RSC payload | 短新鲜期或协商缓存；变更要能尽快看见 |
+| 个性化 API | `private`、短龄或 `no-store`，别让共享缓存误存 |
+
+与站内 `cdn-cache-headers` 一文互补：那篇偏头字段清单，这篇偏 **再验证语义**。
+
+## 调试习惯
+
+- 看响应：`Age`、`CF-Cache-Status` / `X-Cache`、是否真有 `ETag`。  
+- 改内容后先确认 **URL 是否变了**（hash）再怪 CDN。  
+- 文档站与营销页可以激进缓存；后台壳与账单页别抄同一套。
+
+把「谁在什么条件下可以展示旧字节」写进发布检查表，比上线后清全网缓存省心。

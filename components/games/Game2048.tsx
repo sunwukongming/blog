@@ -133,6 +133,25 @@ function tileStyle(t: Tile): CSSProperties {
   } as CSSProperties;
 }
 
+
+function boardHint(tiles: Tile[]) {
+  const live = tiles.filter((x) => !x.gone);
+  const max = live.reduce((m, x) => Math.max(m, x.v), 0);
+  const nextTier = max > 0 ? max * 2 : 2;
+  const at = new Map(live.map((x) => [x.r * 4 + x.c, x.v]));
+  let mergeable = 0;
+  for (const t of live) {
+    for (const [dr, dc] of [
+      [0, 1],
+      [1, 0],
+    ] as const) {
+      const v = at.get((t.r + dr) * 4 + (t.c + dc));
+      if (v === t.v) mergeable++;
+    }
+  }
+  return { max, nextTier, mergeable };
+}
+
 export default function Game2048() {
   const [state, dispatch] = useReducer(reducer, null, newGame);
   const [best, submitBest] = useRecord("2048", (next, prev) => next > prev);
@@ -167,6 +186,7 @@ export default function Game2048() {
   );
   // 被合并掉的方块画在下面
   const tiles = state.tiles.toSorted((a, b) => Number(!a.gone) - Number(!b.gone));
+  const mergeHint = boardHint(state.tiles);
 
   return (
     <div className="game">
@@ -176,6 +196,12 @@ export default function Game2048() {
         </span>
         <span>
           最高<b>{best ?? 0}</b>
+        </span>
+        <span title="当前盘面最大块">
+          最大<b>{mergeHint.max || "—"}</b>
+        </span>
+        <span title="下一档目标（最大块 ×2）">
+          下一档<b>{mergeHint.max ? mergeHint.nextTier : 4}</b>
         </span>
         <span className="spacer" />
         <button
@@ -191,6 +217,16 @@ export default function Game2048() {
           新游戏
         </button>
       </div>
+      {!state.over && !(state.won && !state.keepGoing) && mergeHint.max > 0 && (
+        <p
+          className={mergeHint.mergeable > 0 ? "game-tip" : "game-tip game-tip--alert"}
+          aria-live="polite"
+        >
+          {mergeHint.mergeable > 0
+            ? `可合并邻格 ${mergeHint.mergeable} 处 · 冲下一档 ${mergeHint.nextTier}`
+            : `暂无相邻同号 · 调整后再拼 ${mergeHint.nextTier}`}
+        </p>
+      )}
       <div className="game-stage t2048" {...swipe}>
         {[...Array(16).keys()].map((i) => (
           <div key={i} className="t2048-cell" style={{ "--r": i >> 2, "--c": i & 3 } as CSSProperties} />
@@ -241,7 +277,7 @@ export default function Game2048() {
           </div>
         )}
       </div>
-      <p className="game-hint">滑动或方向键移动（触屏需主轴明显，减少斜滑误触）。撤销用按钮或 U / Backspace。</p>
+      <p className="game-hint">滑动或方向键移动。顶栏「最大 / 下一档」与可合并提示帮助盯目标；撤销仍用按钮或 U / Backspace。</p>
     </div>
   );
 }

@@ -11,7 +11,15 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: PageProps<"/games/[slug]">): Promise<Metadata> {
   const game = getPlayable((await params).slug);
-  return game ? { title: game.title, description: game.summary } : {};
+  if (!game) return {};
+  const title = `${game.title} · GM Lab`;
+  const description = game.summary;
+  return {
+    title: game.title,
+    description,
+    openGraph: { title, description, type: "website" },
+    twitter: { card: "summary", title, description },
+  };
 }
 
 export default function GamePage({ params }: PageProps<"/games/[slug]">) {

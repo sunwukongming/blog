@@ -6,16 +6,20 @@ import { SITE, SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "分类",
-  description: "按前端、后端、云与可观测、工具与随笔浏览 GM Lab 文章；每颗行星是一个分类。",
+  description: "按前端、后端、云与可观测、工具与随笔浏览 GM Lab 文章；每颗行星是一个分类，点进 CollectionPage 续读。",
   openGraph: {
     title: "分类",
-    description: "按前端、后端、云与可观测、工具与随笔浏览 GM Lab 文章；每颗行星是一个分类。",
+    description: "按前端、后端、云与可观测、工具与随笔浏览 GM Lab 文章；每颗行星是一个分类，点进 CollectionPage 续读。",
     type: "website",
+    siteName: SITE.name,
+    locale: "zh_CN",
+    url: SITE_URL ? `${SITE_URL}/categories` : undefined,
   },
+  alternates: SITE_URL ? { canonical: "/categories" } : undefined,
   twitter: {
     card: "summary",
     title: "分类",
-    description: "按前端、后端、云与可观测、工具与随笔浏览 GM Lab 文章；每颗行星是一个分类。",
+    description: "按前端、后端、云与可观测、工具与随笔浏览 GM Lab 文章；每颗行星是一个分类，点进 CollectionPage 续读。",
   },
 };
 

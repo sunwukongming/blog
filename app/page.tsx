@@ -33,7 +33,15 @@ export default async function Home() {
     description: SITE.description,
     url: SITE_URL ?? undefined,
     author: { "@type": "Person", name: SITE.author },
+    publisher: { "@type": "Person", name: SITE.author },
     inLanguage: "zh-CN",
+    potentialAction: SITE_URL
+      ? {
+          "@type": "SearchAction",
+          target: `${SITE_URL}/blog?q={search_term_string}`,
+          "query-input": "required name=search_term_string",
+        }
+      : undefined,
   };
   return (
     <main data-world="room" className="page page--split">

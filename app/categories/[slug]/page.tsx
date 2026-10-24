@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: PageProps<"/categories/[slug]
     title,
     description,
     alternates: url ? { canonical: url } : undefined,
-    openGraph: { title, description, type: "website", url, siteName: SITE.name },
+    openGraph: { title, description, type: "website", url, siteName: SITE.name, locale: "zh_CN" },
     twitter: { card: "summary", title, description },
   };
 }
@@ -50,9 +50,13 @@ async function CategoryPanel({ params }: { params: Promise<{ slug: string }> }) 
     name: `${category.name} · ${SITE.name}`,
     description: category.blurb,
     url: pageUrl,
+    inLanguage: "zh-CN",
+    numberOfItems: posts.length,
     isPartOf: SITE_URL ? { "@type": "WebSite", name: SITE.name, url: SITE_URL } : undefined,
+    about: { "@type": "Thing", name: category.name },
     mainEntity: {
       "@type": "ItemList",
+      name: `${category.name} 文章`,
       numberOfItems: posts.length,
       itemListElement: posts.map((post, i) => ({
         "@type": "ListItem",

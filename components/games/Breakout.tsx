@@ -546,10 +546,20 @@ const [phase, setPhase] = useState<Phase>("select");
               速<b className={hud.lives <= 1 || hud.slow ? "game-tip--alert" : undefined}>{hud.ballSpeed}</b>
             </span>
             <span
-              className="breakout-progress"
-              data-low={hud.brickLeft <= 3 && hud.brickLeft > 0 || undefined}
+              className="breakout-progress breakout-progress-items"
+              data-low={(hud.brickLeft <= 3 && hud.brickLeft > 0) || undefined}
               data-done={hud.progress >= 100 || undefined}
-              title={`本关进度 ${hud.progress}% · 剩余可打砖 ${hud.brickLeft}/${hud.brickTotal}`}
+              data-items={(hud.wide || hud.slow) || undefined}
+              title={
+                [
+                  `本关进度 ${hud.progress}% · 砖 ${hud.brickLeft}/${hud.brickTotal}`,
+                  hud.wide ? `加宽 ${hud.wideLeft.toFixed(1)}s` : "",
+                  hud.slow ? `减速 ${hud.slowLeft.toFixed(1)}s` : "",
+                  `拍宽 ${hud.paddleW}`,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")
+              }
             >
               关卡
               <b>{hud.progress}%</b>
@@ -560,36 +570,30 @@ const [phase, setPhase] = useState<Phase>("select");
                 aria-hidden="true"
                 style={{ ["--bo-pct" as string]: `${hud.progress}%` } as CSSProperties}
               />
-            </span>
-            <span title="当前拍宽（关卡越高越短；加宽道具×1.5）">
+              <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
               拍宽<b className={hud.wide ? "game-tip--alert" : undefined}>{hud.paddleW}</b>
+              {(hud.wide || hud.slow) && (
+                <>
+                  <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
+                  <span className="breakout-item-timer">
+                    {hud.wide && (
+                      <>
+                        <b style={{ color: ITEM_LOOK.W.color }}>宽</b>
+                        <small style={{ marginLeft: 2, color: ITEM_LOOK.W.color }}>{hud.wideLeft.toFixed(1)}s</small>
+                      </>
+                    )}
+                    {hud.wide && hud.slow ? <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small> : null}
+                    {hud.slow && (
+                      <>
+                        <b style={{ color: ITEM_LOOK.S.color }}>慢</b>
+                        <small style={{ marginLeft: 2, color: ITEM_LOOK.S.color }}>{hud.slowLeft.toFixed(1)}s</small>
+                      </>
+                    )}
+                  </span>
+                </>
+              )}
             </span>
           </>
-        )}
-        {(hud.wide || hud.slow) && (
-          <span
-            className="breakout-item-timer"
-            title={[
-              hud.wide ? `加宽剩余 ${hud.wideLeft.toFixed(1)}s` : "",
-              hud.slow ? `减速剩余 ${hud.slowLeft.toFixed(1)}s` : "",
-            ]
-              .filter(Boolean)
-              .join(" · ")}
-          >
-            {hud.wide && (
-              <>
-                <b style={{ color: ITEM_LOOK.W.color }}>宽</b>
-                <small style={{ marginLeft: 2, color: ITEM_LOOK.W.color }}>{hud.wideLeft.toFixed(1)}s</small>
-              </>
-            )}
-            {hud.wide && hud.slow ? <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small> : null}
-            {hud.slow && (
-              <>
-                <b style={{ color: ITEM_LOOK.S.color }}>慢</b>
-                <small style={{ marginLeft: 2, color: ITEM_LOOK.S.color }}>{hud.slowLeft.toFixed(1)}s</small>
-              </>
-            )}
-          </span>
         )}
         <span className="spacer" />
                 <button
@@ -616,7 +620,7 @@ const [phase, setPhase] = useState<Phase>("select");
               ? `多球/残命：多球×${hud.balls} · ♥×${hud.lives} · 速 ${hud.ballSpeed} · 连击 ${hud.combo}`
             : hud.brickLeft <= 3 && hud.brickLeft > 0
               ? `多球/残命：♥×${hud.lives} · 球×${hud.balls} · 残局 ${hud.brickLeft} 块 · 拍 ${hud.paddleW}`
-              : `关卡进度 ${hud.progress}%（砖 ${hud.brickLeft}/${hud.brickTotal}）· ♥×${hud.lives} · 球×${hud.balls} · 速 ${hud.ballSpeed}${hud.slow ? "(减)" : ""} · 连击 ${hud.combo}`}
+              : `进度|道具：${hud.progress}%（砖 ${hud.brickLeft}/${hud.brickTotal}）${hud.wide ? ` · 宽${hud.wideLeft.toFixed(1)}s` : ""}${hud.slow ? ` · 慢${hud.slowLeft.toFixed(1)}s` : ""} · ♥×${hud.lives} · 球×${hud.balls} · 速 ${hud.ballSpeed} · 连击 ${hud.combo}`}
         </p>
       )}
       {(phase === "running" || phase === "aim" || phase === "paused" || phase === "select") && (

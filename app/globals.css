@@ -991,3 +991,26 @@ html:has(.page--game) { overscroll-behavior: none; }
   display: inline-flex;
   align-items: center;
 }
+
+/* batch32: Snake wrap+gold, Breakout progress|items, Poker blinds|odds */
+.snake-wrap-gold[data-wrap][data-gold] {
+  box-shadow: 0 0 0 1px color-mix(in oklab, #ffe066 50%, var(--accent));
+  border-radius: 6px;
+  padding-inline: 4px;
+}
+.snake-wrap-gold[data-edge] {
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--accent) 70%, transparent);
+}
+.breakout-progress-items[data-items] {
+  box-shadow: 0 0 0 1px color-mix(in oklab, #7af5c0 45%, transparent);
+  border-radius: 6px;
+  padding-inline: 4px;
+}
+.pk-blinds-odds[data-odds] {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--accent) 40%, transparent);
+  border-radius: 6px;
+  padding-inline: 4px;
+}

@@ -223,7 +223,22 @@ export default function Poker() {
         <span>
           第<b>{table.hand}</b>手
         </span>
-        <span className={blindFlash ? "pk-blinds pk-blinds--flash" : "pk-blinds"} title={blindFlash ? blindFlash : `每 ${BLIND_EVERY} 手翻倍`} data-flash={blindFlash ? "" : undefined}>
+        <span
+          className={
+            blindFlash
+              ? "pk-blinds pk-blinds--flash pk-blinds-odds"
+              : "pk-blinds pk-blinds-odds"
+          }
+          data-flash={blindFlash ? "" : undefined}
+          data-odds={myTurn && rules && !rules.canCheck && rules.toCall > 0 && pot > 0 ? "" : undefined}
+          title={
+            myTurn && rules && !rules.canCheck && rules.toCall > 0 && pot > 0
+              ? `盲注 ${table.sb}/${table.bb}${blindFlash ? " · 闪涨" : ` · 下涨第${nextBlindHand}手`} · 需胜率 ${Math.min(99, Math.round((rules.toCall / (pot + rules.toCall)) * 100))}%（跟注/(底池+跟注)）`
+              : blindFlash
+                ? blindFlash
+                : `每 ${BLIND_EVERY} 手翻倍`
+          }
+        >
           盲注<b>
             {table.sb}/{table.bb}
           </b>
@@ -232,35 +247,37 @@ export default function Poker() {
           ) : started && !gameOver && !victory ? (
             <small className="pk-blinds__next"> · 下涨第{nextBlindHand}手</small>
           ) : null}
+          {myTurn && rules && !rules.canCheck && rules.toCall > 0 && pot > 0 && (
+            <>
+              <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
+              <span
+                className="pk-odds-hud"
+                data-tier={
+                  Math.round((rules.toCall / (pot + rules.toCall)) * 100) <= 25
+                    ? "low"
+                    : Math.round((rules.toCall / (pot + rules.toCall)) * 100) <= 40
+                      ? "mid"
+                      : "high"
+                }
+              >
+                需胜率
+                <b>
+                  {Math.min(99, Math.round((rules.toCall / (pot + rules.toCall)) * 100))}%
+                </b>
+                <small style={{ marginLeft: 4, opacity: 0.75 }}>
+                  跟{rules.toCall}
+                </small>
+                <small className="pk-odds-hud__tier" style={{ marginLeft: 6 }}>
+                  {Math.round((rules.toCall / (pot + rules.toCall)) * 100) <= 25
+                    ? "偏便宜"
+                    : Math.round((rules.toCall / (pot + rules.toCall)) * 100) <= 40
+                      ? "中性"
+                      : "偏贵"}
+                </small>
+              </span>
+            </>
+          )}
         </span>
-        {myTurn && rules && !rules.canCheck && rules.toCall > 0 && pot > 0 && (
-          <span
-            className="pk-odds-hud"
-            data-tier={
-              Math.round((rules.toCall / (pot + rules.toCall)) * 100) <= 25
-                ? "low"
-                : Math.round((rules.toCall / (pot + rules.toCall)) * 100) <= 40
-                  ? "mid"
-                  : "high"
-            }
-            title={`跟注打平需胜率 ${Math.min(99, Math.round((rules.toCall / (pot + rules.toCall)) * 100))}%（跟注/(底池+跟注)）· 色阶 低≤25 / 中≤40 / 高>40`}
-          >
-            需胜率
-            <b>
-              {Math.min(99, Math.round((rules.toCall / (pot + rules.toCall)) * 100))}%
-            </b>
-            <small style={{ marginLeft: 4, opacity: 0.75 }}>
-              跟{rules.toCall}
-            </small>
-            <small className="pk-odds-hud__tier" style={{ marginLeft: 6 }}>
-              {Math.round((rules.toCall / (pot + rules.toCall)) * 100) <= 25
-                ? "偏便宜"
-                : Math.round((rules.toCall / (pot + rules.toCall)) * 100) <= 40
-                  ? "中性"
-                  : "偏贵"}
-            </small>
-          </span>
-        )}
         {started && !gameOver && !victory && (
           <span
             className="pk-pot-hud"
@@ -383,9 +400,10 @@ export default function Poker() {
                 : Math.round((rules.toCall / (pot + rules.toCall)) * 100) <= 40
                   ? " · 色阶中性"
                   : " · 色阶偏高（偏贵）"}
+              {` · 盲注|需胜率同条 ${table.sb}/${table.bb}`}
               {table.players.some((pl) => pl.allIn && !pl.out)
                 ? " · 全下中：只进你可参与的主池/边池"
-                : " · 顶栏同步色阶"}
+                : ""}
             </p>
           )}
           {started && !gameOver && !victory && !result && table.players.some((pl) => pl.allIn && !pl.out) && !(myTurn && rules && !rules.canCheck && rules.toCall > 0 && pot > 0) && (

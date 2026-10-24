@@ -1,0 +1,41 @@
+---
+title: Kubernetes Sidecar 模式：何时拆容器、如何共享寿命
+date: "2026-10-24"
+category: cloud
+summary: 日志代理、网格代理、凭据刷新常以 sidecar 进同一 Pod。讲清共享卷与网络命名空间、启动顺序，以及别把业务拆成 sidecar 的边界。
+---
+
+同一 Pod 多容器共享 **网络命名空间与卷**：这是 sidecar 的全部超能力，也是耦合来源。
+
+## 常见形态
+
+1. **大使 / 代理**：Envoy、业务只打 localhost。  
+2. **适配器**：把业务日志/指标译成平台格式。  
+3. **定时助手**：拉密钥、刷缓存；用共享卷交文件。
+
+```yaml
+containers:
+  - name: app
+    volumeMounts: [{ name: socks, mountPath: /var/run/app }]
+  - name: proxy
+    volumeMounts: [{ name: socks, mountPath: /var/run/app }]
+volumes:
+  - name: socks
+    emptyDir: {}
+```
+
+## 寿命与探针
+
+- 默认一起调度、一起杀；**原生 sidecar**（`restartPolicy: Always` 的 initContainers，1.29+）更适合网格代理长伴。  
+- 探针只打业务容器时，sidecar 挂了可能无人知——要有独立指标或 `shareProcessNamespace` 慎用。  
+- 资源请求要给 sidecar 单独账，避免抢业务 CPU。
+
+## 何时不要 sidecar
+
+- 只需独立扩缩或独立发布 → 拆 Deployment / 旁路 Service。  
+- 业务逻辑「顺便」塞进助手容器 → 难测、难回滚。  
+- 仅偶发任务 → Job/CronJob 或进程内库往往更简单。
+
+## 小结
+
+Sidecar 用 Pod 边界换本地协作：共享网与盘，换运维复杂度。代理与日志适配最划算；业务核心留在主容器，助手保持可替换、可观测。

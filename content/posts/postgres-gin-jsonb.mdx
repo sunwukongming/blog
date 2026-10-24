@@ -1,0 +1,42 @@
+---
+title: Postgres GIN 与 JSONB：容器里的键值怎么索引
+date: "2026-10-24"
+category: backend
+summary: 与表达式、BRIN、部分、覆盖索引区分：GIN 服务 @>、?、路径存在性等容器查询；讲 jsonb_ops / jsonb_path_ops 取舍与膨胀。
+---
+
+`payload @> '{"status":"open"}'` 这类包含查询，B-tree 列索引帮不上。**GIN（Generalized Inverted Index）**把容器拆成条目再倒排。
+
+## 两种 jsonb opclass
+
+```sql
+CREATE INDEX ON events USING gin (payload);                 -- jsonb_ops 默认
+CREATE INDEX ON events USING gin (payload jsonb_path_ops);  -- 更瘦，偏 @>
+```
+
+| | `jsonb_ops` | `jsonb_path_ops` |
+|---|---|---|
+| 支持 | `@>` `?` `?&` `?|` 等更全 | 主要强化 `@>` |
+| 体积 | 更大 | 更小、构建更快 |
+| 适用 | 键存在性、混合操作符 | 几乎只做包含查询 |
+
+路径点查仍可叠加**表达式 B-tree**（见站内表达式索引文）；GIN 不替代有序范围扫，也和 BRIN 的物理顺序假设无关。
+
+## 何时上 GIN
+
+- 文档/事件里按键值过滤、标签数组 `&&` / `@>`  
+- 与部分索引叠：`WHERE tenant_id = …` 再 GIN payload，控体积  
+- 写多读少时慎用：GIN 维护贵，可看 `pending list` 与 `gin_pending_list_limit`
+
+## 和兄弟们
+
+| 手段 | 典型谓词 |
+|---|---|
+| B-tree / 覆盖 / 部分 | 标量等值、排序、少回表 |
+| 表达式索引 | `lower(email)`、`(payload->>'id')` |
+| BRIN | 时间序大表粗过滤 |
+| **GIN** | JSONB/数组包含与键存在 |
+
+## 小结
+
+GIN 是容器查询的倒排工具，不是「JSONB 万能索引」。先确认操作符是 `@>` 还是点查，再选 opclass；点查优先表达式 B-tree，大表时间窗可与 BRIN 分工。

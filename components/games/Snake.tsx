@@ -507,16 +507,27 @@ export default function Snake() {
               时间<b>{hud.seconds}s</b>
             </span>
             <span
-              className={hud.goldLeft != null ? "snake-speed-gold" : undefined}
+              className={
+                hud.goldLeft != null || hud.wrap
+                  ? "snake-speed-gold snake-wrap-gold"
+                  : undefined
+              }
               data-gold={hud.goldLeft != null || undefined}
+              data-wrap={hud.wrap || undefined}
               data-urgent={(hud.goldLeft != null && hud.goldLeft <= 2) || undefined}
+              data-edge={(hud.wrap && !!hud.edgeHint?.includes("将从")) || undefined}
+              data-near={(hud.wrap && !!hud.edgeHint?.includes("靠")) || undefined}
               data-fast={hud.speedTier === "极速" || hud.speedTier === "很快" || undefined}
               title={
-                hud.goldLeft != null
-                  ? `速度 ${hud.speedTier}（${hud.speedMs}ms）${hud.nextSpeed ? ` · ${hud.nextSpeed}` : " · 已达极速"} · 金食 ${hud.goldLeft.toFixed(1)}s（×3）`
-                  : hud.nextSpeed
-                    ? `步进 ${hud.speedMs}ms · ${hud.nextSpeed}`
-                    : `步进 ${hud.speedMs}ms · 已达极速`
+                hud.wrap && hud.goldLeft != null
+                  ? `穿墙预警+金食：${hud.edgeHint ?? "穿墙开"} · 金食 ${hud.goldLeft.toFixed(1)}s（×3） · 速度 ${hud.speedTier}`
+                  : hud.goldLeft != null
+                    ? `速度 ${hud.speedTier}（${hud.speedMs}ms）${hud.nextSpeed ? ` · ${hud.nextSpeed}` : " · 已达极速"} · 金食 ${hud.goldLeft.toFixed(1)}s（×3）`
+                    : hud.wrap
+                      ? `穿墙 ${hud.edgeHint ?? "开"} · 速度 ${hud.speedTier}`
+                      : hud.nextSpeed
+                        ? `步进 ${hud.speedMs}ms · ${hud.nextSpeed}`
+                        : `步进 ${hud.speedMs}ms · 已达极速`
               }
             >
               速度<b className={hud.speedTier === "极速" || hud.speedTier === "很快" ? "game-tip--alert" : undefined}>{hud.speedTier}</b>
@@ -527,24 +538,22 @@ export default function Snake() {
                   {hud.nextSpeed ? <small style={{ marginLeft: 4, opacity: 0.7 }}>{hud.nextSpeed}</small> : <small style={{ marginLeft: 4, opacity: 0.55 }}>极速</small>}
                 </>
               )}
+              {hud.wrap && (
+                <>
+                  <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
+                  <span className="snake-wrap-badge" data-edge={hud.edgeHint?.includes("将从") || undefined} data-near={hud.edgeHint?.includes("靠") || undefined}>
+                    穿墙
+                    {hud.edgeHint?.includes("将从") ? (
+                      <small className="snake-wrap-badge__warn"> · 将穿出</small>
+                    ) : hud.edgeHint?.includes("靠") ? (
+                      <small className="snake-wrap-badge__near"> · 近缘</small>
+                    ) : (
+                      <small> · 开</small>
+                    )}
+                  </span>
+                </>
+              )}
             </span>
-            {hud.wrap && (
-              <span
-                className="snake-wrap-badge"
-                data-edge={hud.edgeHint?.includes("将从") || undefined}
-                data-near={hud.edgeHint?.includes("靠") || undefined}
-                title={hud.edgeHint ?? "本关边缘可穿墙"}
-              >
-                穿墙
-                {hud.edgeHint?.includes("将从") ? (
-                  <small className="snake-wrap-badge__warn"> · 将穿出</small>
-                ) : hud.edgeHint?.includes("靠") ? (
-                  <small className="snake-wrap-badge__near"> · 近缘</small>
-                ) : (
-                  <small> · 开</small>
-                )}
-              </span>
-            )}
           </>
         ) : (
           <>
@@ -596,7 +605,7 @@ export default function Snake() {
         >
           {`${
             hud.wrap && hud.goldLeft != null
-              ? `金食+穿墙：金色 ${hud.goldLeft.toFixed(1)}s（一个顶三个） · ${hud.edgeHint ?? "穿墙开"} · 档 ${hud.speedTier}`
+              ? `穿墙预警+金食：${hud.edgeHint ?? "穿墙开"} · 金色 ${hud.goldLeft.toFixed(1)}s（×3）${hud.goldLeft <= 2 ? " · 金食将尽" : ""} · 档 ${hud.speedTier}`
               : hud.wrap && hud.edgeHint?.includes("将从")
               ? `穿墙预警：下一格将穿出 · ${hud.edgeHint} · 档 ${hud.speedTier}`
               : hud.wrap && hud.edgeHint?.includes("靠")

@@ -1,0 +1,40 @@
+---
+title: TypeScript 可辨识联合：把 API 结果做成穷尽分支
+date: "2026-10-24"
+category: frontend
+summary: 用字面量 discriminant 把成功/失败/重定向收成联合类型，switch 里靠 never 守门，少写 as 与可选字段猜谜。
+---
+
+前后端契约里最常见的是「同一字段形状随状态变」。可选字段堆叠（`data?` + `error?`）容易漏检。**可辨识联合（discriminated union）**用一个字面量标签切开。
+
+## 形状
+
+```ts
+type ApiResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; error: { code: string; message: string } }
+  | { ok: false; error: { code: "redirect"; location: string } };
+
+function handle<T>(r: ApiResult<T>) {
+  switch (r.ok) {
+    case true:
+      return r.data;
+    case false:
+      if (r.error.code === "redirect") return location.assign(r.error.location);
+      throw new Error(r.error.message);
+  }
+}
+```
+
+更好的标签是显式 `status: "ok" | "err" | "redirect"`，避免 `ok: false` 下再嵌套多种 error。
+
+## 实践
+
+1. **序列化边界**（fetch / RPC）立刻收窄成联合，UI 只消费已辨识类型。  
+2. `switch` 末尾放 `const _exhaustive: never = r`，新增变体编译期必改。  
+3. 和 Zod 配对：`z.discriminatedUnion("status", [...])` 运行时与类型同源。  
+4. 别把 discriminant 设成可选；缺标签就不是联合。
+
+## 小结
+
+可辨识联合是 API 结果的类型防火墙：标签决定字段，分支决定控制流。比「一堆可选」更适合错误码演进，也比 `as` 断言诚实。

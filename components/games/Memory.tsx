@@ -254,12 +254,23 @@ export default function Memory() {
           最少<b className={shownBest != null && moves > 0 && moves <= shownBest ? "game-tip--alert" : undefined}>{shownBest ?? "—"}</b>
           <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
           <span
-            className="memory-moves-delta"
+            className="memory-moves-delta memory-moves-delta--tier"
             data-over={shownBest != null && moves > shownBest ? true : undefined}
             data-under={shownBest != null && moves > 0 && moves <= shownBest ? true : undefined}
+            data-tier={
+              shownBest == null || moves <= 0
+                ? undefined
+                : moves <= shownBest
+                  ? "good"
+                  : moves - shownBest <= 2
+                    ? "ok"
+                    : moves - shownBest <= 5
+                      ? "warn"
+                      : "bad"
+            }
             title={
               shownBest != null && moves > 0
-                ? `本局 ${moves} 步 · 最少 ${shownBest} · 步差 ${moves - shownBest >= 0 ? "+" : ""}${moves - shownBest}`
+                ? `本局 ${moves} 步 · 最少 ${shownBest} · 步差 ${moves - shownBest >= 0 ? "+" : ""}${moves - shownBest}（色阶 good≤0 / ok≤+2 / warn≤+5 / bad>+5）`
                 : `本局 ${moves} 步`
             }
           >
@@ -270,6 +281,19 @@ export default function Memory() {
                 <b className={moves > shownBest ? "game-tip--alert" : undefined}>{moves - shownBest}</b>
               </small>
             ) : null}
+            <span
+              className="memory-moves-delta__bar"
+              aria-hidden="true"
+              style={
+                {
+                  ["--delta-pct" as string]: `${
+                    shownBest != null && moves > 0
+                      ? Math.min(100, Math.max(0, moves <= shownBest ? 8 : ((moves - shownBest) / 8) * 100))
+                      : 0
+                  }%`,
+                } as CSSProperties
+              }
+            />
           </span>
         </span>
         <span>
@@ -289,7 +313,9 @@ export default function Memory() {
         {" · "}
         最少 <b>{shownBest ?? "—"}</b> 步
         {shownBest != null && moves > 0
-          ? ` · 步差 ${moves - shownBest >= 0 ? "+" : ""}${moves - shownBest}`
+          ? ` · 步差色 ${moves - shownBest >= 0 ? "+" : ""}${moves - shownBest}（${
+              moves <= shownBest ? "good" : moves - shownBest <= 2 ? "ok" : moves - shownBest <= 5 ? "warn" : "bad"
+            }）`
           : ` · 本局 ${moves} 步`}
         {" · "}
         各档：

@@ -1,0 +1,52 @@
+---
+title: Next.js after()：响应先走，收尾稍后
+date: "2026-10-25"
+category: frontend
+summary: 用 after() 把日志、分析、缓存预热从关键路径拆开：先返回响应，再在同进程里跑收尾。对比 waitUntil、队列与 route 内 fire-and-forget。
+---
+
+页面或 Route Handler 常有「用户不需要等、但进程还得做」的事：写审计日志、打点、预热缓存。Next.js 的 **`after()`**（App Router）让你在**响应已经开始发送之后**再跑这些任务，仍留在同一次请求的生命周期里。
+
+## 基本用法
+
+```ts
+import { after } from "next/server";
+import { logEvent } from "@/lib/audit";
+
+export async function POST(req: Request) {
+  const body = await req.json();
+  const result = await createOrder(body);
+
+  after(async () => {
+    await logEvent("order.created", { id: result.id });
+  });
+
+  return Response.json(result);
+}
+```
+
+`after` 回调在响应完成相关工作后执行；失败应自己吞掉或上报，避免影响已发出的响应。
+
+## 和 waitUntil / 队列
+
+| 方式 | 特点 |
+| --- | --- |
+| `after()` | 框架级；适合短任务、同区域同进程 |
+| `ctx.waitUntil`（部分运行时） | 平台原语；与框架解耦 |
+| 消息队列 | 可靠、可重试、可跨服务；有运营成本 |
+| 裸 `void promise` | 易在 serverless 上被冻死，不推荐 |
+
+需要**至少一次**且可延迟很久 → 队列。只需「尽量做完、丢了可补」的短收尾 → `after()` 很合适。
+
+## 注意点
+
+- 不要在 `after` 里做会拖垮实例的重计算；设超时与体积上限。
+- 读写的 cookie/header 以响应已结束为前提：别假设还能改状态码。
+- 本地 `next dev` 与生产对「进程何时退出」语义可能略有差别，关键路径逻辑不要只靠 `after`。
+- 与 `unstable_after` 旧名迁移时核对当前 Next 大版本文档。
+
+## 小结
+
+- 用户可见路径先返回；审计/打点进 `after()`。
+- 短、可丢、同进程 → `after`；要可靠投递 → 队列。
+- 回调内自治错误；别回写响应。

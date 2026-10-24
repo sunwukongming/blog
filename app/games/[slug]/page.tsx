@@ -16,12 +16,26 @@ export async function generateMetadata({ params }: PageProps<"/games/[slug]">): 
   const title = `${game.title} · ${SITE.name}`;
   const description = game.summary;
   const url = SITE_URL ? `${SITE_URL}/games/${game.slug}` : undefined;
+  const images = SITE_URL ? [{ url: `${SITE_URL}/icon.svg`, alt: `${game.title} · ${SITE.name}` }] : undefined;
   return {
     title: game.title,
     description,
     alternates: url ? { canonical: url } : undefined,
-    openGraph: { title, description, type: "website", siteName: SITE.name, url },
-    twitter: { card: "summary", title, description },
+    openGraph: {
+      title,
+      description,
+      type: "website",
+      siteName: SITE.name,
+      locale: "zh_CN",
+      url,
+      images,
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description,
+      images: images?.map((i) => i.url),
+    },
   };
 }
 

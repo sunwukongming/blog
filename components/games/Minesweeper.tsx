@@ -363,10 +363,11 @@ export default function Minesweeper() {
           ) : null}
         </span>
         <span
-          className="mine-progress mine-open-flag mine-chord-open mine-chord-openable"
+          className="mine-progress mine-open-flag mine-chord-open mine-chord-openable mine-late-openable"
           data-late={lateClear || undefined}
           data-dense={flagDense || undefined}
           data-ready={chordReady > 0 || undefined}
+          data-late-open={lateClear && chordOpenable > 0 ? true : undefined}
           data-seg={
             safeProgress <= 0
               ? "zero"
@@ -378,7 +379,7 @@ export default function Minesweeper() {
                     ? "late"
                     : "high"
           }
-          title={`Chord|开图：开图 ${safeProgress}%（${safeOpen}/${safeTotal}）· Chord×${chordReady}${chordReady > 0 ? ` 可点 · 可翻${chordOpenable}` : ""} · 旗 ${flags}/${level.mines}${flagDense ? " · 旗密" : ""}`}
+          title={`Chord|开图：开图 ${safeProgress}%（${safeOpen}/${safeTotal}）· Chord×${chordReady}${chordReady > 0 ? ` 可点 · 可翻${chordOpenable}` : ""}${lateClear && chordOpenable > 0 ? " · 收官可翻" : ""} · 旗 ${flags}/${level.mines}${flagDense ? " · 旗密" : ""}`}
         >
           开图<b>{safeProgress}%</b>
           <small>
@@ -405,8 +406,9 @@ export default function Minesweeper() {
           <span className="mine-chord" data-ready={chordReady > 0 || undefined} data-openable={chordOpenable > 0 || undefined}>
             Chord<b className={chordReady > 0 ? "game-tip--alert" : undefined}>{chordReady}</b>
             {chordOpenable > 0 ? (
-              <small style={{ marginLeft: 4, opacity: 0.85 }}>
-                可翻<b className="game-tip--alert">{chordOpenable}</b>
+              <small style={{ marginLeft: 4, opacity: 0.85 }} data-late-open={lateClear || undefined}>
+                {lateClear ? "收官可翻" : "可翻"}
+                <b className="game-tip--alert">{chordOpenable}</b>
               </small>
             ) : null}
           </span>
@@ -485,7 +487,7 @@ export default function Minesweeper() {
             : chordReady > 0
               ? `Chord|开图同条：Chord×${chordReady} 可点 · 可翻 ${chordOpenable} · 开图 ${safeProgress}% · 旗 ${flags}/${level.mines} · 中键/双击翻周围`
               : lateClear
-                ? `收官：还剩 ${safeLeft} 格 · 开图 ${safeProgress}% · 旗位对齐后 chord`
+                ? `收官可翻：还剩 ${safeLeft} 格 · 可翻 ${chordOpenable} · Chord×${chordReady} · 开图 ${safeProgress}% · 旗位对齐后 chord`
                 : phase === "playing" && level.mines - flags <= 3 && level.mines - flags > 0
                   ? `剩余雷仅 ${level.mines - flags} · 开图 ${safeProgress}% · 旗位对齐后再 chord`
                   : flagDense

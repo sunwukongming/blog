@@ -1,0 +1,58 @@
+---
+title: Redis Lua：把多键校验收成一次原子执行
+date: "2026-10-25"
+category: backend
+summary: 用 EVAL/FUNCTION 把「读-判-写」收进一次脚本，避免 GET+SET 竞态。讲清 KEYS/ARGV 约定、复制与超时、何时该用 WATCH/事务或 Redlock。
+---
+
+业务里常见模式：读库存 → 判断够不够 → 扣减。拆成多次 `GET`/`SET` 时，中间夹进别的客户端就会超卖。Redis 的 **Lua / Function** 把这段收成**单线程原子**执行。
+
+## 最小扣减
+
+```lua
+-- KEYS[1]=stock key, ARGV[1]=delta
+local n = tonumber(redis.call("GET", KEYS[1]) or "0")
+local d = tonumber(ARGV[1])
+if n < d then
+  return {0, n}
+end
+redis.call("DECRBY", KEYS[1], d)
+return {1, n - d}
+```
+
+```ts
+const [ok, left] = await redis.eval(script, 1, "sku:42:stock", "1");
+```
+
+脚本内对同一实例的命令串行；对外只暴露一次往返。返回值用数组比纯字符串好拆。
+
+## KEYS / ARGV 约定
+
+- **KEYS**：只放真正的 key，方便集群按 slot 校验；跨 slot 会直接拒。
+- **ARGV**：数值、标识、调用方 ID 等非 key。
+- 不要在脚本里用字符串拼 key 名再 `CALL`——集群模式下 slot 检查靠 KEYS 列表。
+
+Redis 7+ 更推荐 **FUNCTION**（`FCALL`）：脚本常驻、可版本化，少反复 `EVAL` 传大段源码。
+
+## 复制、超时与副作用
+
+- 写命令会进 AOF/复制流；只读脚本用 `EVAL_RO` / `FCALL_RO`。
+- 长循环会堵住单线程：加上限、避免 `KEYS *`。
+- 脚本里不要依赖「当前时间之外的外部状态」；需要墙钟用 `redis.call("TIME")`，并接受复制延迟语义。
+
+## 和 WATCH / 事务 / 锁
+
+| 手段 | 适合 |
+| --- | --- |
+| Lua / Function | 单 key 或同 slot 多 key 的短校验+写入 |
+| `WATCH`+`MULTI` | 乐观冲突少、逻辑想留在客户端 |
+| Redlock 等 | 跨资源、跨服务的互斥（成本高，慎用） |
+
+能塞进同实例短脚本的，优先脚本；跨分片或跨系统再上锁。
+
+## 小结
+
+- 读-判-写用 Lua/Function 一次做完，消灭中间态竞态。
+- KEYS/ARGV 分清；集群只碰同 slot。
+- 控制脚本时长；复制与只读入口选对。
+- 跨分片别硬扛脚本，换模型或业务边界。

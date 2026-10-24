@@ -1,0 +1,55 @@
+---
+title: Postgres 咨询锁：用 bigint 协调业务互斥
+date: "2026-10-25"
+category: backend
+summary: pg_advisory_lock / try_advisory_lock 做应用级互斥：选键、会话锁 vs 事务锁、和行锁/唯一约束的分工，以及连接池下的释放陷阱。
+---
+
+有些互斥不对应某一行：例如「同一租户同时只跑一个结算」「某外部 ID 的导入不要并行」。Postgres **咨询锁（advisory lock）** 用一对 `bigint`（或单 `bigint`）当锁名，不绑表结构。
+
+## 会话锁 vs 事务锁
+
+```sql
+-- 事务级：COMMIT/ROLLBACK 自动放
+SELECT pg_advisory_xact_lock(42, hashtext('tenant:7:settle'));
+
+-- 会话级：显式 unlock，或断开连接
+SELECT pg_try_advisory_lock(hashtext('job:import:99'));
+-- ... 干活 ...
+SELECT pg_advisory_unlock(hashtext('job:import:99'));
+```
+
+- **`pg_advisory_xact_lock`**：跟事务走，连接池友好（不会「借出连接仍占锁」到归还之后——锁在事务结束已释）。
+- **`pg_advisory_lock`**：会话级；池化时必须保证**同一连接**上 lock/unlock，并在归还前释放，否则别的请求会踩到残留锁。
+
+`try_` 变体非阻塞，拿不到立刻返回 `false`，适合「有人在做就跳过」。
+
+## 键怎么选
+
+- 稳定：同一业务含义永远映射同一 `bigint`（或 `(classid, objid)` 两段）。
+- 避免和系统其它顾问锁段撞车：可固定 `classid` 为业务号段。
+- `hashtext` / `hashtextextended` 有碰撞可能；关键路径用显式分配的整型更稳。
+
+## 和行锁、唯一约束
+
+| 手段 | 用途 |
+| --- | --- |
+| `UNIQUE` / 排他约束 | 数据真值互斥 |
+| `SELECT … FOR UPDATE` | 锁住已有行 |
+| 咨询锁 | 无行可锁、或跨多表的「逻辑临界区」 |
+
+能落成约束的优先约束；咨询锁补「流程」互斥，不替代数据完整性。
+
+## 运维
+
+```sql
+SELECT * FROM pg_locks WHERE locktype = 'advisory';
+```
+
+长时间占锁看持有后端、`query_start`。应用侧对 `try_` 失败打点，避免静默跳过关键任务。
+
+## 小结
+
+- 无行可锁的业务互斥用咨询锁；池化优先事务级。
+- 会话锁必须同连接成对 unlock。
+- 约束保真值，顾问锁保流程；键要稳定可观测。

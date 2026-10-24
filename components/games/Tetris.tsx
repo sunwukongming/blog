@@ -706,6 +706,15 @@ export default function Tetris() {
               {stats.canHold === false ? "冷却" : "可用"}
             </b>
             {stats.hold ? <small style={{ marginLeft: 4, opacity: 0.75 }}>{stats.hold}</small> : <small style={{ marginLeft: 4, opacity: 0.55 }}>空</small>}
+            <span
+              className="tetris-hold-coolbar"
+              data-cool={stats.canHold === false || undefined}
+              data-ready={stats.canHold || undefined}
+              title={stats.canHold === false ? "Hold 冷却：落地后恢复" : "Hold 可用"}
+              aria-hidden="true"
+            >
+              <i style={{ ["--hold-cool-pct" as string]: stats.canHold === false ? "100%" : "0%" } as { [key: string]: string }} />
+            </span>
             <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
             预览
             <b className={stats.next[0] === "I" || stats.next[0] === "T" ? "game-tip--alert" : undefined}>
@@ -739,7 +748,7 @@ export default function Tetris() {
       )}
       {phase === "running" && !stats.clearTip && (
         <p className={stats.b2b || stats.combo > 1 || stats.canHold || stats.next[0] === "I" || stats.next[0] === "T" ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">
-          {`连消|Hold：×${stats.combo} · B2B ${stats.b2b ? "就绪" : "未武装"} · Hold ${stats.canHold === false ? "冷却" : "可用"}${stats.hold ? `/${stats.hold}` : "/空"} · 预览 ${stats.next[0] ?? "—"}${stats.next.length > 1 ? ` · ${stats.next.join("→")}` : ""}`}
+          {`连消|Hold：×${stats.combo} · B2B ${stats.b2b ? "就绪" : "未武装"} · Hold ${stats.canHold === false ? "冷却条满" : "可用"}${stats.hold ? `/${stats.hold}` : "/空"} · 预览 ${stats.next[0] ?? "—"}${stats.next.length > 1 ? ` · ${stats.next.join("→")}` : ""}`}
           {" · 幽灵 "}
           {stats.ghost}
           {" 格"}
@@ -786,6 +795,14 @@ export default function Tetris() {
           <span title={stats.canHold === false ? "Hold 冷却：落地后再可交换" : "C / Shift：与当前块交换；落地前每块限一次"}>
             暂存
             <small style={{ marginLeft: 6, opacity: 0.8 }}>{stats.canHold === false ? "冷却" : "可用"}</small>
+            <span
+              className="tetris-hold-coolbar tetris-hold-coolbar--side"
+              data-cool={stats.canHold === false || undefined}
+              data-ready={stats.canHold || undefined}
+              aria-hidden="true"
+            >
+              <i style={{ ["--hold-cool-pct" as string]: stats.canHold === false ? "100%" : "0%" } as { [key: string]: string }} />
+            </span>
           </span>
           <div
             className="tetris-next"

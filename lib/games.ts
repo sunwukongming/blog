@@ -23,7 +23,7 @@ export const GAMES: GameItem[] = [
     href: "/games/snake",
     playable: true,
     controls: "方向键或 WASD 控制方向，空格暂停。吃够数量过关，金色食物一个顶三个。",
-    touchControls: "用下面的方向键，或者在棋盘上滑动来转向。",
+    touchControls: "用加大版方向键（含暂停），或在棋盘上滑动转向。",
   },
   {
     slug: "tetris",
@@ -56,7 +56,7 @@ export const GAMES: GameItem[] = [
     href: "/games/breakout",
     playable: true,
     controls: "移动鼠标或按 ← → 控制球拍，空格发球，P 暂停。金属块打不碎，打掉其余砖块就过关。",
-    touchControls: "手指在棋盘上左右移动控制球拍，点一下发球。",
+    touchControls: "拖动手指直接移球拍（不拖尾），点一下发球；也可用下方左右键。",
   },
   {
     slug: "minesweeper",

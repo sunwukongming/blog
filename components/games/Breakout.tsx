@@ -426,10 +426,19 @@ export default function Breakout() {
     };
   }, []);
 
-  // 鼠标或手指在棋盘上的横向位置就是球拍的位置
+  // 鼠标追踪；触屏直接设球拍，减少拖尾
   const aimAt = (e: PointerEvent<HTMLDivElement>) => {
     const r = e.currentTarget.getBoundingClientRect();
-    game.current.target = ((e.clientX - r.left) / r.width) * W;
+    const x = ((e.clientX - r.left) / r.width) * W;
+    const g = game.current;
+    const half = paddleW(g) / 2;
+    const clamped = Math.max(half, Math.min(W - half, x));
+    if (e.pointerType === "touch" || e.pointerType === "pen") {
+      g.paddle = clamped;
+      g.target = null;
+    } else {
+      g.target = clamped;
+    }
   };
 
   const level = BREAKOUT_LEVELS[hud.level];
@@ -469,15 +478,32 @@ export default function Breakout() {
       </div>
       <div
         className="game-stage breakout"
-        onPointerMove={aimAt}
-        onPointerLeave={() => (game.current.target = null)}
+        style={{ touchAction: "none" }}
+        onPointerMove={(e) => {
+          if (e.pointerType === "touch" || e.currentTarget.hasPointerCapture?.(e.pointerId)) aimAt(e);
+          else aimAt(e);
+        }}
+        onPointerLeave={(e) => {
+          if (e.pointerType === "mouse") game.current.target = null;
+        }}
+        onPointerUp={(e) => {
+          try {
+            e.currentTarget.releasePointerCapture?.(e.pointerId);
+          } catch {}
+        }}
         onPointerDown={(e) => {
+          e.currentTarget.setPointerCapture?.(e.pointerId);
           aimAt(e);
           if (phase === "aim") serve();
         }}
       >
         <canvas ref={canvas} aria-label={`打砖块，第 ${hud.level + 1} 关，${hud.score} 分`} />
-        {phase === "aim" && <p className="breakout-hint">点击棋盘或按空格发球</p>}
+        {phase === "aim" && (
+          <p className="breakout-hint">
+            <span className="when-mouse">点击棋盘或按空格发球</span>
+            <span className="when-touch">拖动手指移球拍，点一下发球；也可用下方按钮</span>
+          </p>
+        )}
         {phase !== "aim" && phase !== "running" && (
           <div className="game-overlay">
             {phase === "select" && (
@@ -536,6 +562,50 @@ export default function Breakout() {
             )}
           </div>
         )}
+      </div>
+      <div className="pad pad--breakout" aria-label="球拍">
+        <button
+          type="button"
+          aria-label="左移"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            held.current.left = true;
+            game.current.target = null;
+            buzz(8);
+          }}
+          onPointerUp={() => (held.current.left = false)}
+          onPointerLeave={() => (held.current.left = false)}
+          onPointerCancel={() => (held.current.left = false)}
+        >
+          ←
+        </button>
+        <button
+          type="button"
+          aria-label="发球 / 暂停"
+          className="pad__text"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            if (phase === "aim") serve();
+            else toggle();
+          }}
+        >
+          {phase === "aim" ? "发球" : phase === "paused" ? "继续" : "暂停"}
+        </button>
+        <button
+          type="button"
+          aria-label="右移"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            held.current.right = true;
+            game.current.target = null;
+            buzz(8);
+          }}
+          onPointerUp={() => (held.current.right = false)}
+          onPointerLeave={() => (held.current.right = false)}
+          onPointerCancel={() => (held.current.right = false)}
+        >
+          →
+        </button>
       </div>
     </div>
   );

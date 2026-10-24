@@ -523,8 +523,8 @@ export default function Snake() {
           </div>
         )}
       </div>
-      {/* 触屏设备上显示方向键，按下即转向，不等抬起 */}
-      <div className="dpad">
+      {/* 触屏：加大 dpad，按下即转向 + 轻震；附带暂停 */}
+      <div className="dpad dpad--lg" aria-label="方向键">
         {PAD.map(([dir, arrow, label]) => (
           <button
             key={dir}
@@ -533,13 +533,30 @@ export default function Snake() {
             style={{ gridArea: dir }}
             onPointerDown={(e) => {
               e.preventDefault();
+              e.currentTarget.setPointerCapture?.(e.pointerId);
               turn(dir);
+              buzz(10);
             }}
           >
             {arrow}
           </button>
         ))}
+        {(phase === "running" || phase === "paused") && (
+          <button
+            type="button"
+            className="dpad__pause"
+            style={{ gridArea: "pause" }}
+            aria-label={phase === "paused" ? "继续" : "暂停"}
+            onPointerDown={(e) => {
+              e.preventDefault();
+              toggle();
+            }}
+          >
+            {phase === "paused" ? "继续" : "暂停"}
+          </button>
+        )}
       </div>
+      <p className="game-hint when-touch">方向键或在棋盘上滑动转向；也可点暂停。</p>
     </div>
   );
 }

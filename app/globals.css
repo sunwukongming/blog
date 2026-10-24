@@ -129,6 +129,7 @@ main [data-ui], main a, main button { pointer-events: auto; }
   .orbit-stage { display: block; height: 34svh; flex-shrink: 0; }
 }
 .when-touch { display: none; }
+.when-mouse { display: inline; }
 @media (pointer: coarse) {
   .when-touch { display: inline; }
   .when-mouse { display: none; }
@@ -250,6 +251,17 @@ html:has(.page--game) { overscroll-behavior: none; }
   display: none; justify-content: center; gap: 8px; touch-action: none; user-select: none; -webkit-user-select: none;
   grid-template: "  .  up    .  " 56px "left down right" 56px / 72px 72px 72px;
 }
+.dpad--lg {
+  gap: 10px;
+  grid-template:
+    ". up ." 64px
+    "left down right" 64px
+    "pause pause pause" 48px
+    / 84px 84px 84px;
+  justify-self: center;
+}
+.dpad--lg button { font-size: 26px; border-radius: 16px; }
+.dpad__pause { font-size: 14px !important; font-weight: 600; }
 .dpad button, .pad button {
   border: 1px solid var(--line); border-radius: 12px; background: rgb(255 255 255 / 0.06); color: var(--fg);
   font-size: 22px; cursor: pointer;
@@ -572,4 +584,31 @@ html:has(.page--game) { overscroll-behavior: none; }
 @media (pointer: coarse) {
   .pad--tetris button { min-height: 56px; font-size: 18px; }
   .game-btn:disabled { opacity: 0.4; }
+}
+
+.pad--breakout { grid-template-columns: 1fr 1.1fr 1fr; }
+.pad--breakout button { min-height: 56px; font-size: 22px; }
+
+.games-records { width: min(720px, 100%); margin: 0 0 18px; display: grid; gap: 8px; }
+.games-records h2 { margin: 0; font-size: 15px; }
+.games-records__note { margin: 0; font-size: 13px; color: var(--muted); }
+.games-records__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.games-records__list li + li { border-top: 1px solid var(--line); }
+.games-records__list a {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  padding: 10px 0; text-decoration: none;
+}
+.games-records__list a:hover .games-records__title { color: var(--accent); }
+.games-records__title { font-weight: 600; }
+.games-records__list .game-card__best { margin: 0; }
+@media (max-width: 640px) {
+  .dpad--lg {
+    grid-template:
+      ". up ." 68px
+      "left down right" 68px
+      "pause pause pause" 52px
+      / minmax(72px, 1fr) minmax(72px, 1fr) minmax(72px, 1fr);
+    width: min(100%, 320px);
+  }
+  .game-wrap[data-game="breakout"] { --chrome: 340px; }
 }

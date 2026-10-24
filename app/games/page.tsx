@@ -21,9 +21,23 @@ export default function GamesPage() {
         <p className="eyebrow">Games · GM Lab</p>
         <h1 className="display">游戏</h1>
         <p className="lede">
-          几个能直接在浏览器里玩的小游戏，以及做过的游戏相关项目。能点的条目可以点进去。
+          书房桌上的那些——用来验证交互与前端手感的小游戏。纪录存在你本机浏览器里，换设备不会带走。和首页「桌上的游戏」是同一批入口。
         </p>
       </div>
+      <section className="panel games-records" data-ui aria-labelledby="g-records">
+        <h2 id="g-records">本机纪录</h2>
+        <p className="games-records__note">有玩过才会显示具体数字；卡片上也能看到同一套数据。</p>
+        <ul className="games-records__list">
+          {playable.map((g) => (
+            <li key={g.slug}>
+              <Link href={g.href!}>
+                <span className="games-records__title">{g.title}</span>
+                <GameBest slug={g.slug} />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
       <section aria-labelledby="g-play">
         <h2 id="g-play" className="sr-only">
           能直接玩

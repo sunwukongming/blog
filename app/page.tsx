@@ -8,7 +8,15 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   description: SITE.description,
-  openGraph: { title: SITE.name, description: SITE.description },
+  openGraph: {
+    title: SITE.name,
+    description: SITE.description,
+    type: "website",
+    siteName: SITE.name,
+    locale: "zh_CN",
+    url: SITE_URL ?? undefined,
+  },
+  twitter: { card: "summary", title: SITE.name, description: SITE.description },
 };
 
 

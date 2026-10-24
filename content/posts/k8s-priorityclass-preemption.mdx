@@ -1,0 +1,27 @@
+---
+title: K8s PriorityClass：优先级与抢占怎么用才稳
+date: "2026-10-24"
+category: cloud
+summary: PriorityClass 决定调度排序与能否抢占低优先级 Pod；先划业务档位，再设 preemptionPolicy，避免把平台组件挤掉。
+---
+
+集群忙时，调度器按 **优先级** 排队；更高优先级的 Pod 还可 **抢占** 低优先级的，腾出资源。
+
+## 概念
+
+- `PriorityClass`：全局名 → 整数值（越大越高）。  
+- Pod `priorityClassName` 引用它。  
+- `preemptionPolicy`：`PreemptLowerPriority`（默认）或 `Never`。
+
+系统关键组件常用高优先级且慎重抢占；批处理/实验任务用低优先级、可被抢。
+
+## 实践
+
+1. 先定档：`platform` > `production` > `batch` > `best-effort`，数值拉开间距。  
+2. 生产业务默认 **不要** 随便 `Never`，否则高优也插不进已满节点。  
+3. 观察 `kubectl describe pod` 的 Preemption / NominatedNode；结合 PDB，避免抢占打出不可用。  
+4. 与 ResourceQuota 无关：配额是名额，优先级是调度顺序。
+
+## 注意
+
+抢占会杀 Pod，依赖优雅终止与 PDB。别给每个团队一个「最高」，否则等于没有优先级。

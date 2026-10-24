@@ -685,9 +685,12 @@ export default function Tetris() {
             连消<b>×{stats.combo}</b>
           </span>
         )}
-        {stats.b2b && (
-          <span title="下一次 Tetris / T-Spin 将触发 Back-to-Back">
-            B2B<b>就绪</b>
+        <span title={stats.b2b ? "下一次 Tetris / T-Spin 将触发 Back-to-Back" : "先完成 Tetris / T-Spin 以武装 B2B"}>
+          B2B<b className={stats.b2b ? "game-tip--alert" : undefined}>{stats.b2b ? "就绪" : "—"}</b>
+        </span>
+        {(phase === "running" || phase === "paused") && (
+          <span title="幽灵块落点距离（格）">
+            幽灵<b>{stats.ghost}</b>
           </span>
         )}
         {(phase === "running" || phase === "paused") && (
@@ -712,13 +715,13 @@ export default function Tetris() {
         </p>
       )}
       {phase === "running" && !stats.clearTip && (
-        <p className={stats.canHold ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">
-          幽灵落点 {stats.ghost} 格
-          {stats.canHold === false ? " · Hold 已用（落地后恢复）" : " · Hold 可用"}
-          {stats.hold ? ` · 暂存 ${stats.hold}` : " · 暂存空"}
-          {" · 预览 "}
-          {stats.next.join("→")}
-          {stats.b2b ? " · B2B 就绪" : ""}
+        <p className={stats.b2b || stats.canHold ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">
+          {stats.b2b ? "B2B 就绪" : "B2B 未武装"}
+          {" · 幽灵落点 "}
+          {stats.ghost}
+          {" 格"}
+          {stats.canHold === false ? " · Hold 已用" : " · Hold 可用"}
+          {stats.hold ? ` · 暂存 ${stats.hold}` : ""}
           {stats.combo > 1 ? ` · 连消×${stats.combo}` : ""}
         </p>
       )}

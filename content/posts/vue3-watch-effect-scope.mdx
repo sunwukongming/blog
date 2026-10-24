@@ -1,0 +1,46 @@
+---
+title: Vue 3 watchEffect 与 effectScope：副作用别漏卸
+date: "2026-10-24"
+category: frontend
+summary: watchEffect 自动收集依赖，组件卸载会停；抽到模块或手动创建时要用 effectScope，避免热更新与单例里的幽灵监听。
+---
+
+`watchEffect` 适合「依赖一变就同步」的轻量反应。坑多半出在 **效应跑出了组件生命周期**。
+
+## 组件内
+
+```ts
+watchEffect((onCleanup) => {
+  const id = setInterval(poll, 1000);
+  onCleanup(() => clearInterval(id));
+});
+```
+
+组件 `onUnmounted` 时效应停止；`onCleanup` 处理定时器、订阅。
+
+## 抽到 composable / 单例
+
+若在模块顶层或 `keep-alive` 外的长生命周期对象里 `watchEffect`，组件走了效应可能还在。
+
+```ts
+import { effectScope, watchEffect } from "vue";
+
+const scope = effectScope();
+scope.run(() => {
+  watchEffect(() => { /* ... */ });
+});
+// 不再需要时
+scope.stop();
+```
+
+`effectScope` 可一次性停掉作用域内所有效应，适合地图控件、音视频桥、跨路由服务。
+
+## 对照
+
+| API | 何时用 |
+|---|---|
+| `watch` | 明确来源、可 `once`/`deep` |
+| `watchEffect` | 依赖一串、懒得列全 |
+| `effectScope` | 手动生命周期 / 库代码 |
+
+和 `keep-alive` 连读：激活/停用时考虑 `onActivated` 里重启、`scope.stop` 在真正销毁时调用。

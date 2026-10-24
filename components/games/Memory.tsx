@@ -228,18 +228,14 @@ export default function Memory() {
           最少<b>{shownBest ?? "—"}</b>
         </span>
       </div>
-      {endgame && (
-        <p className="game-tip game-tip--alert" aria-live="polite">
-          残局：还剩 {leftPairs} 对 · 步数 {moves} · 少翻错更能刷新纪录
-        </p>
-      )}
-      <p className="game-tip" aria-live="polite">
-        本局连击 <b className={streak >= 2 ? "game-tip--alert" : undefined}>{streak}</b>
-        {bestStreak > 1 ? `（本档最高 ${bestStreak}，切换难度会保留）` : "（切换难度保留各档连击最高）"}
+      <p className={endgame || streak >= 2 ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">
+        {endgame
+          ? `残局：还剩 ${leftPairs} 对 · 连击 ${streak}${bestStreak > 1 ? `（峰 ${bestStreak}）` : ""} · 步数 ${moves}`
+          : `本局连击 ${streak}${bestStreak > 1 ? `（本档峰 ${bestStreak}）` : ""}`}
         {" · "}
-        本难度最少 <b>{shownBest ?? "—"}</b> 步
+        最少 <b>{shownBest ?? "—"}</b> 步
         {" · "}
-        各难度：
+        各档：
         {allDiffBests.map((x, i) => (
           <span key={DIFFS[i].key}>
             {i > 0 ? " · " : ""}
@@ -247,6 +243,7 @@ export default function Memory() {
             <b className={DIFFS[i].key === diff.key ? "game-tip--alert" : undefined}>{x.best ?? "—"}</b>
           </span>
         ))}
+        {endgame ? " · 少翻错更易刷纪录" : " · 切换难度保留连击峰"}
       </p>
       <div
         className="memory"

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CATEGORIES } from "@/lib/categories";
 import { getAllPosts } from "@/lib/posts";
+import { SITE, SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "分类",
@@ -20,8 +21,26 @@ export const metadata: Metadata = {
 
 export default async function Categories() {
   const posts = await getAllPosts();
+  const itemListLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: `${SITE.name} 分类`,
+    description: "按前端、后端、云与可观测、工具与随笔浏览",
+    numberOfItems: CATEGORIES.length,
+    itemListElement: CATEGORIES.map((c, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      url: SITE_URL ? `${SITE_URL}/categories/${c.slug}` : `/categories/${c.slug}`,
+      name: c.name,
+      description: c.blurb,
+    })),
+  };
   return (
     <main data-world="orbit" className="page page--split">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }}
+      />
       <div className="hero">
         <p className="eyebrow">
           {CATEGORIES.length} 个分类 · {posts.length} 篇文章

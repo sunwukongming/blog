@@ -1,0 +1,37 @@
+---
+title: Go database/sql：NULL 怎么接才不踩坑
+date: "2026-10-24"
+category: backend
+summary: 扫描可空列用 sql.Null* 或指针；别对 NULL 直接 Scan 进非指针基本类型。业务层尽早变成明确的 optional，而不是把 NullString 传遍全栈。
+---
+
+`database/sql` 遇到 SQL `NULL` 时，往 `string`/`int64` 等非指针扫会直接报错。团队里常见两种接法。
+
+## 标准库
+
+```go
+var name sql.NullString
+err := row.Scan(&name)
+if name.Valid {
+  use(name.String)
+}
+```
+
+还有 `NullInt64`、`NullBool`、`NullTime` 等。Go 1.22+ 也可用泛型 `sql.Null[T]`。
+
+## 指针
+
+```go
+var name *string
+err := row.Scan(&name) // NULL → nil
+```
+
+简洁，但要处处判空；和 JSON `omitempty` 组合时语义要统一。
+
+## 建议
+
+1. **边界转换**：在 repo/DAO 把 `Null*` 收成 `*T` 或自定义 `Optional`，上层不依赖 `database/sql` 类型。  
+2. **NOT NULL 列**用非指针，避免无意义的可选。  
+3. 写回用 `nil` / `Null*.Valid=false`，别用空字符串假装 NULL（除非产品就是这个语义）。
+
+和 DTO/domain 边界连读：可空是数据模型的一部分，别在 handler 里才第一次遇见。

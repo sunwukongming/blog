@@ -27,7 +27,8 @@ export const metadata: Metadata = {
 export default async function Archive() {
   const posts = await getAllPosts();
   const years = Map.groupBy(posts, (p) => p.date.slice(0, 4));
-  const current = String(new Date().getFullYear());
+  // Expand the newest post year (avoid prerender touching new Date())
+  const current = posts[0]?.date.slice(0, 4) ?? [...years.keys()][0] ?? "2026";
   const yearCount = years.size;
   // batch44: ItemList 与 eyebrow 篇数对齐；只暴露最近 50 条避免巨大 JSON-LD
   // batch51: 再核 numberOfItems=posts.length + slice(0,50) + inLanguage；与 blog ItemList 同源 getAllPosts

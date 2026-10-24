@@ -758,6 +758,20 @@ export default function Tetris() {
                 }}
               />
             </span>
+            <span
+              className="tetris-ghost-depth-bar"
+              data-deep={stats.ghost >= 12 || undefined}
+              data-shallow={stats.ghost > 0 && stats.ghost <= 3 || undefined}
+              title={`幽灵落点深度 ${stats.ghost} 格（满刻度按 20）`}
+              aria-label={`幽灵深度 ${stats.ghost} 格`}
+            >
+              <i
+                className="tetris-ghost-depth-bar__fill"
+                style={{
+                  width: `${Math.min(100, Math.round((stats.ghost / 20) * 100))}%`,
+                }}
+              />
+            </span>
             {stats.comboPeak > 1 ? (
               <small style={{ marginLeft: 4, opacity: 0.7 }} title={`本局连消峰值 ×${stats.comboPeak}`}>
                 峰{stats.comboPeak}

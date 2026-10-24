@@ -2957,3 +2957,76 @@ html:has(.page--game) { overscroll-behavior: none; }
 .pk-active-bar[data-heads] > i {
   background: linear-gradient(90deg, #fbbf24, #f59e0b);
 }
+
+/* batch63: memory-waste-bar / mine-flag-slack-bar / tetris-ghost-depth-bar */
+.memory-waste-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.memory-waste-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #86efac, #22c55e);
+  transition: width 100ms ease-out;
+}
+.memory-waste-bar[data-warm] .memory-waste-bar__fill {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+.memory-waste-bar[data-hot] .memory-waste-bar__fill {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+}
+
+.mine-flag-slack-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.mine-flag-slack-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+  transition: width 100ms ease-out;
+}
+.mine-flag-slack-bar[data-tight] .mine-flag-slack-bar__fill {
+  background: linear-gradient(90deg, #86efac, #22c55e);
+}
+.mine-flag-slack-bar[data-over] .mine-flag-slack-bar__fill {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+}
+
+.tetris-ghost-depth-bar {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 6px;
+  width: 40px;
+  height: 5px;
+  border-radius: 3px;
+  background: color-mix(in oklab, var(--fg, #e5e7eb) 12%, transparent);
+  overflow: hidden;
+}
+.tetris-ghost-depth-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #93c5fd, #3b82f6);
+  transition: width 100ms ease-out;
+}
+.tetris-ghost-depth-bar[data-shallow] .tetris-ghost-depth-bar__fill {
+  background: linear-gradient(90deg, #f87171, #ef4444);
+}
+.tetris-ghost-depth-bar[data-deep] .tetris-ghost-depth-bar__fill {
+  background: linear-gradient(90deg, #86efac, #22c55e);
+}

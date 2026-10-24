@@ -1,0 +1,58 @@
+---
+title: Postgres Row Level Security：表级策略谁能看见行
+date: "2026-10-25"
+category: backend
+summary: RLS 用 POLICY 限制 SELECT/写操作可见或可改的行。讲清 FORCE、security invoker/definer 视图、与 session 变量租户键，避开和咨询锁/SKIP LOCKED 混谈。
+---
+
+站内锁族（advisory、SKIP LOCKED、deadlock）管的是 **并发互斥**。**Row Level Security（RLS）** 管的是 **谁能读/写哪些行**——多租户、合规隔离常在库内落地。
+
+## 最小策略
+
+```sql
+ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY tenant_iso ON orders
+  FOR ALL
+  TO app_user
+  USING (tenant_id = current_setting('app.tenant_id', true)::uuid)
+  WITH CHECK (tenant_id = current_setting('app.tenant_id', true)::uuid);
+```
+
+应用在事务开头：
+
+```sql
+SELECT set_config('app.tenant_id', $1, true);  -- true = 事务局部
+```
+
+`USING` 过滤读与更新前可见行；`WITH CHECK` 约束写入后的新行。
+
+## FORCE 与表主人
+
+表所有者默认 **绕过** RLS。迁移角色或超级用户也要注意：
+
+```sql
+ALTER TABLE orders FORCE ROW LEVEL SECURITY;
+```
+
+`FORCE` 后连所有者也走策略（超级用户仍例外）。生产应用角色不应是表 owner。
+
+## 视图与函数
+
+- 视图默认 **invoker** 权限时，RLS 按调用者生效；`security_barrier` 视图可减少优化器下推泄漏。  
+- `SECURITY DEFINER` 函数以定义者身份跑，可能 **绕过** 调用者 RLS——务必限定 `search_path`、只授必要表，或函数内再显式过滤。
+
+## 边界
+
+- 漏设 `TO app_user`、策略只写了 `FOR SELECT` 时，写路径可能仍敞开——用 `\d+` / `pg_policies` 核对。  
+- 与 **咨询锁 / SKIP LOCKED**：RLS 不替代队列抢行；先 RLS 过滤可见集，再 `FOR UPDATE SKIP LOCKED`。  
+- `current_setting(..., true)` 缺省返回 `NULL`，策略里 `NULL = uuid` 为 unknown，行会被滤掉——连接池复用前必须设租户。  
+- 性能测试要带策略；RLS 条件能用上 `tenant_id` 索引更稳。
+
+## 对照
+
+| 机制 | 角色 |
+|---|---|
+| RLS POLICY | 行可见/可写集合 |
+| GRANT | 表/列级权限 |
+| 咨询锁 | 应用互斥，不隔离行集 |

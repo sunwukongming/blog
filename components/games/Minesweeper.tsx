@@ -614,6 +614,24 @@ export default function Minesweeper() {
               }}
             />
           </span>
+          <span
+            className="mine-flag-slack-bar"
+            data-over={flags > level.mines || undefined}
+            data-tight={flags >= level.mines && flags > 0 || undefined}
+            title={`未标雷 ${Math.max(0, level.mines - flags)}/${level.mines}（旗 ${flags}）`}
+            aria-label={`未标雷 ${Math.max(0, level.mines - flags)}`}
+          >
+            <i
+              className="mine-flag-slack-bar__fill"
+              style={{
+                width: `${
+                  level.mines > 0
+                    ? Math.min(100, Math.round((Math.max(0, level.mines - flags) / level.mines) * 100))
+                    : 0
+                }%`,
+              }}
+            />
+          </span>
           {best != null && phase === "playing" && best > 0 ? (
             <>
               <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>

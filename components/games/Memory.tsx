@@ -497,6 +497,20 @@ export default function Memory() {
               style={{ width: `${Math.min(100, Math.round((streak / 5) * 100))}%` }}
             />
           </span>
+          <span
+            className="memory-waste-bar"
+            data-hot={Math.max(0, moves - matchedCount * 2) >= 8 || undefined}
+            data-warm={Math.max(0, moves - matchedCount * 2) >= 4 && Math.max(0, moves - matchedCount * 2) < 8 || undefined}
+            title={`多余翻步 ${Math.max(0, moves - matchedCount * 2)}（满刻度按 12；理想每对 2 步）`}
+            aria-label={`多余翻步 ${Math.max(0, moves - matchedCount * 2)}`}
+          >
+            <i
+              className="memory-waste-bar__fill"
+              style={{
+                width: `${Math.min(100, Math.round((Math.max(0, moves - matchedCount * 2) / 12) * 100))}%`,
+              }}
+            />
+          </span>
         </span>
       </div>
       <p className={endgame || streak >= 2 ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">

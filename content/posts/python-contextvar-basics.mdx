@@ -1,0 +1,57 @@
+---
+title: Python contextvars：异步里的「线程局部」
+date: "2026-10-25"
+category: backend
+summary: threading.local 绑线程；asyncio 任务切换不会换线程。contextvars 随 Context 复制，适合请求 ID、租户、超时预算在协程间传递。
+---
+
+在线程模型里用 `threading.local()` 存请求上下文很常见。换成 **asyncio / trio** 后，多个 Task 跑在同一线程，`local()` 会串号。**`contextvars`** 就是标准库给的答案。
+
+## 最小用法
+
+```python
+from contextvars import ContextVar
+
+request_id: ContextVar[str] = ContextVar("request_id", default="-")
+
+async def handle(req):
+    token = request_id.set(req.headers["x-request-id"])
+    try:
+        await process()
+    finally:
+        request_id.reset(token)
+
+async def process():
+    print(request_id.get())  # 当前 Task 的值
+```
+
+`set` 返回 **Token**，`reset` 成对出现，避免泄漏到后续复用的 Task。
+
+## 和 create_task
+
+```python
+import asyncio
+from contextvars import copy_context
+
+async def main():
+    request_id.set("root")
+    ctx = copy_context()
+    await asyncio.create_task(child(), context=ctx)  # 3.11+ 可显式传 context
+```
+
+默认情况下，新建 Task 会 **继承** 当前 Context 的快照；之后父子各自 `set` 互不影响。显式 `copy_context()` 便于在线程池 `ctx.run(fn)` 里带上同一套变量。
+
+## 边界
+
+- **不是** 给业务当全局可变配置总线；值应偏小、偏不可变（请求 ID、deadline）。  
+- 中间件/装饰器务必 `try/finally: reset`；只 `set` 不 `reset` 会在连接复用时脏读。  
+- 与 `threading.local`：纯多线程同步代码仍可用 local；异步或「线程池执行协程上下文」用 contextvars。  
+- 日志过滤器里 `request_id.get()` 即可注入字段，不必改每个函数签名。
+
+## 对照
+
+| 机制 | 作用域 |
+|---|---|
+| `threading.local` | 线程 |
+| `contextvars` | Context（随 Task 复制） |
+| 显式参数 | 最清晰，签名变长 |

@@ -1,0 +1,43 @@
+---
+title: SQLite WAL checkpoint：忙碌库的刷盘节奏
+date: "2026-10-25"
+category: backend
+summary: WAL 模式下写进 -wal 文件，读仍可并发。checkpoint 把变更合并回主库；讲清 PASSIVE/FULL/RESTART/TRUNCATE、自动 checkpoint 与长读事务挡道。
+---
+
+SQLite **WAL（Write-Ahead Logging）** 让写手追加 `-wal`，读者走快照，少抢库级锁。债务是：`-wal` 会涨，需要 **checkpoint** 折回主数据库文件。
+
+## 模式一览
+
+```sql
+PRAGMA journal_mode = WAL;
+PRAGMA wal_checkpoint(PASSIVE);
+```
+
+| 模式 | 行为 |
+|---|---|
+| `PASSIVE` | 能刷多少刷多少，不打扰读写；可能刷不完 |
+| `FULL` | 尽量等写完，阻塞到可安全刷完 |
+| `RESTART` | FULL 后再挡新写，直到读者离开旧快照 |
+| `TRUNCATE` | RESTART 后把 `-wal` 截断为 0 字节 |
+
+运维脚本常用 `TRUNCATE` 控制磁盘；在线服务高峰期先 `PASSIVE`，低峰再加强。
+
+## 自动 checkpoint
+
+连接在 WAL 帧数或尺寸阈值阈值时会自动 PASSIVE checkpoint（可用 `PRAGMA wal_autocheckpoint` 调）。长事务、只读连接占着旧快照时，自动刷可能一直「差一点」，`-wal` 与 `-shm` 持续变大——监控文件大小比只看 QPS 更直接。
+
+## 边界
+
+- **备份**：热备要拷主库 + `-wal` + `-shm`，或用 Online Backup API / `VACUUM INTO`；只拷主文件会丢未 checkpoint 写入。  
+- 多进程写同一 WAL 库可以，但仍是 **一写多读** 模型；别假设像 Postgres 那样的行级 MVCC 服务器。  
+- checkpoint 期间读通常仍可进行；`FULL`/`RESTART` 会增加写等待，别在峰值盲目 RESTART。  
+- 切换回 `DELETE` journal 前需成功 checkpoint，否则模式切换失败。
+
+## 对照
+
+| 手段 | 角色 |
+|---|---|
+| WAL | 写并发读 |
+| `wal_checkpoint` | 合并/截断 WAL |
+| `VACUUM` | 整库重写，更重 |

@@ -1,0 +1,51 @@
+---
+title: "CSS View Transitions for SPA Navigation: Route-Level Shared Elements in Next"
+summary: "The basics of same-document startViewTransition are covered in a separate post. This one is only about SPA route changes: view-transition-name, next-view-transitions, and fallbacks."
+---
+
+Same-document VT (theme switches, list reordering) just needs one DOM mutation wrapped in `document.startViewTransition`. **SPA navigation** has to name the shared elements across "old page snapshot → route swaps the tree → new page snapshot"; otherwise you only get a full-page cross-fade, not the list-to-detail hero animation.
+
+## Where it differs from same-document VT
+
+| | Same-document (existing post) | SPA navigation (this post) |
+|---|---|---|
+| Trigger | A single `startViewTransition(() => mutate())` | The router hooks in before and after the page swap |
+| Naming | `view-transition-name` is optional | Shared nodes across pages **must** have a stable name |
+| Typical use | Dark mode toggle, card reordering | List thumbnail → detail hero image |
+
+## Minimal wiring
+
+1. Give the list card and the detail hero image the **same** `view-transition-name` (e.g. `vt-post-${slug}`), and drop the name on the outgoing page to avoid duplicate-name conflicts.  
+2. Wrap navigation with a framework adapter: in the Next App Router the usual choice is `Link` / `useTransitionRouter` from [`next-view-transitions`](https://github.com/shuding/next-view-transitions); or manage `startViewTransition` + `router.push` yourself.  
+3. Disable or shorten the animation under `@media (prefers-reduced-motion: reduce)`; browsers without support should **navigate directly** instead of hanging on a Promise.
+
+```css
+.card-thumb[data-vt] { view-transition-name: var(--vt-name); }
+::view-transition-old(vt-post-demo),
+::view-transition-new(vt-post-demo) {
+  animation-duration: 280ms;
+  animation-timing-function: ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) { animation: none !important; }
+}
+```
+
+## Pitfalls in practice
+
+| Pitfall | Symptom | Fix |
+|---|---|---|
+| Two nodes share a name at the same time | Transition jumps around / console warning | Clear the name before leaving; one unique name per page |
+| Assigning the name late in `useEffect` | No name yet when the snapshot is taken | Set it during render, or synchronously before the transition callback |
+| Sprinkling `view-transition-name: root` on large blocks | The whole page feels like a slideshow | Only name the shared elements |
+| Ignoring BFCache / back gestures | No animation or a white flash on back | Test the browser back button; fall back for popstate if needed |
+
+## Versus Motion libraries
+
+Framer Motion's `layoutId` is great at "reordering within the same tree". When you cross routes and want system-level before/after snapshots, VT is closer to the platform (including cross-document transitions down the road). They can coexist: layout animations inside the list, VT across pages.
+
+## In one sentence
+
+Same-document VT handles "how this page changes"; SPA VT handles "which piece is the same object across two pages". Get a stable `view-transition-name` and fallbacks first, then tune the `::view-transition-*` curves. It complements `css-view-transitions` rather than replacing it.

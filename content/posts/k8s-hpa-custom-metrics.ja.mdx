@@ -1,0 +1,70 @@
+---
+title: "K8s HPA のカスタムメトリクス：CPU だけでなくキューと業務 SLO でスケールする"
+summary: "HPA の安定化ウィンドウについては別記事があります。この記事では custom / external メトリクスに絞ります：メトリクスの出どころ、書き方、CPU ポリシーとの共存方法。"
+---
+
+デフォルトの HPA は CPU/メモリ使用率を見ており、「QPS に比例して計算量が増える」サービスに向いています。キューの滞留、毎秒の注文数、ゲートウェイのレイテンシのパーセンタイルなどには、**カスタム（custom）または外部（external）メトリクス**が必要です。
+
+## 安定化ウィンドウの記事との役割分担
+
+| 記事 | 焦点 |
+|---|---|
+| `k8s-hpa-scale-stabilization` | スケールのばたつき、`stabilizationWindowSeconds`、ポリシー |
+| 本記事 | メトリクスソース、`MetricSpec` の選び方、リソースメトリクスとの併用 |
+
+まずメトリクスを正しくつなぎ、それから安定化ウィンドウを調整します。そうしないと、間違ったシグナルを安定させるだけになります。
+
+## メトリクスの出どころ
+
+1. **Resource**：CPU/メモリ（組み込み）。  
+2. **Pods / Object custom**：metrics-server の拡張 API / Prometheus Adapter。Pod 単位や Ingress などのオブジェクト単位です。  
+3. **External**：クラスター外のシグナル（クラウドのキューの深さ、マネージド Kafka の lag）を、アダプター経由で公開します。
+
+```yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: worker
+  minReplicas: 2
+  maxReplicas: 20
+  metrics:
+    - type: External
+      external:
+        metric:
+          name: sqs_messages_visible
+          selector:
+            matchLabels:
+              queue: checkout
+        target:
+          type: AverageValue
+          averageValue: "30"
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+```
+
+複数のメトリクスがある場合、HPA は**それぞれが推奨するレプリカ数の最大値**を採用します（デフォルトの挙動）。これにより「キューは空だが CPU は高い」状況で計算資源をスケールインしすぎることを防げます。
+
+## 選定チェックリスト
+
+| シグナル | メトリクスの種類 | 注意点 |
+|---|---|---|
+| コンシューマーの遅延 | External / Pod 単位のカスタム | ターゲットは「1 レプリカが処理できる量」にし、グローバルな lag の絶対値を適当に割らない |
+| 入口の RPS | Object（Ingress） | レプリカ数と同じ方向に動く。サーキットブレーカー作動後に RPS が落ちてスケールインの雪崩が起きる点に注意 |
+| P99 レイテンシ | 直接スケールに使うのは慎重に | レイテンシ悪化の原因は DB かもしれず、アプリをスケールアウトすると悪化する。キュー / レート制限を優先する |
+
+## 導入時の落とし穴
+
+- Adapter が落ちる → メトリクスが欠損する → スケールアウトもスケールインもしない、または挙動がバージョン依存になる。アラートを設定しましょう。  
+- ラベルセレクターと Prometheus メトリクスのラベルが一致しない → 常に 0。  
+- カスタムメトリクスだけでリソースによるフォールバックを設定しない → メトリクスが遅延したときのセーフティネットがない。
+
+## ひとことで
+
+**業務の負荷はカスタム/外部メトリクスで表し、CPU はフォールバック、安定化ウィンドウは別途調整する。** HPA の安定化ウィンドウの記事と併せて読んでください：一方は「何を聞くか」を、もう一方は「噂に飛びつかない」ことを扱います。

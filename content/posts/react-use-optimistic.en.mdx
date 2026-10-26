@@ -1,0 +1,59 @@
+---
+title: "React useOptimistic: Optimistic UI and Its Rollback Boundary"
+summary: "Likes, renames, drag-to-reorder: you want to paint the result first and wait for the server after. useOptimistic layers an optimistic state on top of a Transition; on failure it falls back to the real props when the action ends, so don't hand-roll a second pending cache."
+---
+
+This site already covers **useTransition**, **useDeferredValue**, and **useEffectEvent**. **`useOptimistic`** has one job: "show the expected result first, then reconcile with the real data once the request lands."
+
+## Minimal usage
+
+```tsx
+"use client";
+import { useOptimistic, useTransition } from "react";
+
+function LikeButton({ likes, id }: { likes: number; id: string }) {
+  const [optimistic, addOptimistic] = useOptimistic(
+    likes,
+    (current, delta: number) => current + delta,
+  );
+  const [pending, startTransition] = useTransition();
+
+  return (
+    <button
+      disabled={pending}
+      onClick={() => {
+        startTransition(async () => {
+          addOptimistic(1);
+          await fetch(`/api/like/${id}`, { method: "POST" });
+          // After the parent revalidates / router.refresh, likes updates and the optimistic layer is removed
+        });
+      }}
+    >
+      {optimistic}
+    </button>
+  );
+}
+```
+
+- The first argument is the **authoritative value** (from props/server).  
+- The second is a reducer: `(current, action) => nextOptimistic`.  
+- Call `addOptimistic` inside the **`startTransition` action**; when the action ends, if the authoritative value hasn't changed, the UI reverts to it.
+
+## Versus hand-rolled pending state
+
+Keeping your own "optimistic likes" in `useState` and rolling back in `catch` tends to fight with parent refreshes and Strict Mode double invocation. `useOptimistic` ties applying and removing the layer to the Transition lifecycle.
+
+## Boundaries
+
+- It must be paired with a **Transition** (or the implicit transition of a Server Action form); calling `addOptimistic` from a plain event handler leaves no point at which the layer is removed.  
+- Optimistic state is **derived UI**, not a new source of truth; persistence is still decided by the server.  
+- When a reducer returns a new array for list deletes/reorders, keep references predictable so unrelated subtrees don't make the whole list flicker.  
+- Error feedback: `try/catch` inside the action; the optimistic layer rolls back on its own, and a toast is enough to explain what happened.
+
+## Comparison
+
+| API | Role |
+|---|---|
+| `useTransition` | Marks an update as non-urgent |
+| `useOptimistic` | Layers the expected UI on top during the transition |
+| `useDeferredValue` | Defers following the latest value; no "write first, confirm later" |

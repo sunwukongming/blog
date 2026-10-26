@@ -1,0 +1,70 @@
+---
+title: "K8s HPA Custom Metrics: Scale on Queues and Business SLOs, Not Just CPU"
+summary: "Stabilization windows are covered in a separate HPA post. This one is about custom / external metrics: where they come from, how to write them, and how they coexist with a CPU policy."
+---
+
+By default HPA looks at CPU/memory utilization, which suits services where "compute grows with QPS". Queue backlog, orders per second, or gateway latency percentiles call for **custom or external metrics**.
+
+## How this splits with the stabilization post
+
+| Post | Focus |
+|---|---|
+| `k8s-hpa-scale-stabilization` | Scaling flapping, `stabilizationWindowSeconds`, policies |
+| This post | Metric sources, choosing a `MetricSpec`, mixing with resource metrics |
+
+Wire the metrics up correctly first, then tune the stabilization window; otherwise you're just stabilizing the wrong signal.
+
+## Where metrics come from
+
+1. **Resource**: CPU/memory (built in).  
+2. **Pods / Object custom**: the metrics-server extension API / Prometheus Adapter, per pod or per object such as an ingress.  
+3. **External**: signals from outside the cluster (cloud queue depth, managed Kafka lag), exposed through an adapter.
+
+```yaml
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: worker
+  minReplicas: 2
+  maxReplicas: 20
+  metrics:
+    - type: External
+      external:
+        metric:
+          name: sqs_messages_visible
+          selector:
+            matchLabels:
+              queue: checkout
+        target:
+          type: AverageValue
+          averageValue: "30"
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+```
+
+With multiple metrics, HPA takes the **maximum of the replica counts each one recommends** (the default behavior), so an empty queue with high CPU won't scale away your compute.
+
+## Selection checklist
+
+| Signal | Metric type | Watch out for |
+|---|---|---|
+| Consumer lag | External / custom per-pod | Target "what one replica can drain", not some arbitrary division of the global absolute lag |
+| Ingress RPS | Object (Ingress) | Moves in the same direction as replicas; beware RPS dropping after a circuit breaker trips, triggering a scale-down avalanche |
+| P99 latency | Be careful scaling on it directly | High latency may be the DB; scaling the app makes it worse; prefer queues / rate limiting |
+
+## Rollout pitfalls
+
+- Adapter goes down → gap in metrics → no scaling in either direction, or behavior depends on the version; alert on it.  
+- Label selector doesn't match the Prometheus metric labels → always 0.  
+- Only custom metrics, no resource fallback → no safety net when metrics lag.
+
+## In one sentence
+
+**Express business pressure with custom/external metrics; keep CPU as the fallback; tune the stabilization window separately.** Read this together with the HPA stabilization post: one decides "what to listen to", the other "don't jump at every rumor".

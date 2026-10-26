@@ -1,0 +1,59 @@
+---
+title: "React useOptimistic：楽観的 UI とロールバックの境界"
+summary: "いいね、名前変更、ドラッグでの並べ替えなど、結果を先に描画してからサーバーを待ちたい場面があります。useOptimistic は Transition の上に楽観的な状態を一層重ね、失敗時は action の終了とともに本来の props へ自動で戻ります。pending 用のキャッシュを別に手書きする必要はありません。"
+---
+
+このサイトではすでに **useTransition**、**useDeferredValue**、**useEffectEvent** を扱っています。**`useOptimistic`** の役割は「期待される結果を先に表示し、リクエストが完了したら実データに合わせる」ことに特化しています。
+
+## 最小の使い方
+
+```tsx
+"use client";
+import { useOptimistic, useTransition } from "react";
+
+function LikeButton({ likes, id }: { likes: number; id: string }) {
+  const [optimistic, addOptimistic] = useOptimistic(
+    likes,
+    (current, delta: number) => current + delta,
+  );
+  const [pending, startTransition] = useTransition();
+
+  return (
+    <button
+      disabled={pending}
+      onClick={() => {
+        startTransition(async () => {
+          addOptimistic(1);
+          await fetch(`/api/like/${id}`, { method: "POST" });
+          // 親で revalidate / router.refresh が走ると likes が更新され、楽観的レイヤーが外れる
+        });
+      }}
+    >
+      {optimistic}
+    </button>
+  );
+}
+```
+
+- 第 1 引数は **正となる値**（props やサーバー由来）です。  
+- 第 2 引数は reducer：`(current, action) => nextOptimistic` です。  
+- **`startTransition` の action** 内で `addOptimistic` を呼びます。action 終了時に正の値が変わっていなければ、UI は正の値に戻ります。
+
+## 手書きの pending 状態との比較
+
+`useState` で「楽観的な likes」を別に持ち、`catch` でロールバックする方法は、親のリフレッシュや Strict Mode の二重呼び出しと衝突しがちです。`useOptimistic` はレイヤーの「重ねる／外す」を Transition のライフサイクルに結び付けます。
+
+## 境界
+
+- 必ず **Transition**（または Server Action フォームの暗黙的な transition）と組み合わせます。通常のイベントハンドラーで `addOptimistic` だけを呼んでも、レイヤーを外すタイミングがありません。  
+- 楽観的な状態は **派生 UI** であり、新しい信頼できる情報源ではありません。永続化は引き続きサーバーが正です。  
+- リストの削除や並べ替えで reducer が新しい配列を返す場合は、参照を予測可能に保ち、無関係なサブツリーまでリスト全体がちらつかないようにします。  
+- 失敗時の通知：action 内で `try/catch` すれば楽観的レイヤーはロールバックされます。説明はトーストを別に出せば十分です。
+
+## 比較
+
+| API | 役割 |
+|---|---|
+| `useTransition` | 更新を緊急でないものとしてマークする |
+| `useOptimistic` | トランジション中に期待される UI を重ねる |
+| `useDeferredValue` | 最新値への追従を遅らせる。「先に書いて後で確定」はしない |

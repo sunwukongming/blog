@@ -1,0 +1,57 @@
+---
+title: "Redis Streams XCLAIM: Turning Pending Claims into an Operable Action"
+summary: "The consumer group post covers the ACK/PEL loop. This one is only about XCLAIM / XAUTOCLAIM: min-idle, JUSTID, FORCE, RETRYCOUNT, and how to avoid double consumption after a claim."
+---
+
+The post "Consumer Groups: ACK, Pending, and Claiming" treats the PEL as a ticket queue. **This post is about the claim commands themselves**: when to grab, which fields you get back, and how to keep two consumers from processing the same entry at once.
+
+## How this splits with the consumer group post
+
+| Post | Focus |
+|---|---|
+| consumer-groups | Overview of XREADGROUP / XACK / XPENDING |
+| **This post** | **XCLAIM arguments, idle threshold, auto-claim, ownership transfer** |
+
+## Minimal claim
+
+```text
+XCLAIM mystream mygroup worker-b 60000 1710000000000-0
+```
+
+- The fourth argument is **min-idle-time (milliseconds)**: only entries in the PEL with idle ≥ that value are transferred to `worker-b`.  
+- It returns the claimed entries (with payload by default). You still need to **XACK** after processing, or the entry just lands in the new owner's PEL.
+
+## Common modifiers
+
+```text
+XCLAIM mystream mygroup worker-b 60000 <id> JUSTID
+XCLAIM mystream mygroup worker-b 0 <id> FORCE
+XCLAIM mystream mygroup worker-b 60000 <id> IDLE 0 RETRYCOUNT 1
+```
+
+- **JUSTID**: change ownership only, don't return the body (saves bandwidth; use it when you already have a local copy).  
+- **FORCE**: ignore idle and forcibly change the owner (use with care; suited to ops when you know for sure the original consumer is dead).  
+- **IDLE / RETRYCOUNT**: reset the idle time and retry count after claiming, so someone else doesn't immediately grab it again based on the old idle.
+
+## XAUTOCLAIM: scan the PEL instead of naming IDs
+
+```text
+XAUTOCLAIM mystream mygroup worker-b 60000 0-0 COUNT 20
+```
+
+Scans a batch of timed-out pending entries from a cursor; a good fit for a worker heartbeat loop where "if one dies, someone else picks it up". You still need idempotent processing + ACK.
+
+## Double-consumption checklist
+
+1. **Idempotency on a business key** (order ID / dedup table); a claim doesn't mean "nobody else has done it".  
+2. Set min-idle above the P99 of "the slowest normal processing run", so live consumers are less likely to be robbed by mistake.  
+3. When the original consumer recovers, it should check the PEL / its own claim state first, rather than blindly ACKing entries that have changed hands.  
+4. Monitoring: pending count per consumer, idle percentiles, claim count.
+
+## Dead letters
+
+Streams has no DLQ out of the box. Common approaches: after more than N claims, `XADD dlq ...` and then ACK in the original group, or use a separate `XGROUP` on an isolation stream. Base the threshold on RETRYCOUNT or your own attrs.
+
+## Summary
+
+A claim is **ownership transfer + continued at-least-once delivery**, not magic deduplication. Put idle, FORCE, idempotency, and ACK into the same runbook, and the PEL stops being a black box.

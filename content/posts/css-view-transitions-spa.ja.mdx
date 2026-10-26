@@ -1,0 +1,51 @@
+---
+title: "CSS View Transitions を SPA ナビゲーションにつなぐ：Next / ルート単位の共有要素"
+summary: "同一ドキュメントでの startViewTransition の基本は別記事にあります。この記事では SPA のルート切り替えだけを扱います：view-transition-name、next-view-transitions、フォールバック。"
+---
+
+同一ドキュメントの VT（テーマ切り替え、リストの並べ替え）は、DOM の変更を `document.startViewTransition` で一度包むだけで済みます。**SPA ナビゲーション**では「旧ページのスナップショット → ルーターによるツリー差し替え → 新ページのスナップショット」の間で共有要素に名前を付ける必要があります。そうしないとページ全体のクロスフェードになるだけで、一覧 → 詳細のヒーローアニメーションにはなりません。
+
+## 同一ドキュメント VT との境界
+
+| | 同一ドキュメント（既存記事） | SPA ナビゲーション（本記事） |
+|---|---|---|
+| トリガー | `startViewTransition(() => mutate())` を一度呼ぶ | ルーターがページ切り替えの前後にフックする |
+| 命名 | `view-transition-name` は任意 | ページをまたぐ共有ノードには安定した name が**必須** |
+| 典型例 | ダークモード切り替え、カードの並べ替え | 一覧のサムネイル → 詳細のヒーロー画像 |
+
+## 最小限の配線
+
+1. 一覧カードと詳細のヒーロー画像に**同じ** `view-transition-name`（例：`vt-post-${slug}`）を付け、退場するページでは name を外して名前の重複を避けます。  
+2. フレームワークのアダプターでナビゲーションを包みます。Next App Router なら [`next-view-transitions`](https://github.com/shuding/next-view-transitions) の `Link` / `useTransitionRouter` が定番です。あるいは `startViewTransition` + `router.push` を自前で管理します。  
+3. `@media (prefers-reduced-motion: reduce)` でアニメーションを無効化または短縮します。未対応のブラウザでは **そのまま遷移** させ、Promise で止まらないようにします。
+
+```css
+.card-thumb[data-vt] { view-transition-name: var(--vt-name); }
+::view-transition-old(vt-post-demo),
+::view-transition-new(vt-post-demo) {
+  animation-duration: 280ms;
+  animation-timing-function: ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) { animation: none !important; }
+}
+```
+
+## 実践での落とし穴
+
+| 落とし穴 | 症状 | 対処 |
+|---|---|---|
+| 2 つのノードが同時に同じ名前を持つ | トランジションが飛ぶ / コンソールに警告 | 退場前に name を外す。1 ページにつき一意な名前を 1 つ |
+| `useEffect` で後から name を付ける | スナップショット時点でまだ名前がない | レンダリング時に付けるか、トランジションのコールバック前に同期的に付ける |
+| 大きなブロックに `view-transition-name: root` を乱用する | ページ全体がスライドショーのようになる | 共有要素だけに名前を付ける |
+| BFCache / 戻るジェスチャーを考慮しない | 戻ったときにアニメーションがない、または白く点滅する | ブラウザの戻るをテストし、必要なら popstate ではフォールバックする |
+
+## Motion ライブラリとの関係
+
+Framer Motion の `layoutId` は「同じツリー内での並べ替え」にとても強いです。ルートをまたぎ、システムレベルの前後スナップショットが欲しい場合は、VT のほうがプラットフォームに沿っています（将来のクロスドキュメント遷移も含めて）。併用もできます：一覧の中は layout、ページ間は VT です。
+
+## ひとことで
+
+同一ドキュメント VT は「このページがどう変わるか」を、SPA VT は「2 つのページの間でどれが同じものか」を扱います。まず `view-transition-name` の安定化とフォールバックを固め、それから `::view-transition-*` のカーブを調整しましょう。`css-view-transitions` を置き換えるものではなく、補完するものです。

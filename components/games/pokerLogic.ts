@@ -2,8 +2,12 @@
 
 export type Card = { r: number; s: number }; // r: 2~14（14 是 A），s: 0♠ 1♥ 2♦ 3♣
 export type Style = "human" | "tight" | "loose" | "aggro";
+/** 座位上显示的最近动作；只存类型，文字由组件按当前语言翻译 */
+export type LastAction = { type: "sb" | "bb" | "fold" | "check" | "call" | "allin" } | { type: "raise"; to: number };
+/** 牌型等级：0 高牌 … 8 同花顺，9 皇家同花顺；名字由组件按当前语言翻译 */
+export type HandRank = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 export type Player = {
-  name: string;
+  /** 性格同时作为座位的身份（每种性格一人），名字由组件按语言显示 */
   style: Style;
   chips: number;
   hand: Card[];
@@ -20,10 +24,10 @@ export type Player = {
   /** 筹码输光，出局 */
   out: boolean;
   /** 最近一次动作，显示在座位上 */
-  last: string;
+  last: LastAction | null;
 };
 export type Street = "preflop" | "flop" | "turn" | "river" | "done";
-export type Pot = { amount: number; winners: number[]; handName: string };
+export type Pot = { amount: number; winners: number[]; rank: HandRank | null };
 export type Result = { pots: Pot[]; showdown: boolean; best: Record<number, Card[]> };
 export type Table = {
   players: Player[];
@@ -50,7 +54,6 @@ export const BLIND_EVERY = 10;
 
 // ---------- 牌和牌型 ----------
 
-export const HAND_NAMES = ["高牌", "一对", "两对", "三条", "顺子", "同花", "葫芦", "四条", "同花顺"];
 const BASE = 15;
 const CAT = BASE ** 5;
 
@@ -118,11 +121,11 @@ export function bestHand(cards: Card[]): { score: number; cards: Card[] } {
   return best;
 }
 
-export function handName(score: number) {
-  const cat = Math.floor(score / CAT);
+export function handRank(score: number): HandRank {
+  const cat = Math.floor(score / CAT) as HandRank;
   // 同花顺里最大的是 A 开头：皇家同花顺
-  if (cat === 8 && Math.floor(score / BASE ** 4) % BASE === 14) return "皇家同花顺";
-  return HAND_NAMES[cat];
+  if (cat === 8 && Math.floor(score / BASE ** 4) % BASE === 14) return 9;
+  return cat;
 }
 
 /** 蒙特卡洛估算胜率：随机补齐对手手牌和公共牌，数自己赢了多少次（平分按比例算） */
@@ -170,8 +173,7 @@ function nextIndex(t: Table, from: number, ok: (p: Player) => boolean) {
 }
 
 export function newTable(): Table {
-  const mk = (name: string, style: Style): Player => ({
-    name,
+  const mk = (style: Style): Player => ({
     style,
     chips: STARTING_CHIPS,
     hand: [],
@@ -182,10 +184,10 @@ export function newTable(): Table {
     acted: false,
     raises: 0,
     out: false,
-    last: "",
+    last: null,
   });
   return {
-    players: [mk("你", "human"), mk("阿稳", "tight"), mk("小跟", "loose"), mk("老凶", "aggro")],
+    players: [mk("human"), mk("tight"), mk("loose"), mk("aggro")],
     deck: [],
     board: [],
     dealer: Math.floor(Math.random() * 4),
@@ -218,7 +220,7 @@ export function startHand(t: Table) {
   t.bb = t.sb * 2;
   for (const p of t.players) {
     if (p.chips <= 0) p.out = true;
-    Object.assign(p, { hand: [], bet: 0, total: 0, folded: p.out, allIn: false, acted: false, raises: 0, last: "" });
+    Object.assign(p, { hand: [], bet: 0, total: 0, folded: p.out, allIn: false, acted: false, raises: 0, last: null });
   }
   t.dealer = nextIndex(t, t.dealer, (p) => !p.out);
   t.deck = shuffledDeck();
@@ -231,9 +233,9 @@ export function startHand(t: Table) {
   const sbi = alive === 2 ? t.dealer : nextIndex(t, t.dealer, (p) => !p.out);
   const bbi = nextIndex(t, sbi, (p) => !p.out);
   pay(t.players[sbi], t.sb);
-  t.players[sbi].last = "小盲";
+  t.players[sbi].last = { type: "sb" };
   pay(t.players[bbi], t.bb);
-  t.players[bbi].last = "大盲";
+  t.players[bbi].last = { type: "bb" };
   for (let round = 0; round < 2; round++)
     for (let k = 1; k <= t.players.length; k++) {
       const p = t.players[(t.dealer + k) % t.players.length];
@@ -267,26 +269,26 @@ export function act(t: Table, a: Action) {
   const toCall = t.currentBet - p.bet;
   if (a.type === "fold") {
     p.folded = true;
-    p.last = "弃牌";
+    p.last = { type: "fold" };
   } else if (a.type === "check" && toCall === 0) {
-    p.last = "过牌";
+    p.last = { type: "check" };
   } else if (a.type === "call" || (a.type === "check" && toCall > 0)) {
     pay(p, toCall);
-    p.last = p.allIn ? "全下" : "跟注";
+    p.last = { type: p.allIn ? "allin" : "call" };
   } else {
     const maxTo = p.bet + p.chips;
     const to = a.type === "allin" ? maxTo : Math.min(Math.max(a.to ?? 0, t.currentBet + t.minRaise), maxTo);
     if (to <= t.currentBet) {
       // 全下的钱还不够跟注，等同于跟注全部
       pay(p, to - p.bet);
-      p.last = p.allIn ? "全下" : "跟注";
+      p.last = { type: p.allIn ? "allin" : "call" };
     } else {
       const size = to - t.currentBet;
       if (size >= t.minRaise) t.minRaise = size;
       t.currentBet = to;
       pay(p, to - p.bet);
       p.raises++;
-      p.last = p.allIn ? "全下" : `加注到 ${to}`;
+      p.last = p.allIn ? { type: "allin" } : { type: "raise", to };
       // 有人加注，其他人要重新表态
       for (const q of t.players) if (q !== p) q.acted = false;
     }
@@ -333,7 +335,7 @@ function nextStreet(t: Table) {
     t.street = "river";
   }
   t.toAct = nextIndex(t, t.dealer, canBet);
-  for (const p of t.players) if (live(p) && !p.allIn) p.last = "";
+  for (const p of t.players) if (live(p) && !p.allIn) p.last = null;
 }
 
 /** 自动发牌阶段每次调用发一条街，发完河牌就摊牌 */
@@ -348,7 +350,7 @@ function awardFold(t: Table) {
   const winner = t.players.findIndex(live);
   const amount = potSize(t);
   t.players[winner].chips += amount;
-  t.result = { pots: [{ amount, winners: [winner], handName: "" }], showdown: false, best: {} };
+  t.result = { pots: [{ amount, winners: [winner], rank: null }], showdown: false, best: {} };
   finish(t);
 }
 
@@ -374,7 +376,7 @@ function showdown(t: Table) {
     const winners = eligible
       .filter((i) => scores.get(i) === top)
       .sort((a, b) => ((a - t.dealer + 4) % 4 || 4) - ((b - t.dealer + 4) % 4 || 4));
-    if (amount > 0) pots.push({ amount, winners, handName: handName(top) });
+    if (amount > 0) pots.push({ amount, winners, rank: handRank(top) });
     prev = cap;
   }
   // 弃牌的人投得比所有摊牌的人都多时，多出来的部分并进最后一个池

@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Html, OrthographicCamera, useCursor } from "@react-three/drei";
 import * as THREE from "three";
+import { useT } from "@/components/i18n/LangProvider";
+import type { Messages } from "@/lib/i18n";
 import { isFromUI, rng, useViewShift, useWorldClock, useLabelPortal, type Navigate } from "../utils";
 
 const BG = "#1b2236";
@@ -11,6 +13,27 @@ const BOOK_COLORS = ["#d0644c", "#e7b24a", "#4f7cac", "#6a9c78", "#efe3d0", "#8a
 const CODE_COLORS = ["#7fd4ff", "#ffc46b", "#b6f09c", "#f78fb3", "#7fd4ff"];
 
 type V3 = [number, number, number];
+
+// 物件悬停时显示的标签
+const LABELS: Messages<Record<"essays" | "archive" | "blog" | "games" | "cloud" | "categories", string>> = {
+  zh: { essays: "随笔", archive: "归档", blog: "文章", games: "游戏", cloud: "云与可观测", categories: "分类星系" },
+  en: {
+    essays: "Essays",
+    archive: "Archive",
+    blog: "Articles",
+    games: "Games",
+    cloud: "Cloud & Observability",
+    categories: "Category galaxy",
+  },
+  ja: {
+    essays: "エッセイ",
+    archive: "アーカイブ",
+    blog: "記事",
+    games: "ゲーム",
+    cloud: "クラウドと可観測性",
+    categories: "カテゴリーの銀河",
+  },
+};
 
 function Box({
   args,
@@ -81,6 +104,7 @@ function Hotspot({
 
 /** C 书房（GM Lab 首页）。电脑 → 文章，桌上的手柄 → 游戏，书架 → 云与可观测，地球仪 → 分类星系，墙上的画 → 归档，窗户 → 随笔 */
 export default function Room({ navigate }: { navigate: Navigate }) {
+  const label = useT(LABELS);
   const t = useWorldClock();
   const cam = useRef<THREE.OrthographicCamera>(null);
   const room = useRef<THREE.Group>(null);
@@ -166,7 +190,7 @@ export default function Room({ navigate }: { navigate: Navigate }) {
         </mesh>
 
         {/* 窗户 → 随笔 */}
-        <Hotspot to="/categories/essays" label="随笔" labelAt={[-2.9, 3.25, 1.5]} navigate={navigate}>
+        <Hotspot to="/categories/essays" label={label.essays} labelAt={[-2.9, 3.25, 1.5]} navigate={navigate}>
           <Box args={[0.04, 1.5, 1.3]} color="#3a4766" position={[-2.99, 2.3, 1.5]} />
           <Box args={[0.02, 1.3, 1.1]} color="#2b4a7a" basic position={[-2.96, 2.3, 1.5]} />
           <Box args={[0.03, 1.3, 0.05]} color="#3a4766" position={[-2.94, 2.3, 1.5]} />
@@ -178,7 +202,7 @@ export default function Room({ navigate }: { navigate: Navigate }) {
         </Hotspot>
 
         {/* 墙上的画 → 归档 */}
-        <Hotspot to="/archive" label="归档" labelAt={[-1.4, 3.25, -2.9]} navigate={navigate}>
+        <Hotspot to="/archive" label={label.archive} labelAt={[-1.4, 3.25, -2.9]} navigate={navigate}>
           <Box args={[0.9, 0.62, 0.04]} color="#efe4d4" position={[-1.4, 2.7, -2.98]} />
           <Box args={[0.76, 0.48, 0.02]} color="#5b8fb9" basic position={[-1.4, 2.7, -2.95]} />
           <Box args={[0.5, 0.2, 0.02]} color="#3f6b8f" basic position={[-1.45, 2.56, -2.94]} />
@@ -196,7 +220,7 @@ export default function Room({ navigate }: { navigate: Navigate }) {
         ))}
 
         {/* 电脑 → 文章 */}
-        <Hotspot to="/blog" label="文章" labelAt={[0.5, 2.3, -2.5]} navigate={navigate}>
+        <Hotspot to="/blog" label={label.blog} labelAt={[0.5, 2.3, -2.5]} navigate={navigate}>
           <Box args={[0.08, 0.3, 0.08]} color="#2b2e36" position={[0.5, 1.2, -2.62]} />
           <Box args={[1.2, 0.74, 0.06]} color="#22252e" position={[0.5, 1.7, -2.64]} />
           <Box args={[1.1, 0.64, 0.01]} color="#0f2a3f" basic position={[0.5, 1.7, -2.605]} />
@@ -212,7 +236,7 @@ export default function Room({ navigate }: { navigate: Navigate }) {
         </Hotspot>
 
         {/* 桌上的手柄 → 游戏 */}
-        <Hotspot to="/games" label="游戏" labelAt={[-0.1, 1.55, -1.95]} navigate={navigate}>
+        <Hotspot to="/games" label={label.games} labelAt={[-0.1, 1.55, -1.95]} navigate={navigate}>
           <group position={[-0.08, 1.09, -1.97]} rotation-y={0.35} scale={1.5}>
             <Box args={[0.34, 0.05, 0.13]} color="#3b2b63" position={[0, 0, 0]} />
             <Box args={[0.1, 0.05, 0.12]} color="#3b2b63" position={[-0.14, -0.005, 0.05]} rotation={[0, 0.3, 0]} />
@@ -252,7 +276,7 @@ export default function Room({ navigate }: { navigate: Navigate }) {
         <Box args={[0.7, 0.04, 0.1]} color="#2b3340" position={[0.5, 0.02, -1.45]} />
 
         {/* 书架 → 云与可观测 */}
-        <Hotspot to="/categories/cloud" label="云与可观测" labelAt={[-2.75, 3.1, -0.5]} navigate={navigate}>
+        <Hotspot to="/categories/cloud" label={label.cloud} labelAt={[-2.75, 3.1, -0.5]} navigate={navigate}>
           <Box args={[0.04, 2.8, 1.8]} color="#5e3b28" position={[-2.98, 1.4, -0.5]} />
           <Box args={[0.5, 2.8, 0.06]} color={wood} position={[-2.75, 1.4, -1.37]} />
           <Box args={[0.5, 2.8, 0.06]} color={wood} position={[-2.75, 1.4, 0.37]} />
@@ -265,7 +289,7 @@ export default function Room({ navigate }: { navigate: Navigate }) {
         </Hotspot>
 
         {/* 书架顶上的地球仪 → 分类星系 */}
-        <Hotspot to="/categories" label="分类星系" labelAt={[-2.75, 3.55, 0.05]} navigate={navigate}>
+        <Hotspot to="/categories" label={label.categories} labelAt={[-2.75, 3.55, 0.05]} navigate={navigate}>
           <mesh position={[-2.75, 2.85, 0.05]}>
             <cylinderGeometry args={[0.1, 0.12, 0.06, 10]} />
             <meshStandardMaterial color="#2d2f36" />

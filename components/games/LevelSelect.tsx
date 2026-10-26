@@ -1,4 +1,6 @@
 import type { ReactNode } from "react";
+import { useT } from "@/components/i18n/LangProvider";
+import { LEVEL_SELECT_MESSAGES } from "./LevelSelect.messages";
 
 export type LevelCard = { name: string; best?: string };
 
@@ -23,6 +25,7 @@ export default function LevelSelect({
   onPick: (index: number) => void;
   children?: ReactNode;
 }) {
+  const t = useT(LEVEL_SELECT_MESSAGES);
   return (
     <div className="levels">
       <strong>{title}</strong>
@@ -36,7 +39,7 @@ export default function LevelSelect({
                 className="level"
                 disabled={locked}
                 onClick={() => onPick(i)}
-                aria-label={`第 ${i + 1} 关 ${l.name}${locked ? "，未解锁" : ""}`}
+                aria-label={t.levelAria(i + 1, l.name, locked)}
               >
                 <span className="level__n">{locked ? <LockIcon /> : i + 1}</span>
                 <span className="level__name">{l.name}</span>

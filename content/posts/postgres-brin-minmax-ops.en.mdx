@@ -1,0 +1,44 @@
+---
+title: "Postgres BRIN minmax-ops: What's Actually Stored in the Summary"
+summary: "This site already has a BRIN intro and BRIN vs. B-tree. This post digs only into the default opclass, minmax-ops: the per-range min/max, the null flags, and how has_all_nulls / has_nulls affect scans."
+---
+
+`USING brin (col)` uses **minmax-ops** by default: for each range of `pages_per_range` pages, it records "the smallest and largest values seen in this range." It's not a histogram and not a Bloom filter—just a range summary.
+
+## What's in a page range
+
+For comparable types, each summary roughly contains:
+
+| Field | Meaning |
+|---|---|
+| `min` / `max` | Lower/upper bound of the non-null values in the page range |
+| Null-related flags | Whether the range is all null and whether it contains nulls (exact column names vary slightly across major versions) |
+
+For a query like `WHERE ts BETWEEN $a AND $b`, the planner checks the summary: if the interval and `[min,max]` **don't overlap**, the whole range of pages can be skipped; if they overlap, the heap pages still have to be read and filtered. So BRIN wins by "reading fewer pages," not by "locating a row in one step."
+
+```sql
+-- Spell out the default opclass explicitly, for comparison with inclusion / bloom
+CREATE INDEX ON events USING brin (created_at minmax_ops)
+  WITH (pages_per_range = 32);
+
+-- Check whether summaries are "loose": with poor correlation, max-min gets huge and the skip rate collapses
+SELECT * FROM brin_page_items(get_raw_page('events_created_at_idx', 1), 'events_created_at_idx');
+```
+
+(`brin_page_items` / page numbers vary by version and index layout; in production, go by the heap blocks in `EXPLAIN (ANALYZE, BUFFERS)`.)
+
+## How this splits with the other two posts
+
+- **BRIN intro**: when to use it, `pages_per_range`, maintenance.  
+- **BRIN vs. B-tree**: choosing between them.  
+- **This post**: minmax summary semantics—how out-of-order writes loosen ranges, why page ranges with nulls almost always get scanned, and why a point lookup with `=` can still scan many blocks.
+
+## Operational notes
+
+1. **Correlation**: for fact tables appended in time order, minmax is tight; once out-of-order `UPDATE`s scatter the data, ranges widen and skipping stops working.  
+2. **summarize**: after a large bulk load, run `SELECT brin_summarize_new_values('idx')` so pages don't sit unsummarized for long.  
+3. **Don't expect accurate cardinality**: minmax has no NDV; if you picked the wrong column, don't blame the planner.
+
+## In one sentence
+
+**minmax-ops = a closed-interval label on each page range**; it's only cheap when correlation is good. For out-of-order writes, fix the write order or partition first, then think about tuning `pages_per_range`.

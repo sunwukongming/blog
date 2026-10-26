@@ -2,6 +2,8 @@
 
 一个有 3D 世界的个人博客。书房里写 Go / 云原生 / 可观测与前端笔记，桌上的小游戏用来验证交互。每个页面是一个独立的 3D 场景，全站共用一个常驻的 WebGL Canvas，换页时场景淡入淡出切换，不会重建 WebGL 上下文。
 
+全站有简体中文、英文、日文三种语言，网址都带语言前缀（`/zh`、`/en`、`/ja`），下表的路由省略了前缀。
+
 | 路由 | 世界 | 交互 |
 |---|---|---|
 | `/` | Low-poly 书房（GM Lab）+ 个人介绍 | 点电脑 → 文章，手柄 → 游戏，书架 → 云与可观测，地球仪 → 分类，墙上的画 → 归档，窗户 → 随笔 |
@@ -10,6 +12,7 @@
 | `/blog` | 卡片环 | 文章列表；标题/摘要搜索与分类筛选 |
 | `/blog/[slug]` | 信号场（点阵） | 正文、目录 TOC、复制链接、分享到 X、阅读时长、相关推荐与进度点 |
 | `/about` | 跳转到首页 | |
+| `/feed.xml` | | 每种语言一份 RSS：`/zh/feed.xml`、`/en/feed.xml`、`/ja/feed.xml` |
 | `/games` | 夜行（霓虹线框地形） | 游戏入口、本机纪录汇总与相关条目 |
 | `/games/[slug]` | 同上（背景静止，省电） | 能直接玩的小游戏：贪吃蛇（穿墙关 HUD）、俄罗斯方块（Hold / 幽灵 / T-Spin 与消行提示）、2048、打砖块、扫雷、德州扑克、记忆翻牌 |
 | `/archive` | 夜行（彼虹线框地形） | 按年折叠的文章归档 |
@@ -38,13 +41,35 @@ summary: 一句话摘要
 
 `title`、`date`（YYYY-MM-DD）和 `category` 必填，分类必须是 `lib/categories.ts` 里有的，写错了 `pnpm build` 会直接报错，不会带着问题上线。
 
+### 译文
+
+在原文旁边放 `slug.en.mdx`、`slug.ja.mdx`，frontmatter 只写 `title` 和 `summary`，日期和分类沿用原文：
+
+```mdx
+---
+title: "English title"
+summary: "One-line summary"
+---
+```
+
+- 没有译文的文章在英文 / 日文页面显示中文原文，并提示“暂无译文”；这类页面的 canonical 指向中文版，sitemap 也只收录中文版
+- 有译文的文章三种语言互相标注 hreflang
+- 正文里的站内链接照原文写 `/blog/xxx` 即可，渲染时会自动加上当前语言的前缀
+
+## 多语言
+
+- `proxy.ts`：访问 `/` 时按访客语言跳转（先看语言切换器记下的 cookie，再看浏览器 `Accept-Language`；都不是中日英时进英文版，没有这个请求头时进中文版）。加前缀之前的旧链接（`/blog/xxx` 等）308 跳到 `/zh/...`
+- `lib/i18n.ts`：语言列表和路径工具；服务端组件用 `getLang()`（`lib/lang.ts`），客户端组件用 `useLang()` / `useT()`（`components/i18n/LangProvider.tsx`）
+- 界面文字：页面和共用组件在 `lib/messages.ts`；游戏、看板娘、3D 场景的文字放在各自的 `*.messages.ts` 或文件里的翻译表
+- 加一种语言：在 `LOCALES` 里加上代码，然后补齐所有类型为 `Messages<…>` 的翻译表（TypeScript 会把缺的地方都报出来），再在 `proxy.ts` 的 matcher 里加上前缀
+
 ## 改成你自己的
 
-- 站点名称：`lib/site.ts` 里的 `SITE`
-- 分类（名称、颜色、行星顺序）：`lib/categories.ts`
+- 站点名称和描述：`lib/site.ts` 里的 `getSite`
+- 分类（三种语言的名称、颜色、行星顺序）：`lib/categories.ts`
 - 路由和世界的对应关系：`lib/worlds.ts`
 - 每个世界的配色和标题字体：`app/globals.css` 顶部
-- 首页的个人介绍（名字、简介、技术栈、链接）：`lib/site.ts` 里的 `PROFILE`
+- 首页的个人介绍（名字、简介、技术栈、链接，三种语言各一份）：`lib/site.ts` 里的 `PROFILES`
 - 看板娘“梦子”（《狂赌之渊》蛇喰梦子的同人形象）的台词（按页面、按时间、被戳时）：`lib/mascot.ts`；形象和交互在 `components/mascot/Mascot.tsx`
 - 站点正式地址：在 Vercel 项目的环境变量里设置 `NEXT_PUBLIC_SITE_URL`（例如 `https://example.com`）。不设置时会用 Vercel 提供的生产域名；两个都没有时不输出 canonical，sitemap 为空
 
@@ -54,12 +79,12 @@ summary: 一句话摘要
 
 ## SEO 与订阅
 
-- `/feed.xml`：RSS（条目 author 邮箱形、enclosure + media:content、CDATA 摘要、channel lastBuildDate）
+- `/{zh,en,ja}/feed.xml`：每种语言一份 RSS（旧的 `/feed.xml` 跳到中文版；条目 author 邮箱形、enclosure + media:content、CDATA 摘要、channel lastBuildDate）
 - `/archive`：按年折叠归档，带 SEO description
 - `/sitemap.xml`、`/robots.txt`：给搜索引擎（文章 lastmod 用发布日，列表页用最新文章日）
 - 首页、分类（含分类详情）、归档、文章列表与游戏列表页带 description 与 OG；分类/归档/文章列表/游戏详情 OG/Twitter；robots 含 host；feed 含 managingEditor 与 atom:link；sitemap 中 /games 用 GAMES_UPDATED
 - 可玩游戏路由 sitemap lastmod 使用 `GAMES_UPDATED`
-- 每篇文章自动生成 1200×630 的分享图（`app/blog/[slug]/opengraph-image.tsx`），中文字体在构建时从 Google Fonts 按需下载
+- 每篇文章自动生成 1200×630 的分享图（`app/[lang]/blog/[slug]/opengraph-image.tsx`），字体在构建时从 Google Fonts 按需下载（日文用 Noto Sans JP）
 
 ## 结构
 
@@ -90,8 +115,9 @@ lib/og.tsx                  分享图模板
 
 1. 在 `components/games/` 下写一个默认导出的客户端组件
 2. 在 `components/games/GamePlayer.tsx` 里按 slug 注册
-3. 在 `lib/games.ts` 的 `GAMES` 里加一条，`playable: true`，写好 `controls` 和 `touchControls`
-4. 想在列表卡片上显示图标和最高分，再改 `GameIcon.tsx` 和 `GameBest.tsx`
+3. 在 `lib/games.ts` 里加一条，`playable: true`，标题、简介、`controls` 和 `touchControls` 都写三种语言
+4. 游戏里的文字放进 `Xxx.messages.ts`（`Messages<…>` 类型），组件里用 `useT()` 取
+5. 想在列表卡片上显示图标和最高分，再改 `GameIcon.tsx` 和 `GameBest.tsx`
 
 ## 加关卡
 

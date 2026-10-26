@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
+import { useLang, usePagePath } from "@/components/i18n/LangProvider";
+import type { Messages } from "@/lib/i18n";
 import {
   COMEBACK,
   COPY,
@@ -20,6 +21,12 @@ import {
 
 const HIDDEN_KEY = "gm-lab:mascot-hidden";
 const SAY_MS = 5200;
+
+const ARIA: Messages<{ summon: (n: string) => string; hide: (n: string) => string; poke: (n: string) => string }> = {
+  zh: { summon: (n) => `叫${n}出来`, hide: (n) => `收起${n}`, poke: (n) => `戳一下${n}` },
+  en: { summon: (n) => `Call ${n} back`, hide: (n) => `Hide ${n}`, poke: (n) => `Poke ${n}` },
+  ja: { summon: (n) => `${n}を呼ぶ`, hide: (n) => `${n}をしまう`, poke: (n) => `${n}をつつく` },
+};
 const IDLE_MS = 45_000;
 
 const MOUTH: Record<Mood, React.ReactNode> = {
@@ -129,7 +136,9 @@ function Girl({ mood, irisL, irisR }: { mood: Mood; irisL: React.Ref<SVGGElement
 }
 
 export default function Mascot() {
-  const pathname = usePathname();
+  const pathname = usePagePath();
+  const lang = useLang();
+  const name = MASCOT_NAME[lang];
   const [hidden, setHidden] = useState(() => {
     try {
       return localStorage.getItem(HIDDEN_KEY) === "1";
@@ -175,11 +184,11 @@ export default function Mascot() {
     const first = firstPath.current === null;
     firstPath.current = pathname;
     const id = window.setTimeout(
-      () => sayRef.current(first ? pick(greeting(new Date().getHours())) : pick(pageLines(pathname))),
+      () => sayRef.current(first ? pick(greeting(new Date().getHours(), lang)) : pick(pageLines(pathname, lang))),
       first ? 1200 : 700,
     );
     return () => window.clearTimeout(id);
-  }, [pathname, hidden]);
+  }, [pathname, hidden, lang]);
 
   // 眼睛跟着鼠标；发呆太久、复制文字、切回标签页时吐槽一句
   useEffect(() => {
@@ -208,13 +217,13 @@ export default function Mascot() {
     const idle = window.setInterval(() => {
       if (Date.now() - lastActive.current > IDLE_MS && !document.hidden) {
         lastActive.current = Date.now();
-        sayRef.current(pick(IDLE));
+        sayRef.current(pick(IDLE[lang]));
       }
     }, 5000);
-    const copy = () => sayRef.current(pick(COPY));
+    const copy = () => sayRef.current(pick(COPY[lang]));
     const vis = () => {
       if (document.hidden) hiddenAt = Date.now();
-      else if (hiddenAt && Date.now() - hiddenAt > 30_000) sayRef.current(pick(COMEBACK));
+      else if (hiddenAt && Date.now() - hiddenAt > 30_000) sayRef.current(pick(COMEBACK[lang]));
     };
     window.addEventListener("pointermove", look, { passive: true });
     window.addEventListener("keydown", active);
@@ -230,23 +239,23 @@ export default function Mascot() {
       document.removeEventListener("copy", copy);
       document.removeEventListener("visibilitychange", vis);
     };
-  }, [hidden]);
+  }, [hidden, lang]);
 
   const toggle = (next: boolean) => {
     try {
       localStorage.setItem(HIDDEN_KEY, next ? "1" : "0");
     } catch {}
     if (next) {
-      say(pick(HIDE), 1200);
+      say(pick(HIDE[lang]), 1200);
       window.setTimeout(() => setHidden(true), 900);
     } else {
       setHidden(false);
-      window.setTimeout(() => sayRef.current(pick(SHOW)), 300);
+      window.setTimeout(() => sayRef.current(pick(SHOW[lang])), 300);
     }
   };
 
   const poke = () => {
-    say(POKES[pokes.current % POKES.length]);
+    say(POKES[lang][pokes.current % POKES[lang].length]);
     pokes.current++;
   };
 
@@ -257,7 +266,7 @@ export default function Mascot() {
         className="mascot-summon"
         data-ui
         onClick={() => toggle(false)}
-        aria-label={`叫${MASCOT_NAME}出来`}
+        aria-label={ARIA[lang].summon(name)}
       >
         <Girl mood="smug" irisL={irisL} irisR={irisR} />
       </button>
@@ -271,10 +280,10 @@ export default function Mascot() {
           {line.text}
         </p>
       )}
-      <button type="button" className="mascot__close" onClick={() => toggle(true)} aria-label={`收起${MASCOT_NAME}`}>
+      <button type="button" className="mascot__close" onClick={() => toggle(true)} aria-label={ARIA[lang].hide(name)}>
         ×
       </button>
-      <button type="button" className="mascot__body" onClick={poke} aria-label={`戳一下${MASCOT_NAME}`}>
+      <button type="button" className="mascot__body" onClick={poke} aria-label={ARIA[lang].poke(name)}>
         <Girl mood={mood} irisL={irisL} irisR={irisR} />
       </button>
     </div>

@@ -4,7 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Html, PerspectiveCamera, useCursor } from "@react-three/drei";
 import * as THREE from "three";
-import { CATEGORIES } from "@/lib/categories";
+import { useLang } from "@/components/i18n/LangProvider";
+import { getCategories } from "@/lib/categories";
 import type { PostMeta } from "@/lib/posts";
 import { isFromUI, rng, useViewShift, useWorldClock, useLabelPortal, type Navigate } from "../utils";
 
@@ -29,7 +30,8 @@ export default function Orbit({ posts, focus, navigate }: Props) {
   const group = useRef<THREE.Group>(null);
   const planetRefs = useRef<(THREE.Group | null)[]>([]);
   const look = useRef(OVERVIEW_LOOK.clone());
-  const focusIndex = CATEGORIES.findIndex((c) => c.slug === focus);
+  const categories = getCategories(useLang());
+  const focusIndex = categories.findIndex((c) => c.slug === focus);
   // 手机上聚焦行星时，行星对准正文面板上方留出的 .orbit-stage
   useViewShift(cam, focusIndex >= 0 ? 0.2 : 0, focusIndex >= 0 ? ".orbit-stage" : undefined);
   // 竖屏时把总览镜头拉远，让最外圈轨道也能完整显示
@@ -138,7 +140,7 @@ export default function Orbit({ posts, focus, navigate }: Props) {
             <lineBasicMaterial color={i === focusIndex ? "#4b5591" : "#283057"} />
           </lineLoop>
         ))}
-        {CATEGORIES.map((cat, i) => (
+        {categories.map((cat, i) => (
           <Planet
             key={cat.slug}
             ref={(el) => {

@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useT } from "@/components/i18n/LangProvider";
+import { UI } from "@/lib/messages";
 import type { Heading } from "@/lib/toc";
+
+const useArticleT = () => useT(UI).article;
 
 // Next 会把上一个路由隐藏着留在 DOM 里，所以都从自己所在的 <main> 往下找，不用 document.querySelector
 const articleOf = (el: Element | null) => el?.closest("main")?.querySelector<HTMLElement>(".article") ?? null;
@@ -42,6 +46,7 @@ export function ReadingProgress() {
 
 /** 文章目录：窄屏在正文上方，宽屏固定在正文右侧并高亮当前小节 */
 export function Toc({ headings }: { headings: Heading[] }) {
+  const t = useArticleT();
   const root = useRef<HTMLElement>(null);
   const [active, setActive] = useState(headings[0]?.id);
   useEffect(() => {
@@ -69,9 +74,9 @@ export function Toc({ headings }: { headings: Heading[] }) {
   }, [headings]);
 
   return (
-    <nav ref={root} className="toc toc--collapsible" aria-label="目录" data-ui>
+    <nav ref={root} className="toc toc--collapsible" aria-label={t.toc} data-ui>
       <details open>
-        <summary className="toc__title">目录 · {headings.length} 节</summary>
+        <summary className="toc__title">{t.tocTitle(headings.length)}</summary>
         <ol>
           {headings.map((h) => (
             <li key={h.id} data-depth={h.depth}>
@@ -92,6 +97,7 @@ export function Toc({ headings }: { headings: Heading[] }) {
 
 /** 给正文里的代码块加「复制」按钮 */
 export function CodeCopy() {
+  const t = useArticleT();
   const marker = useRef<HTMLSpanElement>(null);
   useEffect(() => {
     const article = articleOf(marker.current);
@@ -101,15 +107,15 @@ export function CodeCopy() {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "copy-code";
-      btn.textContent = "复制";
+      btn.textContent = t.copy;
       btn.onclick = async () => {
         try {
           await navigator.clipboard.writeText(pre.innerText);
-          btn.textContent = "已复制";
+          btn.textContent = t.copied;
         } catch {
-          btn.textContent = "复制失败";
+          btn.textContent = t.copyFailed;
         }
-        timers.push(window.setTimeout(() => (btn.textContent = "复制"), 1500));
+        timers.push(window.setTimeout(() => (btn.textContent = t.copy), 1500));
       };
       (pre.parentElement ?? pre).append(btn);
       return btn;
@@ -118,13 +124,14 @@ export function CodeCopy() {
       timers.forEach(clearTimeout);
       buttons.forEach((b) => b.remove());
     };
-  }, []);
+  }, [t]);
   return <span ref={marker} hidden />;
 }
 
 /** 文章页：复制当前篇链接（不含 hash） */
 export function CopyLink() {
-  const [label, setLabel] = useState("复制链接");
+  const t = useArticleT();
+  const [label, setLabel] = useState<"copyLink" | "copied" | "copyFailed">("copyLink");
   return (
     <button
       type="button"
@@ -134,20 +141,21 @@ export function CopyLink() {
         const url = typeof location !== "undefined" ? location.href.replace(/#.*$/, "") : "";
         try {
           await navigator.clipboard.writeText(url);
-          setLabel("已复制");
+          setLabel("copied");
         } catch {
-          setLabel("复制失败");
+          setLabel("copyFailed");
         }
-        window.setTimeout(() => setLabel("复制链接"), 1500);
+        window.setTimeout(() => setLabel("copyLink"), 1500);
       }}
     >
-      {label}
+      {t[label]}
     </button>
   );
 }
 
 /** 分享当前文章到 X（Twitter intent） */
 export function ShareX({ title }: { title: string }) {
+  const t = useArticleT();
   return (
     <button
       type="button"
@@ -161,13 +169,14 @@ export function ShareX({ title }: { title: string }) {
         window.open(intent.toString(), "_blank", "noopener,noreferrer");
       }}
     >
-      分享到 X
+      {t.shareX}
     </button>
   );
 }
 
 /** 相关推荐旁的阅读进度点（按正文滚动比例点亮） */
 export function ReadingDots({ count = 5 }: { count?: number }) {
+  const t = useArticleT();
   const root = useRef<HTMLDivElement>(null);
   const [lit, setLit] = useState(0);
   useEffect(() => {
@@ -195,7 +204,7 @@ export function ReadingDots({ count = 5 }: { count?: number }) {
     };
   }, [count]);
   return (
-    <div ref={root} className="reading-dots" aria-hidden="true" title="本文阅读进度">
+    <div ref={root} className="reading-dots" aria-hidden="true" title={t.progress}>
       {Array.from({ length: count }, (_, i) => (
         <span key={i} className="reading-dots__dot" data-on={i <= lit || undefined} />
       ))}

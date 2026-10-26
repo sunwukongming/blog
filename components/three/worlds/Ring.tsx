@@ -4,12 +4,19 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import { PerspectiveCamera, useCursor } from "@react-three/drei";
 import * as THREE from "three";
+import { useLang } from "@/components/i18n/LangProvider";
 import { getCategory } from "@/lib/categories";
+import type { Locale } from "@/lib/i18n";
 import type { PostMeta } from "@/lib/posts";
 import { isFromUI, useWorldClock, type Navigate } from "../utils";
 
 const BG = "#dde2ea";
-const CJK = '"PingFang SC","Hiragino Sans GB","Noto Sans SC","Microsoft YaHei",sans-serif';
+// 卡片文字的字体按文章内容的语言选：日文用日文字形
+const FONTS: Record<Locale, string> = {
+  zh: '"PingFang SC","Hiragino Sans GB","Noto Sans SC","Microsoft YaHei",sans-serif',
+  ja: '"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo","Noto Sans JP",sans-serif',
+  en: 'system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif',
+};
 // 卡片上分类色条用的深色版本，浅底上更清楚
 const TAG_INK: Record<string, string> = {
   frontend: "#3550d6",
@@ -19,7 +26,7 @@ const TAG_INK: Record<string, string> = {
   cloud: "#7b4fb0",
 };
 
-function cardTexture(post: PostMeta) {
+function cardTexture(post: PostMeta, lang: Locale) {
   const c = document.createElement("canvas");
   c.width = 360;
   c.height = 480;
@@ -28,10 +35,10 @@ function cardTexture(post: PostMeta) {
   x.fillRect(0, 0, 360, 480);
   x.fillStyle = TAG_INK[post.category] ?? "#1b2a44";
   x.fillRect(28, 30, 8, 26);
-  x.font = `600 20px ${CJK}`;
-  x.fillText(getCategory(post.category)?.name ?? post.category, 46, 51);
+  x.font = `600 20px ${FONTS[lang]}`;
+  x.fillText(getCategory(post.category, lang)?.name ?? post.category, 46, 51);
   x.fillStyle = "#1b2a44";
-  x.font = `700 36px ${CJK}`;
+  x.font = `700 36px ${FONTS[post.contentLang]}`;
   // 按词换行：英文单词、数字和路径不拆开，中文逐字；最多 4 行，超出用省略号
   const tokens = post.title.match(/[A-Za-z0-9][\w./+#-]*|\s+|./gu) ?? [];
   const lines: string[] = [];
@@ -72,7 +79,8 @@ export default function Ring({ posts, navigate }: { posts: PostMeta[]; navigate:
 
   const shown = useMemo(() => posts.slice(0, 24), [posts]);
   const R = Math.max(2.8, shown.length * 0.48);
-  const textures = useMemo(() => shown.map(cardTexture), [shown]);
+  const lang = useLang();
+  const textures = useMemo(() => shown.map((p) => cardTexture(p, lang)), [shown, lang]);
   useEffect(() => () => textures.forEach((x) => x.dispose()), [textures]);
 
   useFrame((state) => {

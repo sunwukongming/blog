@@ -5,7 +5,11 @@
  * 首屏靠 html:has(...) 取到配色；客户端接管后由 WorldTheme 写入 html[data-world]。
  */
 :root {
-  --font-body: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", "Noto Sans CJK SC", "Source Han Sans SC", system-ui, sans-serif;
+  /* 正文字体按语言切换：日文用日文字形，英文优先西文字体；内容语言和页面不同时（没有译文的中文原文）跟着元素的 lang 走 */
+  --font-zh: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", "Noto Sans CJK SC", "Source Han Sans SC", system-ui, sans-serif;
+  --font-ja: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "YuGothic", "Meiryo", "Noto Sans JP", "Noto Sans CJK JP", system-ui, sans-serif;
+  --font-en: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Hiragino Sans", "Microsoft YaHei", sans-serif;
+  --font-body: var(--font-zh);
   --bg: #0a0c10;
   --fg: #e6ebf1;
   --muted: #9aa4b2;
@@ -84,6 +88,11 @@ main [data-ui], main a, main button { pointer-events: auto; }
 .scene-label--planet { pointer-events: auto; cursor: pointer; }
 .scene-label--planet:hover { background: rgb(30 34 60 / 0.9); }
 
+html[lang="ja"], [lang="ja"] { --font-body: var(--font-ja); }
+html[lang="en"], [lang="en"] { --font-body: var(--font-en); }
+html[lang="zh-CN"], [lang="zh-CN"] { --font-body: var(--font-zh); }
+[lang]:not(html) { font-family: var(--font-body); }
+
 /* ── 导航 ─────────────────────────────────────── */
 .site-nav {
   position: fixed; top: 0; left: 0; right: 0; z-index: 10;
@@ -100,6 +109,11 @@ main [data-ui], main a, main button { pointer-events: auto; }
 .site-nav nav a { text-decoration: none; color: var(--muted); }
 .site-nav nav a:hover { color: var(--fg); }
 .site-nav nav a[aria-current="page"] { color: var(--fg); box-shadow: inset 0 -2px 0 var(--accent); padding-bottom: 2px; }
+.site-nav__end { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 6px 18px; }
+.site-nav .lang-switch { gap: 2px; padding-left: 14px; border-left: 1px solid var(--line); font-size: 12.5px; }
+.site-nav .lang-switch a { padding: 2px 7px; border-radius: 6px; }
+.site-nav .lang-switch a[aria-current="true"] { color: var(--fg); background: var(--line); }
+.lang-switch__short { display: none; }
 
 /* ── 页面骨架 ──────────────────────────────────── */
 .page {
@@ -147,6 +161,8 @@ main [data-ui], main a, main button { pointer-events: auto; }
 .post-list a:hover .post-list__title { color: var(--accent); }
 .post-list__title { font-weight: 600; min-width: 0; transition: color 0.15s; }
 .post-list__meta { font: 400 12.5px var(--font-mono), monospace; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* 没有当前语言译文、显示原文的文章 */
+.post-list__orig { margin-left: 8px; padding: 0 5px; border: 1px solid var(--line); border-radius: 4px; font: 500 11px/1.5 var(--font-zh); }
 .post-list__summary { grid-column: 1 / -1; color: var(--muted); font-size: 14px; }
 
 .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 8px; vertical-align: 1px; }
@@ -162,6 +178,8 @@ main [data-ui], main a, main button { pointer-events: auto; }
 /* ── 文章 ─────────────────────────────────────── */
 .article-head { display: grid; gap: 14px; max-width: 760px; padding-top: 12vh; }
 .article-head .display { font-size: clamp(30px, 5vw, 52px); }
+/* 当前语言没有译文、显示中文原文时的说明 */
+.untranslated-note { margin: 0; max-width: 62ch; padding: 10px 14px; border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 8px; background: var(--panel); color: var(--muted); font-size: 14px; }
 .article-meta { display: flex; flex-wrap: wrap; gap: 6px 16px; font: 400 13px var(--font-mono), monospace; color: var(--muted); }
 .article-meta a { color: var(--accent); text-decoration: none; }
 .article { max-width: 760px; width: 100%; padding: clamp(22px, 4vw, 44px); }
@@ -748,6 +766,9 @@ html:has(.page--game) { overscroll-behavior: none; }
 }
 .copy-link:hover { color: var(--fg); text-decoration: underline; }
 @media (max-width: 640px) {
+  .lang-switch__long { display: none; }
+  .lang-switch__short { display: inline; }
+  .site-nav .lang-switch { padding-left: 6px; }
   .site-nav { padding-block: 4px; }
   .site-nav nav { gap: 4px; flex-wrap: wrap; }
   .site-nav nav a,
@@ -4293,4 +4314,16 @@ html:has(.page--game) { overscroll-behavior: none; }
     overflow-y: hidden;
     height: 100%;
   }
+}
+
+/* 窄屏导航分两行：站名和语言切换一行，栏目链接一行（放不下时横向滑动） */
+@media (max-width: 640px) {
+  .site-nav { flex-wrap: wrap; row-gap: 0; padding-bottom: 10px; }
+  .site-nav__end { display: contents; }
+  .site-nav__name { white-space: nowrap; }
+  .site-nav .lang-switch { order: 1; margin-left: auto; border-left: 0; padding-left: 0; }
+  .site-nav nav:not(.lang-switch) { order: 2; width: 100%; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .site-nav nav:not(.lang-switch) a { white-space: nowrap; }
+  .page { padding-top: calc(112px + env(safe-area-inset-top, 0px)); }
+  .page--game { padding-top: calc(100px + env(safe-area-inset-top, 0px)); }
 }

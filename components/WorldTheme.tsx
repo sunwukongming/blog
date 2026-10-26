@@ -2,6 +2,7 @@
 
 import { useLayoutEffect } from "react";
 import { usePathname } from "next/navigation";
+import { splitLocale } from "@/lib/i18n";
 import { WORLD_BG, worldFor } from "@/lib/worlds";
 
 /**
@@ -11,7 +12,7 @@ import { WORLD_BG, worldFor } from "@/lib/worlds";
 export default function WorldTheme() {
   const pathname = usePathname();
   useLayoutEffect(() => {
-    const world = worldFor(pathname);
+    const world = worldFor(splitLocale(pathname).path);
     document.documentElement.dataset.world = world;
     document.querySelector('meta[name="theme-color"]')?.setAttribute("content", WORLD_BG[world]);
   }, [pathname]);

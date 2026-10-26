@@ -13,7 +13,9 @@ import {
   useSwipe,
   type Dir,
 } from "./input";
+import { useLang, useT } from "@/components/i18n/LangProvider";
 import LevelSelect from "./LevelSelect";
+import { SNAKE_MESSAGES, type SpeedTier } from "./Snake.messages";
 import { SNAKE_LEVELS } from "./snakeLevels";
 
 const N = 20;
@@ -51,21 +53,21 @@ type Hud = {
   seconds: number;
   len: number;
   wrap: boolean;
-  edgeHint: string | null;
+  edgeHint: EdgeHint | null;
   speedMs: number;
-  speedTier: string;
-  nextSpeed: string | null;
+  speedTier: SpeedTier;
+  nextSpeed: SpeedTier | null;
   goldLeft: number | null;
   goldEta: number | null;
 };
 
 const VEC: Record<Dir, P> = { up: { x: 0, y: -1 }, down: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } };
 const OPPOSITE: Record<Dir, Dir> = { up: "down", down: "up", left: "right", right: "left" };
-const PAD: [Dir, string, string][] = [
-  ["up", "↑", "向上"],
-  ["left", "←", "向左"],
-  ["down", "↓", "向下"],
-  ["right", "→", "向右"],
+const PAD: [Dir, string][] = [
+  ["up", "↑"],
+  ["left", "←"],
+  ["down", "↓"],
+  ["right", "→"],
 ];
 const LEVEL_KEYS = SNAKE_LEVELS.map((_, i) => `snake-l${i + 1}`);
 
@@ -113,21 +115,11 @@ function freeCell(g: Game): P | null {
   return { x: i % N, y: Math.floor(i / N) };
 }
 
-const EXIT_HINT: Record<Dir, string> = {
-  left: "← 穿墙 · 将从右侧出现",
-  right: "→ 穿墙 · 将从左侧出现",
-  up: "↑ 穿墙 · 将从下侧出现",
-  down: "↓ 穿墙 · 将从上侧出现",
-};
-const NEAR_HINT: Record<Dir, string> = {
-  left: "穿墙关 · 靠左缘，出界从右回",
-  right: "穿墙关 · 靠右缘，出界从左回",
-  up: "穿墙关 · 靠上缘，出界从下回",
-  down: "穿墙关 · 靠下缘，出界从上回",
-};
+/** 穿墙提示：edge 是下一格就穿出，near 是靠近边缘，safe 是其余；文字在 SNAKE_MESSAGES 里 */
+type EdgeHint = { tier: "edge" | "near" | "safe"; dir: Dir };
 
 /** 穿墙关：贴边/近边时提示头会从对面出来 */
-function wrapHint(g: Game): string | null {
+function wrapHint(g: Game): EdgeHint | null {
   if (!g.wrap) return null;
   const h = g.snake[0];
   const d = g.queue[0] ?? g.dir;
@@ -137,7 +129,7 @@ function wrapHint(g: Game): string | null {
     (d === "up" && h.y === 0) ||
     (d === "down" && h.y === N - 1)
   ) {
-    return EXIT_HINT[d];
+    return { tier: "edge", dir: d };
   }
   if (
     (d === "left" && h.x <= 2) ||
@@ -145,9 +137,9 @@ function wrapHint(g: Game): string | null {
     (d === "up" && h.y <= 2) ||
     (d === "down" && h.y >= N - 3)
   ) {
-    return NEAR_HINT[d];
+    return { tier: "near", dir: d };
   }
-  return "穿墙关 · 边缘可出入，头从对面出";
+  return { tier: "safe", dir: d };
 }
 
 const goalOf = (g: Game) => (g.mode.kind === "level" ? SNAKE_LEVELS[g.mode.index].goal : Infinity);
@@ -158,22 +150,24 @@ const interval = (g: Game) =>
     ? Math.max(60, SNAKE_LEVELS[g.mode.index].speed - g.eaten * 2)
     : Math.max(65, 150 - g.score * 3);
 
-function speedTier(ms: number) {
-  if (ms >= 140) return "慢";
-  if (ms >= 110) return "中";
-  if (ms >= 85) return "快";
-  if (ms >= 70) return "很快";
-  return "极速";
+function speedTier(ms: number): SpeedTier {
+  if (ms >= 140) return "slow";
+  if (ms >= 110) return "mid";
+  if (ms >= 85) return "fast";
+  if (ms >= 70) return "faster";
+  return "max";
 }
 
-/** next speed tier hint for tip line */
-function nextSpeedHint(ms: number): string | null {
-  if (ms >= 140) return `下一档「中」需步进 <140ms（当前 ${Math.round(ms)}ms）`;
-  if (ms >= 110) return `下一档「快」需步进 <110ms（当前 ${Math.round(ms)}ms）`;
-  if (ms >= 85) return `下一档「很快」需步进 <85ms（当前 ${Math.round(ms)}ms）`;
-  if (ms >= 70) return `下一档「极速」需步进 <70ms（当前 ${Math.round(ms)}ms）`;
+/** 下一档速度；已是最快一档时为 null */
+function nextSpeedTier(ms: number): SpeedTier | null {
+  if (ms >= 140) return "mid";
+  if (ms >= 110) return "fast";
+  if (ms >= 85) return "faster";
+  if (ms >= 70) return "max";
   return null;
 }
+/** 进入各档需要的步进上限（ms），给提示文字用 */
+const TIER_BELOW: Record<SpeedTier, number> = { slow: Infinity, mid: 140, fast: 110, faster: 85, max: 70 };
 
 type StepResult = "move" | "eat" | "gold" | "dead" | "clear";
 
@@ -393,8 +387,8 @@ export default function Snake() {
     wrap: false,
     edgeHint: null,
     speedMs: 150,
-    speedTier: "中",
-    nextSpeed: nextSpeedHint(150),
+    speedTier: "mid",
+    nextSpeed: nextSpeedTier(150),
     goldLeft: null,
     goldEta: null,
   });
@@ -404,6 +398,25 @@ export default function Snake() {
   const levelBests = useRecordList(LEVEL_KEYS);
   const level = mode.kind === "level" ? SNAKE_LEVELS[mode.index] : null;
   const levelNo = mode.kind === "level" ? mode.index + 1 : 0;
+  const t = useT(SNAKE_MESSAGES);
+  const lang = useLang();
+  const levelName = level ? level.name[lang] : "";
+  // HUD 里存的是 key，显示时再按当前语言翻译
+  const tierName = t.tier[hud.speedTier];
+  const nextText = hud.nextSpeed
+    ? t.nextSpeed(t.tier[hud.nextSpeed], TIER_BELOW[hud.nextSpeed], Math.round(hud.speedMs))
+    : null;
+  const nextSuffix = nextText ? ` · ${nextText}` : t.maxed;
+  const isEdge = hud.edgeHint?.tier === "edge";
+  const isNear = hud.edgeHint?.tier === "near";
+  const edgeText = hud.edgeHint
+    ? isEdge
+      ? t.exitHint[hud.edgeHint.dir]
+      : isNear
+        ? t.nearHint[hud.edgeHint.dir]
+        : t.safeHint
+    : null;
+  const isFast = hud.speedTier === "max" || hud.speedTier === "faster";
 
   useEffect(() => {
     const el = canvas.current;
@@ -429,7 +442,7 @@ export default function Snake() {
       edgeHint: wrapHint(g),
       speedMs,
       speedTier: speedTier(speedMs),
-      nextSpeed: nextSpeedHint(speedMs),
+      nextSpeed: nextSpeedTier(speedMs),
       goldLeft: g.gold ? Math.max(0, g.gold.until - g.time) : null,
       goldEta: !g.gold && g.bonus ? Math.max(0, g.nextGold - g.time) : null,
     });
@@ -529,8 +542,8 @@ export default function Snake() {
 
   const swipe = useSwipe(turn, { continuous: true });
   const levelCards = SNAKE_LEVELS.map((l, i) => ({
-    name: l.name,
-    best: levelBests[i] !== null ? `${levelBests[i]} 秒` : undefined,
+    name: l.name[lang],
+    best: levelBests[i] !== null ? t.levelBest(levelBests[i]) : undefined,
   }));
 
   return (
@@ -538,15 +551,15 @@ export default function Snake() {
       <div className="game-bar">
         {phase === "select" ? (
           <span>
-            选择关卡
+            {t.selectLevel}
             <b>
               {unlocked ?? 1}/{SNAKE_LEVELS.length}
             </b>
             <span
               className="snake-unlock-bar"
               data-full={(unlocked ?? 1) >= SNAKE_LEVELS.length || undefined}
-              title={`已解锁 ${unlocked ?? 1} / ${SNAKE_LEVELS.length}`}
-              aria-label={`已解锁 ${unlocked ?? 1} 关`}
+              title={t.unlockedTitle(unlocked ?? 1, SNAKE_LEVELS.length)}
+              aria-label={t.unlockedAria(unlocked ?? 1)}
             >
               <i
                 style={{
@@ -558,12 +571,13 @@ export default function Snake() {
         ) : level ? (
           <>
             <span>
-              第 {levelNo} 关<b>{level.name}</b>
+              {t.levelNo(levelNo)}
+              <b>{levelName}</b>
               <span
                 className="snake-level-bar"
                 data-late={levelNo >= Math.max(1, SNAKE_LEVELS.length - 1) || undefined}
-                title={`关卡序号 ${levelNo} / ${SNAKE_LEVELS.length}`}
-                aria-label={`第 ${levelNo} 关，共 ${SNAKE_LEVELS.length} 关`}
+                title={t.levelIndexTitle(levelNo, SNAKE_LEVELS.length)}
+                aria-label={t.levelIndexAria(levelNo, SNAKE_LEVELS.length)}
               >
                 <i
                   style={{
@@ -573,7 +587,7 @@ export default function Snake() {
               </span>
             </span>
             <span>
-              进度
+              {t.progress}
               <b>
                 {Math.min(hud.eaten, level.goal)}/{level.goal}
               </b>
@@ -581,8 +595,8 @@ export default function Snake() {
                 className="snake-eaten-bar"
                 data-near={hud.eaten / level.goal >= 0.8 || undefined}
                 data-done={hud.eaten >= level.goal || undefined}
-                title={`关卡进度 ${Math.min(hud.eaten, level.goal)}/${level.goal}`}
-                aria-label={`关卡进度 ${Math.min(100, Math.round((hud.eaten / Math.max(1, level.goal)) * 100))} percent`}
+                title={t.progressTitle(Math.min(hud.eaten, level.goal), level.goal)}
+                aria-label={t.progressAria(Math.min(100, Math.round((hud.eaten / Math.max(1, level.goal)) * 100)))}
               >
                 <i
                   style={{
@@ -592,13 +606,14 @@ export default function Snake() {
               </span>
             </span>
             <span>
-              时间<b>{hud.seconds}s</b>
+              {t.time}
+              <b>{hud.seconds}s</b>
               <span
                 className="snake-time-bar"
                 data-long={hud.seconds >= 60 || undefined}
                 data-over={hud.seconds >= 120 || undefined}
-                title={`用时 ${hud.seconds}s（满刻度 120s）`}
-                aria-label={`用时 ${hud.seconds} 秒`}
+                title={t.timeTitle(hud.seconds)}
+                aria-label={t.timeAria(hud.seconds)}
               >
                 <i style={{ width: `${Math.min(100, Math.round((hud.seconds / 120) * 100))}%` }} />
               </span>
@@ -606,14 +621,8 @@ export default function Snake() {
                 className="snake-pace-bar"
                 data-fast={(hud.seconds > 0 && hud.eaten / hud.seconds >= 0.35) || undefined}
                 data-slow={(hud.seconds >= 20 && hud.eaten / Math.max(1, hud.seconds) < 0.12) || undefined}
-                title={
-                  hud.seconds > 0
-                    ? `吞食配速 ${Math.round((hud.eaten / hud.seconds) * 100) / 100} /s（满刻度按 0.5/s）`
-                    : "吞食配速 —"
-                }
-                aria-label={
-                  hud.seconds > 0 ? `每秒约吞 ${Math.round((hud.eaten / hud.seconds) * 100) / 100}` : "吞食配速未知"
-                }
+                title={t.paceTitle(hud.seconds > 0 ? Math.round((hud.eaten / hud.seconds) * 100) / 100 : null)}
+                aria-label={t.paceAria(hud.seconds > 0 ? Math.round((hud.eaten / hud.seconds) * 100) / 100 : null)}
               >
                 <i
                   style={{
@@ -625,8 +634,8 @@ export default function Snake() {
                 className="snake-speed-ms-bar"
                 data-fast={hud.speedMs <= 120 || undefined}
                 data-slow={hud.speedMs >= 220 || undefined}
-                title={`步进 ${hud.speedMs}ms（满刻度按更快；基准 280→80ms）`}
-                aria-label={`步进间隔 ${hud.speedMs} 毫秒`}
+                title={t.stepTitle(hud.speedMs)}
+                aria-label={t.stepAria(hud.speedMs)}
               >
                 <i
                   style={{
@@ -638,14 +647,8 @@ export default function Snake() {
                 className="snake-score-pace-bar"
                 data-hot={(hud.seconds > 0 && hud.score / hud.seconds >= 40) || undefined}
                 data-slow={(hud.seconds >= 15 && hud.score / Math.max(1, hud.seconds) < 8) || undefined}
-                title={
-                  hud.seconds > 0
-                    ? `得分配速 ${Math.round((hud.score / hud.seconds) * 10) / 10}/s（满刻度按 50/s）`
-                    : "得分配速 —"
-                }
-                aria-label={
-                  hud.seconds > 0 ? `每秒约 ${Math.round((hud.score / hud.seconds) * 10) / 10} 分` : "得分配速未知"
-                }
+                title={t.scorePaceTitle(hud.seconds > 0 ? Math.round((hud.score / hud.seconds) * 10) / 10 : null)}
+                aria-label={t.scorePaceAria(hud.seconds > 0 ? Math.round((hud.score / hud.seconds) * 10) / 10 : null)}
               >
                 <i
                   style={{
@@ -657,14 +660,8 @@ export default function Snake() {
                 className="snake-len-pace-bar"
                 data-hot={(hud.seconds > 0 && hud.len / hud.seconds >= 0.35) || undefined}
                 data-slow={(hud.seconds >= 20 && hud.len / Math.max(1, hud.seconds) < 0.08) || undefined}
-                title={
-                  hud.seconds > 0
-                    ? `身长增速 ${Math.round((hud.len / hud.seconds) * 100) / 100}/s（满刻度按 0.5/s）`
-                    : "身长增速 —"
-                }
-                aria-label={
-                  hud.seconds > 0 ? `每秒约增长 ${Math.round((hud.len / hud.seconds) * 100) / 100} 格` : "身长增速未知"
-                }
+                title={t.lenPaceTitle(hud.seconds > 0 ? Math.round((hud.len / hud.seconds) * 100) / 100 : null)}
+                aria-label={t.lenPaceAria(hud.seconds > 0 ? Math.round((hud.len / hud.seconds) * 100) / 100 : null)}
               >
                 <i
                   style={{
@@ -673,38 +670,27 @@ export default function Snake() {
                 />
               </span>
             </span>
-            <span title={`蛇长 ${hud.len} 格（满刻度按 40）`}>
-              长度<b>{hud.len}</b>
+            <span title={t.lenTitle(hud.len)}>
+              {t.length}
+              <b>{hud.len}</b>
               <span
                 className="snake-len-bar"
                 data-long={hud.len >= 24 || undefined}
                 data-huge={hud.len >= 32 || undefined}
-                title={`蛇长 ${hud.len} / 40`}
-                aria-label={`蛇长 ${hud.len}`}
+                title={t.lenBarTitle(hud.len)}
+                aria-label={t.lenAria(hud.len)}
               >
                 <i style={{ width: `${Math.min(100, Math.round((hud.len / 40) * 100))}%` }} />
               </span>
-              <span
-                title={
-                  hud.eaten > 0
-                    ? `得分效率 ${Math.round((hud.score / hud.eaten) * 10) / 10} 分/食（满刻度按 20）`
-                    : "得分效率 —"
-                }
-              >
-                效率
+              <span title={t.effTitle(hud.eaten > 0 ? Math.round((hud.score / hud.eaten) * 10) / 10 : null)}>
+                {t.eff}
                 <b>{hud.eaten > 0 ? Math.round((hud.score / hud.eaten) * 10) / 10 : "—"}</b>
                 <span
                   className="snake-eff-bar"
                   data-hot={(hud.eaten > 0 && hud.score / hud.eaten >= 15) || undefined}
                   data-low={(hud.eaten >= 3 && hud.score / hud.eaten < 8) || undefined}
-                  title={
-                    hud.eaten > 0
-                      ? `得分效率 ${Math.round((hud.score / hud.eaten) * 10) / 10} 分/食（满刻度按 20）`
-                      : "得分效率 —"
-                  }
-                  aria-label={
-                    hud.eaten > 0 ? `每食约 ${Math.round((hud.score / hud.eaten) * 10) / 10} 分` : "得分效率未知"
-                  }
+                  title={t.effTitle(hud.eaten > 0 ? Math.round((hud.score / hud.eaten) * 10) / 10 : null)}
+                  aria-label={t.effAria(hud.eaten > 0 ? Math.round((hud.score / hud.eaten) * 10) / 10 : null)}
                 >
                   <i
                     style={{
@@ -713,25 +699,15 @@ export default function Snake() {
                   />
                 </span>
               </span>
-              <span
-                title={
-                  hud.len > 0
-                    ? `身长密度 ${Math.round((hud.score / hud.len) * 10) / 10} 分/格（满刻度按 40）`
-                    : "身长密度 —"
-                }
-              >
-                密度
+              <span title={t.densityTitle(hud.len > 0 ? Math.round((hud.score / hud.len) * 10) / 10 : null)}>
+                {t.density}
                 <b>{hud.len > 0 ? Math.round((hud.score / hud.len) * 10) / 10 : "—"}</b>
                 <span
                   className="snake-density-bar"
                   data-hot={(hud.len > 0 && hud.score / hud.len >= 30) || undefined}
                   data-low={(hud.len >= 8 && hud.score / hud.len < 10) || undefined}
-                  title={
-                    hud.len > 0
-                      ? `身长密度 ${Math.round((hud.score / hud.len) * 10) / 10} 分/格（满刻度按 40）`
-                      : "身长密度 —"
-                  }
-                  aria-label={hud.len > 0 ? `每格约 ${Math.round((hud.score / hud.len) * 10) / 10} 分` : "身长密度未知"}
+                  title={t.densityTitle(hud.len > 0 ? Math.round((hud.score / hud.len) * 10) / 10 : null)}
+                  aria-label={t.densityAria(hud.len > 0 ? Math.round((hud.score / hud.len) * 10) / 10 : null)}
                 >
                   <i
                     style={{
@@ -743,14 +719,8 @@ export default function Snake() {
                   className="snake-food-eff-bar"
                   data-hot={(hud.eaten > 0 && hud.score / hud.eaten >= 35) || undefined}
                   data-low={(hud.eaten >= 5 && hud.score / hud.eaten < 12) || undefined}
-                  title={
-                    hud.eaten > 0
-                      ? `食物效率 ${Math.round((hud.score / hud.eaten) * 10) / 10} 分/个（满刻度按 50）`
-                      : "食物效率 —"
-                  }
-                  aria-label={
-                    hud.eaten > 0 ? `每个食物约 ${Math.round((hud.score / hud.eaten) * 10) / 10} 分` : "食物效率未知"
-                  }
+                  title={t.foodEffTitle(hud.eaten > 0 ? Math.round((hud.score / hud.eaten) * 10) / 10 : null)}
+                  aria-label={t.foodEffAria(hud.eaten > 0 ? Math.round((hud.score / hud.eaten) * 10) / 10 : null)}
                 >
                   <i
                     style={{
@@ -762,16 +732,8 @@ export default function Snake() {
                   className="snake-eat-pace-bar"
                   data-hot={(hud.seconds > 0 && hud.eaten / hud.seconds >= 0.35) || undefined}
                   data-slow={(hud.seconds >= 20 && hud.eaten / Math.max(1, hud.seconds) < 0.08) || undefined}
-                  title={
-                    hud.seconds > 0
-                      ? `吞食配速 ${Math.round((hud.eaten / hud.seconds) * 100) / 100}/s（满刻度按 0.5/s）`
-                      : "吞食配速 —"
-                  }
-                  aria-label={
-                    hud.seconds > 0
-                      ? `每秒约吞 ${Math.round((hud.eaten / hud.seconds) * 100) / 100} 个`
-                      : "吞食配速未知"
-                  }
+                  title={t.eatPaceTitle(hud.seconds > 0 ? Math.round((hud.eaten / hud.seconds) * 100) / 100 : null)}
+                  aria-label={t.eatPaceAria(hud.seconds > 0 ? Math.round((hud.eaten / hud.seconds) * 100) / 100 : null)}
                 >
                   <i
                     style={{
@@ -785,10 +747,8 @@ export default function Snake() {
                   className="snake-score-len-bar"
                   data-hot={(hud.len > 0 && hud.score / hud.len >= 8) || undefined}
                   data-low={(hud.len >= 5 && hud.score / Math.max(1, hud.len) < 2) || undefined}
-                  title={
-                    hud.len > 0 ? `分/节 ${Math.round((hud.score / hud.len) * 10) / 10}（满刻度按 10）` : "分/节 —"
-                  }
-                  aria-label={hud.len > 0 ? `每节约 ${Math.round((hud.score / hud.len) * 10) / 10} 分` : "分节效率未知"}
+                  title={t.scoreLenTitle(hud.len > 0 ? Math.round((hud.score / hud.len) * 10) / 10 : null)}
+                  aria-label={t.scoreLenAria(hud.len > 0 ? Math.round((hud.score / hud.len) * 10) / 10 : null)}
                 >
                   <i
                     style={{
@@ -800,16 +760,8 @@ export default function Snake() {
                   className="snake-grow-pace-bar"
                   data-hot={(hud.seconds > 0 && hud.len / hud.seconds >= 0.35) || undefined}
                   data-slow={(hud.seconds >= 20 && hud.len / Math.max(1, hud.seconds) < 0.08) || undefined}
-                  title={
-                    hud.seconds > 0
-                      ? `体长配速 ${Math.round((hud.len / hud.seconds) * 100) / 100}/s（满刻度按 0.5/s）`
-                      : "体长配速 —"
-                  }
-                  aria-label={
-                    hud.seconds > 0
-                      ? `每秒约增长 ${Math.round((hud.len / hud.seconds) * 100) / 100} 节`
-                      : "体长配速未知"
-                  }
+                  title={t.growPaceTitle(hud.seconds > 0 ? Math.round((hud.len / hud.seconds) * 100) / 100 : null)}
+                  aria-label={t.growPaceAria(hud.seconds > 0 ? Math.round((hud.len / hud.seconds) * 100) / 100 : null)}
                 >
                   <i
                     style={{
@@ -837,40 +789,28 @@ export default function Snake() {
               data-urgent={
                 (hud.goldLeft != null && hud.goldLeft <= 2) || (hud.goldEta != null && hud.goldEta <= 2) || undefined
               }
-              data-edge={(hud.wrap && !!hud.edgeHint?.includes("将从")) || undefined}
-              data-near={(hud.wrap && !!hud.edgeHint?.includes("靠")) || undefined}
-              data-edge-tier={
-                !hud.wrap
-                  ? undefined
-                  : hud.edgeHint?.includes("将从")
-                    ? "edge"
-                    : hud.edgeHint?.includes("靠")
-                      ? "near"
-                      : "safe"
-              }
-              data-fast={hud.speedTier === "极速" || hud.speedTier === "很快" || undefined}
+              data-edge={(hud.wrap && isEdge) || undefined}
+              data-near={(hud.wrap && isNear) || undefined}
+              data-edge-tier={!hud.wrap ? undefined : isEdge ? "edge" : isNear ? "near" : "safe"}
+              data-fast={isFast || undefined}
               title={
                 hud.wrap && hud.goldLeft != null
-                  ? `穿墙预警+金食：${hud.edgeHint ?? "穿墙开"} · 金食 ${hud.goldLeft.toFixed(1)}s（×3） · 速度 ${hud.speedTier}`
+                  ? t.speedWrapGoldTitle(edgeText ?? t.wrapOn, hud.goldLeft.toFixed(1), tierName)
                   : hud.goldLeft != null
-                    ? `速度 ${hud.speedTier}（${hud.speedMs}ms）${hud.nextSpeed ? ` · ${hud.nextSpeed}` : " · 已达极速"} · 金食 ${hud.goldLeft.toFixed(1)}s（×3）`
+                    ? t.speedGoldTitle(tierName, hud.speedMs, nextSuffix, hud.goldLeft.toFixed(1))
                     : hud.wrap
-                      ? `穿墙 ${hud.edgeHint ?? "开"} · 速度 ${hud.speedTier}`
-                      : hud.nextSpeed
-                        ? `步进 ${hud.speedMs}ms · ${hud.nextSpeed}`
-                        : `步进 ${hud.speedMs}ms · 已达极速`
+                      ? t.speedWrapTitle(edgeText ?? t.wrapOnShort, tierName)
+                      : t.stepNext(hud.speedMs, nextSuffix)
               }
             >
-              速度
-              <b className={hud.speedTier === "极速" || hud.speedTier === "很快" ? "game-tip--alert" : undefined}>
-                {hud.speedTier}
-              </b>
+              {t.speed}
+              <b className={isFast ? "game-tip--alert" : undefined}>{tierName}</b>
               <span
                 className="snake-speed-gauge"
-                data-fast={hud.speedTier === "极速" || hud.speedTier === "很快" || undefined}
+                data-fast={isFast || undefined}
                 data-tier={hud.speedTier}
-                title={`步进 ${hud.speedMs}ms · 档 ${hud.speedTier}${hud.nextSpeed ? ` · ${hud.nextSpeed}` : " · 已达极速"}`}
-                aria-label={`速度档 ${hud.speedTier} ${hud.speedMs} 毫秒`}
+                title={t.gaugeTitle(hud.speedMs, tierName, nextSuffix)}
+                aria-label={t.gaugeAria(tierName, hud.speedMs)}
               >
                 <i
                   style={{
@@ -881,7 +821,8 @@ export default function Snake() {
               {hud.goldLeft != null && (
                 <>
                   <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
-                  金食<b className={hud.goldLeft <= 2 ? "game-tip--alert" : undefined}>{hud.goldLeft.toFixed(1)}s</b>
+                  {t.gold}
+                  <b className={hud.goldLeft <= 2 ? "game-tip--alert" : undefined}>{hud.goldLeft.toFixed(1)}s</b>
                   <small
                     className="snake-gold-tier"
                     data-tier={hud.goldLeft <= 2 ? "hot" : hud.goldLeft <= 5 ? "warm" : "cool"}
@@ -892,22 +833,23 @@ export default function Snake() {
                   <span
                     className="snake-gold-life-bar"
                     data-tier={hud.goldLeft <= 2 ? "hot" : hud.goldLeft <= 5 ? "warm" : "cool"}
-                    title={`金食剩余 ${hud.goldLeft.toFixed(1)}s / ${6}s`}
-                    aria-label={`金食剩余 ${hud.goldLeft.toFixed(1)} 秒`}
+                    title={t.goldLeftTitle(hud.goldLeft.toFixed(1))}
+                    aria-label={t.goldLeftAria(hud.goldLeft.toFixed(1))}
                   >
                     <i style={{ width: `${Math.min(100, Math.round((hud.goldLeft / 6) * 100))}%` }} />
                   </span>
-                  {hud.nextSpeed ? (
-                    <small style={{ marginLeft: 4, opacity: 0.7 }}>{hud.nextSpeed}</small>
+                  {nextText ? (
+                    <small style={{ marginLeft: 4, opacity: 0.7 }}>{nextText}</small>
                   ) : (
-                    <small style={{ marginLeft: 4, opacity: 0.55 }}>极速</small>
+                    <small style={{ marginLeft: 4, opacity: 0.55 }}>{t.maxShort}</small>
                   )}
                 </>
               )}
               {hud.goldLeft == null && hud.goldEta != null && (
                 <>
                   <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
-                  距金<b className={hud.goldEta <= 2 ? "game-tip--alert" : undefined}>{hud.goldEta.toFixed(1)}s</b>
+                  {t.goldEta}
+                  <b className={hud.goldEta <= 2 ? "game-tip--alert" : undefined}>{hud.goldEta.toFixed(1)}s</b>
                   <small
                     className="snake-gold-tier"
                     data-tier={hud.goldEta <= 2 ? "hot" : hud.goldEta <= 5 ? "warm" : "cool"}
@@ -918,8 +860,8 @@ export default function Snake() {
                   <span
                     className="snake-gold-life-bar snake-gold-eta-bar"
                     data-tier={hud.goldEta <= 2 ? "hot" : hud.goldEta <= 5 ? "warm" : "cool"}
-                    title={`距金约 ${hud.goldEta.toFixed(1)}s（窗口按 14s 估）`}
-                    aria-label={`距金 ${hud.goldEta.toFixed(1)} 秒`}
+                    title={t.goldEtaTitle(hud.goldEta.toFixed(1))}
+                    aria-label={t.goldEtaAria(hud.goldEta.toFixed(1))}
                   >
                     <i style={{ width: `${Math.min(100, Math.round((hud.goldEta / 14) * 100))}%` }} />
                   </span>
@@ -930,50 +872,42 @@ export default function Snake() {
                   <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
                   <span
                     className="snake-wrap-badge snake-wrap-badge--tier"
-                    data-edge={hud.edgeHint?.includes("将从") || undefined}
-                    data-near={hud.edgeHint?.includes("靠") || undefined}
-                    data-edge-tier={
-                      hud.edgeHint?.includes("将从") ? "edge" : hud.edgeHint?.includes("靠") ? "near" : "safe"
-                    }
+                    data-edge={isEdge || undefined}
+                    data-near={isNear || undefined}
+                    data-edge-tier={isEdge ? "edge" : isNear ? "near" : "safe"}
                     title={
-                      hud.edgeHint?.includes("将从")
-                        ? `穿墙色阶 edge：${hud.edgeHint}`
-                        : hud.edgeHint?.includes("靠")
-                          ? `穿墙色阶 near：${hud.edgeHint}`
-                          : "穿墙色阶 safe：边缘可出入"
+                      isEdge
+                        ? t.wrapTierTitle("edge", edgeText ?? "")
+                        : isNear
+                          ? t.wrapTierTitle("near", edgeText ?? "")
+                          : t.wrapTierSafe
                     }
                   >
-                    穿墙
-                    {hud.edgeHint?.includes("将从") ? (
-                      <small className="snake-wrap-badge__warn"> · 将穿出</small>
-                    ) : hud.edgeHint?.includes("靠") ? (
-                      <small className="snake-wrap-badge__near"> · 近缘</small>
+                    {t.wrap}
+                    {isEdge ? (
+                      <small className="snake-wrap-badge__warn">{t.wrapExiting}</small>
+                    ) : isNear ? (
+                      <small className="snake-wrap-badge__near">{t.wrapNear}</small>
                     ) : (
-                      <small> · 开</small>
+                      <small>{t.wrapOpen}</small>
                     )}
                   </span>
                   <span
                     className="snake-edge-bar"
-                    data-edge={hud.edgeHint?.includes("将从") || undefined}
-                    data-near={hud.edgeHint?.includes("靠") || undefined}
+                    data-edge={isEdge || undefined}
+                    data-near={isNear || undefined}
                     title={
-                      hud.edgeHint?.includes("将从")
-                        ? `边缘条 edge：${hud.edgeHint}`
-                        : hud.edgeHint?.includes("靠")
-                          ? `边缘条 near：${hud.edgeHint}`
-                          : "边缘条 safe：穿墙开、未贴边"
+                      isEdge
+                        ? t.edgeBarTitle("edge", edgeText ?? "")
+                        : isNear
+                          ? t.edgeBarTitle("near", edgeText ?? "")
+                          : t.edgeBarSafe
                     }
-                    aria-label={
-                      hud.edgeHint?.includes("将从")
-                        ? "穿墙边缘危险"
-                        : hud.edgeHint?.includes("靠")
-                          ? "穿墙近缘"
-                          : "穿墙安全"
-                    }
+                    aria-label={isEdge ? t.edgeAria.edge : isNear ? t.edgeAria.near : t.edgeAria.safe}
                   >
                     <i
                       style={{
-                        width: `${hud.edgeHint?.includes("将从") ? 100 : hud.edgeHint?.includes("靠") ? 60 : 20}%`,
+                        width: `${isEdge ? 100 : isNear ? 60 : 20}%`,
                       }}
                     />
                   </span>
@@ -984,13 +918,14 @@ export default function Snake() {
         ) : (
           <>
             <span>
-              无尽模式 分数<b>{hud.score}</b>
+              {t.endlessScore}
+              <b>{hud.score}</b>
               <span
                 className="snake-score-bar"
                 data-record={(best != null && hud.score >= best && hud.score > 0) || undefined}
                 data-near={(best != null && best > 0 && hud.score / best >= 0.8) || undefined}
-                title={`分数 ${hud.score}${best != null ? ` / 最高 ${best}` : ""}`}
-                aria-label={`分数 ${hud.score}`}
+                title={t.scoreTitle(hud.score, best)}
+                aria-label={t.scoreAria(hud.score)}
               >
                 <i
                   style={{
@@ -1000,20 +935,21 @@ export default function Snake() {
               </span>
             </span>
             <span>
-              最高<b>{best ?? 0}</b>
+              {t.best}
+              <b>{best ?? 0}</b>
               <span
                 className="snake-best-gap-bar"
                 data-record={(best != null && hud.score >= best && hud.score > 0) || undefined}
                 data-near={(best != null && best > 0 && hud.score / best >= 0.8) || undefined}
                 title={
                   best != null && best > 0
-                    ? `距纪录 ${Math.max(0, best - hud.score)}（当前 ${hud.score} / 最高 ${best}）`
-                    : `最高 ${best ?? 0}`
+                    ? t.bestGapTitle(Math.max(0, best - hud.score), hud.score, best)
+                    : t.bestTitle(best ?? 0)
                 }
                 aria-label={
                   best != null && best > 0
-                    ? `达到最高分的 ${Math.min(100, Math.round((hud.score / best) * 100))} percent`
-                    : `最高分 ${best ?? 0}`
+                    ? t.bestPctAria(Math.min(100, Math.round((hud.score / best) * 100)))
+                    : t.bestAria(best ?? 0)
                 }
               >
                 <i
@@ -1023,14 +959,15 @@ export default function Snake() {
                 />
               </span>
             </span>
-            <span title={`无尽蛇长 ${hud.len} 格（满刻度按 40）`}>
-              长度<b>{hud.len}</b>
+            <span title={t.endlessLenTitle(hud.len)}>
+              {t.length}
+              <b>{hud.len}</b>
               <span
                 className="snake-len-bar"
                 data-long={hud.len >= 24 || undefined}
                 data-huge={hud.len >= 32 || undefined}
-                title={`无尽蛇长 ${hud.len} / 40`}
-                aria-label={`蛇长 ${hud.len}`}
+                title={t.endlessLenBarTitle(hud.len)}
+                aria-label={t.lenAria(hud.len)}
               >
                 <i style={{ width: `${Math.min(100, Math.round((hud.len / 40) * 100))}%` }} />
               </span>
@@ -1052,27 +989,23 @@ export default function Snake() {
               data-urgent={
                 (hud.goldLeft != null && hud.goldLeft <= 2) || (hud.goldEta != null && hud.goldEta <= 2) || undefined
               }
-              data-fast={hud.speedTier === "极速" || hud.speedTier === "很快" || undefined}
+              data-fast={isFast || undefined}
               title={
                 hud.goldLeft != null
-                  ? `无尽金食：速度 ${hud.speedTier}（${hud.speedMs}ms）· 金食 ${hud.goldLeft.toFixed(1)}s（×3）${hud.nextSpeed ? ` · ${hud.nextSpeed}` : " · 已达极速"}`
+                  ? t.endlessGoldTitle(tierName, hud.speedMs, hud.goldLeft.toFixed(1), nextSuffix)
                   : hud.goldEta != null
-                    ? `无尽距金：速度 ${hud.speedTier}（${hud.speedMs}ms）· 距金食 ${hud.goldEta.toFixed(1)}s${hud.nextSpeed ? ` · ${hud.nextSpeed}` : " · 已达极速"}`
-                    : hud.nextSpeed
-                      ? `步进 ${hud.speedMs}ms · ${hud.nextSpeed}`
-                      : `步进 ${hud.speedMs}ms · 已达极速`
+                    ? t.endlessEtaTitle(tierName, hud.speedMs, hud.goldEta.toFixed(1), nextSuffix)
+                    : t.stepNext(hud.speedMs, nextSuffix)
               }
             >
-              速度
-              <b className={hud.speedTier === "极速" || hud.speedTier === "很快" ? "game-tip--alert" : undefined}>
-                {hud.speedTier}
-              </b>
+              {t.speed}
+              <b className={isFast ? "game-tip--alert" : undefined}>{tierName}</b>
               <span
                 className="snake-speed-gauge"
-                data-fast={hud.speedTier === "极速" || hud.speedTier === "很快" || undefined}
+                data-fast={isFast || undefined}
                 data-tier={hud.speedTier}
-                title={`步进 ${hud.speedMs}ms · 档 ${hud.speedTier}${hud.nextSpeed ? ` · ${hud.nextSpeed}` : " · 已达极速"}`}
-                aria-label={`速度档 ${hud.speedTier} ${hud.speedMs} 毫秒`}
+                title={t.gaugeTitle(hud.speedMs, tierName, nextSuffix)}
+                aria-label={t.gaugeAria(tierName, hud.speedMs)}
               >
                 <i
                   style={{
@@ -1083,7 +1016,8 @@ export default function Snake() {
               {hud.goldLeft != null && (
                 <>
                   <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
-                  金食<b className={hud.goldLeft <= 2 ? "game-tip--alert" : undefined}>{hud.goldLeft.toFixed(1)}s</b>
+                  {t.gold}
+                  <b className={hud.goldLeft <= 2 ? "game-tip--alert" : undefined}>{hud.goldLeft.toFixed(1)}s</b>
                   <small
                     className="snake-gold-tier"
                     data-tier={hud.goldLeft <= 2 ? "hot" : hud.goldLeft <= 5 ? "warm" : "cool"}
@@ -1094,25 +1028,26 @@ export default function Snake() {
                   <span
                     className="snake-gold-life-bar"
                     data-tier={hud.goldLeft <= 2 ? "hot" : hud.goldLeft <= 5 ? "warm" : "cool"}
-                    title={`无尽金食剩余 ${hud.goldLeft.toFixed(1)}s / 6s`}
-                    aria-label={`金食剩余 ${hud.goldLeft.toFixed(1)} 秒`}
+                    title={t.endlessGoldLeftTitle(hud.goldLeft.toFixed(1))}
+                    aria-label={t.goldLeftAria(hud.goldLeft.toFixed(1))}
                   >
                     <i style={{ width: `${Math.min(100, Math.round((hud.goldLeft / 6) * 100))}%` }} />
                   </span>
                   <small className="snake-endless-gold__tag" style={{ marginLeft: 4, opacity: 0.8 }}>
-                    无尽
+                    {t.endlessTag}
                   </small>
-                  {hud.nextSpeed ? (
-                    <small style={{ marginLeft: 4, opacity: 0.7 }}>{hud.nextSpeed}</small>
+                  {nextText ? (
+                    <small style={{ marginLeft: 4, opacity: 0.7 }}>{nextText}</small>
                   ) : (
-                    <small style={{ marginLeft: 4, opacity: 0.55 }}>极速</small>
+                    <small style={{ marginLeft: 4, opacity: 0.55 }}>{t.maxShort}</small>
                   )}
                 </>
               )}
               {hud.goldLeft == null && hud.goldEta != null && (
                 <>
                   <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
-                  距金<b className={hud.goldEta <= 2 ? "game-tip--alert" : undefined}>{hud.goldEta.toFixed(1)}s</b>
+                  {t.goldEta}
+                  <b className={hud.goldEta <= 2 ? "game-tip--alert" : undefined}>{hud.goldEta.toFixed(1)}s</b>
                   <small
                     className="snake-gold-tier"
                     data-tier={hud.goldEta <= 2 ? "hot" : hud.goldEta <= 5 ? "warm" : "cool"}
@@ -1123,13 +1058,13 @@ export default function Snake() {
                   <span
                     className="snake-gold-life-bar snake-gold-eta-bar"
                     data-tier={hud.goldEta <= 2 ? "hot" : hud.goldEta <= 5 ? "warm" : "cool"}
-                    title={`无尽距金约 ${hud.goldEta.toFixed(1)}s（窗口按 14s 估）`}
-                    aria-label={`距金 ${hud.goldEta.toFixed(1)} 秒`}
+                    title={t.endlessEtaBarTitle(hud.goldEta.toFixed(1))}
+                    aria-label={t.goldEtaAria(hud.goldEta.toFixed(1))}
                   >
                     <i style={{ width: `${Math.min(100, Math.round((hud.goldEta / 14) * 100))}%` }} />
                   </span>
                   <small className="snake-endless-gold__tag" style={{ marginLeft: 4, opacity: 0.8 }}>
-                    无尽
+                    {t.endlessTag}
                   </small>
                 </>
               )}
@@ -1139,18 +1074,14 @@ export default function Snake() {
         <span className="spacer" />
         {(phase === "running" || phase === "paused") && (
           <button type="button" className="game-btn" onClick={toggle}>
-            {phase === "running" ? "暂停" : "继续"}
+            {phase === "running" ? t.pause : t.resume}
           </button>
         )}
       </div>
       {(phase === "running" || phase === "paused") && (
         <p
           className={
-            hud.wrap ||
-            hud.speedTier === "极速" ||
-            hud.speedTier === "很快" ||
-            hud.goldLeft != null ||
-            (hud.goldEta != null && hud.goldEta <= 2)
+            hud.wrap || isFast || hud.goldLeft != null || (hud.goldEta != null && hud.goldEta <= 2)
               ? "game-tip game-tip--alert"
               : "game-tip"
           }
@@ -1158,106 +1089,116 @@ export default function Snake() {
         >
           {`${
             hud.wrap && hud.goldLeft != null
-              ? `穿墙预警+金食：${hud.edgeHint ?? "穿墙开"} · 金色 ${hud.goldLeft.toFixed(1)}s（×3）${hud.goldLeft <= 2 ? " · 金食将尽" : ""} · 档 ${hud.speedTier}`
+              ? t.tipWrapGold(edgeText ?? t.wrapOn, hud.goldLeft.toFixed(1), hud.goldLeft <= 2, tierName)
               : hud.wrap && hud.goldEta != null
-                ? `穿墙+距金食：${hud.edgeHint ?? "穿墙开"} · 距金 ${hud.goldEta.toFixed(1)}s · 档 ${hud.speedTier}`
-                : hud.wrap && hud.edgeHint?.includes("将从")
-                  ? `穿墙预警色阶：下一格将穿出 · ${hud.edgeHint} · tier edge · 档 ${hud.speedTier}`
-                  : hud.wrap && hud.edgeHint?.includes("靠")
-                    ? `穿墙近缘色阶：${hud.edgeHint} · tier near · 档 ${hud.speedTier}（${hud.speedMs}ms）`
-                    : hud.wrap && hud.edgeHint
-                      ? `穿墙+加速：${hud.edgeHint} · 档位 ${hud.speedTier}（${hud.speedMs}ms）`
+                ? t.tipWrapEta(edgeText ?? t.wrapOn, hud.goldEta.toFixed(1), tierName)
+                : hud.wrap && isEdge
+                  ? t.tipWrapEdge(edgeText ?? "", tierName)
+                  : hud.wrap && isNear
+                    ? t.tipWrapNear(edgeText ?? "", tierName, hud.speedMs)
+                    : hud.wrap && edgeText
+                      ? t.tipWrapHint(edgeText, tierName, hud.speedMs)
                       : hud.wrap
-                        ? `穿墙模式 · 加速档 ${hud.speedTier}（${hud.speedMs}ms）${level ? ` · 目标 ${Math.min(hud.eaten, level.goal)}/${level.goal}` : " · 无尽"}`
+                        ? t.tipWrap(
+                            tierName,
+                            hud.speedMs,
+                            level ? `${Math.min(hud.eaten, level.goal)}/${level.goal}` : null,
+                          )
                         : hud.goldLeft != null
                           ? level
-                            ? `金色食物 ${hud.goldLeft.toFixed(1)}s（一个顶三个） · 档 ${hud.speedTier}（${hud.speedMs}ms）`
-                            : `无尽+金食：金色 ${hud.goldLeft.toFixed(1)}s（×3）${hud.goldLeft <= 2 ? " · 将尽" : ""} · 档 ${hud.speedTier}（${hud.speedMs}ms）· 越高分越快`
+                            ? t.tipLevelGold(hud.goldLeft.toFixed(1), tierName, hud.speedMs)
+                            : t.tipEndlessGold(hud.goldLeft.toFixed(1), hud.goldLeft <= 2, tierName, hud.speedMs)
                           : level
-                            ? `第 ${levelNo} 关·${level.name}：目标 ${Math.min(hud.eaten, level.goal)}/${level.goal}${level.bonus ? " · 有金色食物" : ""} · 加速档 ${hud.speedTier}（${hud.speedMs}ms）`
+                            ? t.tipLevel(
+                                levelNo,
+                                levelName,
+                                `${Math.min(hud.eaten, level.goal)}/${level.goal}`,
+                                !!level.bonus,
+                                tierName,
+                                hud.speedMs,
+                              )
                             : hud.goldEta != null
-                              ? `无尽+距金：距金食 ${hud.goldEta.toFixed(1)}s · 档 ${hud.speedTier}（${hud.speedMs}ms）· 越高分越快`
-                              : `无尽模式 · 加速档 ${hud.speedTier}（${hud.speedMs}ms）· 越高分越快`
+                              ? t.tipEndlessEta(hud.goldEta.toFixed(1), tierName, hud.speedMs)
+                              : t.tipEndless(tierName, hud.speedMs)
           }${
             hud.wrap && hud.goldLeft != null
-              ? hud.nextSpeed
-                ? ` · ${hud.nextSpeed}`
+              ? nextText
+                ? ` · ${nextText}`
                 : ""
-              : (hud.nextSpeed ? ` · ${hud.nextSpeed}` : " · 已达极速") +
+              : nextSuffix +
                 (hud.goldLeft != null && !hud.wrap
                   ? ""
                   : hud.goldLeft != null
-                    ? ` · 金色食物 ${hud.goldLeft.toFixed(1)}s`
+                    ? t.tipGoldSuffix(hud.goldLeft.toFixed(1))
                     : "")
           }`}
         </p>
       )}
       <div className="game-stage" {...swipe}>
-        <canvas ref={canvas} aria-label={level ? `贪吃蛇第 ${levelNo} 关` : "贪吃蛇无尽模式"} />
+        <canvas ref={canvas} aria-label={level ? t.canvasLevel(levelNo) : t.canvasEndless} />
         {phase !== "running" && (
           <div className="game-overlay">
             {phase === "select" && (
               <LevelSelect
-                title="选择关卡"
+                title={t.selectLevel}
                 levels={levelCards}
                 unlocked={unlocked ?? 1}
                 onPick={(i) => start({ kind: "level", index: i })}
               >
                 <button type="button" className="game-btn" onClick={() => start({ kind: "endless" })}>
-                  无尽模式{best ? ` · 最高 ${best}` : ""}
+                  {t.endless}
+                  {best ? t.endlessBest(best) : ""}
                 </button>
               </LevelSelect>
             )}
             {phase === "ready" && (
               <>
-                <strong>{level ? `第 ${levelNo} 关 · ${level.name}` : "无尽模式"}</strong>
+                <strong>{level ? t.readyTitle(levelNo, levelName) : t.endless}</strong>
                 <p>
-                  {level ? `吃够 ${level.goal} 个过关` : "没有终点，越吃越快"}
-                  {level?.wrap ? "，边缘可穿墙——头从对面出来" : ""}
-                  {(level ? level.bonus : true) ? "，金色食物一个顶三个" : ""}
+                  {level ? t.readyGoal(level.goal) : t.readyEndless}
+                  {level?.wrap ? t.readyWrap : ""}
+                  {(level ? level.bonus : true) ? t.readyGold : ""}
                 </p>
                 <button type="button" className="game-btn game-btn--primary" onClick={() => setPhase("running")}>
-                  开始
+                  {t.start}
                 </button>
               </>
             )}
             {phase === "paused" && (
               <>
-                <strong>暂停中</strong>
+                <strong>{t.paused}</strong>
                 <span style={{ display: "flex", gap: 8 }}>
                   <button type="button" className="game-btn game-btn--primary" onClick={toggle}>
-                    继续
+                    {t.resume}
                   </button>
                   <button type="button" className="game-btn" onClick={() => setPhase("select")}>
-                    选关
+                    {t.levels}
                   </button>
                 </span>
               </>
             )}
             {phase === "over" && (
               <>
-                <strong>{record ? "新纪录！" : "撞上了"}</strong>
-                <p>{level ? `吃到 ${Math.min(hud.eaten, level.goal)}/${level.goal}` : `这局得了 ${hud.score} 分`}</p>
+                <strong>{record ? t.newRecord : t.crashed}</strong>
+                <p>{level ? t.overLevel(Math.min(hud.eaten, level.goal), level.goal) : t.overEndless(hud.score)}</p>
                 <span style={{ display: "flex", gap: 8 }}>
                   <button type="button" className="game-btn game-btn--primary" onClick={retry}>
-                    再试一次
+                    {t.retry}
                   </button>
                   <button type="button" className="game-btn" onClick={() => setPhase("select")}>
-                    选关
+                    {t.levels}
                   </button>
                 </span>
               </>
             )}
             {phase === "clear" && (
               <>
-                <strong>{hasNext ? "过关！" : "全部通关！"}</strong>
-                <p>
-                  用时 {hud.seconds} 秒{record ? "，本关最快" : ""}
-                </p>
+                <strong>{hasNext ? t.cleared : t.allCleared}</strong>
+                <p>{t.clearTime(hud.seconds, record)}</p>
                 <span style={{ display: "flex", gap: 8 }}>
                   {hasNext && (
                     <button type="button" className="game-btn game-btn--primary" onClick={next}>
-                      下一关
+                      {t.nextLevel}
                     </button>
                   )}
                   <button
@@ -1265,7 +1206,7 @@ export default function Snake() {
                     className={hasNext ? "game-btn" : "game-btn game-btn--primary"}
                     onClick={() => setPhase("select")}
                   >
-                    选关
+                    {t.levels}
                   </button>
                 </span>
               </>
@@ -1274,12 +1215,12 @@ export default function Snake() {
         )}
       </div>
       {/* 触屏：加大 dpad，按下即转向 + 轻震；附带暂停 */}
-      <div className="dpad dpad--lg" aria-label="方向键">
-        {PAD.map(([dir, arrow, label]) => (
+      <div className="dpad dpad--lg" aria-label={t.dpad}>
+        {PAD.map(([dir, arrow]) => (
           <button
             key={dir}
             type="button"
-            aria-label={label}
+            aria-label={t.pad[dir]}
             style={{ gridArea: dir }}
             onPointerDown={(e) => {
               e.preventDefault();
@@ -1296,18 +1237,18 @@ export default function Snake() {
             type="button"
             className="dpad__pause"
             style={{ gridArea: "pause" }}
-            aria-label={phase === "paused" ? "继续" : "暂停"}
+            aria-label={phase === "paused" ? t.resume : t.pause}
             onPointerDown={(e) => {
               e.preventDefault();
               toggle();
             }}
           >
-            {phase === "paused" ? "继续" : "暂停"}
+            {phase === "paused" ? t.resume : t.pause}
           </button>
         )}
       </div>
-      <p className="game-hint when-mouse">穿墙关顶栏有「穿墙」标记；贴边时提示将从哪一侧出现。</p>
-      <p className="game-hint when-touch">方向键或在棋盘上滑动转向；也可点暂停。穿墙关贴边时有出口提示。</p>
+      <p className="game-hint when-mouse">{t.hintMouse}</p>
+      <p className="game-hint when-touch">{t.hintTouch}</p>
     </div>
   );
 }

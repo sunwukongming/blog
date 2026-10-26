@@ -5,44 +5,44 @@ import { notFound } from "next/navigation";
 import { CodeCopy, CopyLink, ReadingDots, ReadingProgress, ShareX, Toc } from "@/components/ArticleTools";
 import MdxContent from "@/components/MdxContent";
 import { getCategory } from "@/lib/categories";
+import { HTML_LANG, localePath, type Locale } from "@/lib/i18n";
+import { getLang } from "@/lib/lang";
+import { UI } from "@/lib/messages";
+import { absUrl, pageMeta } from "@/lib/meta";
 import { getAllPosts, getPost, getRelatedPosts } from "@/lib/posts";
-import { SITE, SITE_URL } from "@/lib/site";
+import { getSite, SITE_URL } from "@/lib/site";
 import { extractHeadings } from "@/lib/toc";
 
-export async function generateStaticParams() {
-  const posts = await getAllPosts();
+export async function generateStaticParams({ params }: { params: { lang: string } }) {
+  const posts = await getAllPosts(params.lang as Locale);
   return posts.map((p) => ({ slug: p.slug }));
 }
 
-export async function generateMetadata({ params }: PageProps<"/blog/[slug]">): Promise<Metadata> {
+export async function generateMetadata({ params }: PageProps<"/[lang]/blog/[slug]">): Promise<Metadata> {
+  const lang = await getLang();
   const { slug } = await params;
-  const post = await getPost(slug);
+  const post = await getPost(slug, lang);
   if (!post) return {};
-  const url = SITE_URL ? `${SITE_URL}/blog/${slug}` : undefined;
+  const author = getSite(lang).author;
   return {
-    title: post.title,
-    description: post.summary,
-    authors: [{ name: SITE.author }],
-    openGraph: {
+    ...pageMeta({
+      lang,
+      path: `/blog/${slug}`,
+      title: post.title,
+      description: post.summary,
       type: "article",
-      title: post.title,
-      description: post.summary,
-      publishedTime: post.date,
-      siteName: SITE.name,
-      url,
-      authors: [SITE.author],
-    },
-    twitter: {
-      card: "summary",
-      title: post.title,
-      description: post.summary,
-    },
-    alternates: SITE_URL ? { canonical: `/blog/${slug}` } : undefined,
+      langs: post.langs,
+      // 没有译文时内容就是中文原文，canonical 指向中文版
+      canonicalLang: post.contentLang,
+      defaultImage: false,
+      article: { publishedTime: post.date, authors: [author] },
+    }),
+    authors: [{ name: author }],
   };
 }
 
 // App Shell（所在世界）与 URL 无关，读取 params 的正文放进 Suspense
-export default function PostPage({ params }: PageProps<"/blog/[slug]">) {
+export default function PostPage({ params }: PageProps<"/[lang]/blog/[slug]">) {
   return (
     <main data-world="field" className="page" style={{ alignItems: "center" }}>
       <Suspense fallback={null}>
@@ -53,18 +53,22 @@ export default function PostPage({ params }: PageProps<"/blog/[slug]">) {
 }
 
 async function PostBody({ params }: { params: Promise<{ slug: string }> }) {
+  const lang = await getLang();
+  const t = UI[lang].post;
+  const site = getSite(lang);
   const { slug } = await params;
-  const [post, all] = await Promise.all([getPost(slug), getAllPosts()]);
+  const [post, all] = await Promise.all([getPost(slug, lang), getAllPosts(lang)]);
   if (!post) notFound();
 
-  const related = await getRelatedPosts(slug, post.category, 3);
-  const category = getCategory(post.category);
+  const related = await getRelatedPosts(slug, post.category, lang, 3);
+  const category = getCategory(post.category, lang);
   const i = all.findIndex((p) => p.slug === slug);
   const newer = all[i - 1];
   const older = all[i + 1];
   const headings = extractHeadings(post.body);
-  const pageUrl = SITE_URL ? `${SITE_URL}/blog/${slug}` : undefined;
-  // batch47: Article JSON-LD 复核 headline/dates/author/isPartOf/timeRequired；与 related ItemList 同页双脚本
+  const pageUrl = SITE_URL ? absUrl(lang, `/blog/${slug}`) : undefined;
+  // 内容语言和页面语言不同（没有译文、显示中文原文）时，给正文标上原文的 lang
+  const contentLang = post.contentLang === lang ? undefined : HTML_LANG[post.contentLang];
   const articleLd = {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -72,18 +76,13 @@ async function PostBody({ params }: { params: Promise<{ slug: string }> }) {
     description: post.summary,
     datePublished: post.date,
     dateModified: post.date,
-    inLanguage: "zh-CN",
-    author: { "@type": "Person", name: SITE.author },
-    publisher: {
-      "@type": "Organization",
-      name: SITE.name,
-      url: SITE_URL ?? undefined,
-    },
+    inLanguage: HTML_LANG[post.contentLang],
+    author: { "@type": "Person", name: site.author },
+    publisher: { "@type": "Organization", name: site.name, url: SITE_URL ?? undefined },
     mainEntityOfPage: pageUrl ? { "@type": "WebPage", "@id": pageUrl } : undefined,
-    isPartOf: SITE_URL ? { "@type": "WebSite", name: SITE.name, url: SITE_URL } : undefined,
+    isPartOf: SITE_URL ? { "@type": "WebSite", name: site.name, url: absUrl(lang, "/") } : undefined,
     articleSection: category?.name ?? post.category,
-    wordCount: post.readingMinutes ? post.readingMinutes * 400 : undefined,
-    timeRequired: post.readingMinutes ? `PT${post.readingMinutes}M` : undefined,
+    timeRequired: `PT${post.readingMinutes}M`,
     url: pageUrl,
   };
   const relatedLd =
@@ -91,14 +90,14 @@ async function PostBody({ params }: { params: Promise<{ slug: string }> }) {
       ? {
           "@context": "https://schema.org",
           "@type": "ItemList",
-          name: `相关推荐 · ${post.title}`,
-          description: "同站相关文章续读",
+          name: t.relatedName(post.title),
+          description: t.relatedDescription,
           numberOfItems: related.length,
           itemListOrder: "https://schema.org/ItemListOrderAscending",
           itemListElement: related.map((r, idx) => ({
             "@type": "ListItem",
             position: idx + 1,
-            url: SITE_URL ? `${SITE_URL}/blog/${r.slug}` : `/blog/${r.slug}`,
+            url: absUrl(lang, `/blog/${r.slug}`),
             name: r.title,
           })),
         }
@@ -106,48 +105,54 @@ async function PostBody({ params }: { params: Promise<{ slug: string }> }) {
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleLd) }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleLd) }} />
       {relatedLd && (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(relatedLd) }}
-        />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(relatedLd) }} />
       )}
       <ReadingProgress />
       <header className="article-head" style={{ width: "100%" }}>
         <div className="article-meta">
-          {category && <Link href={`/categories/${category.slug}`}>{category.name}</Link>}
+          {category && <Link href={localePath(lang, `/categories/${category.slug}`)}>{category.name}</Link>}
           <time dateTime={post.date}>{post.date}</time>
-          <span>约 {post.readingMinutes} 分钟</span>
+          <span>{t.minutes(post.readingMinutes)}</span>
           <CopyLink />
           <ShareX title={post.title} />
         </div>
-        <h1 className="display">{post.title}</h1>
-        {post.summary && <p className="lede">{post.summary}</p>}
+        <h1 className="display" lang={contentLang}>
+          {post.title}
+        </h1>
+        {post.summary && (
+          <p className="lede" lang={contentLang}>
+            {post.summary}
+          </p>
+        )}
+        {contentLang && <p className="untranslated-note">{t.untranslated}</p>}
       </header>
       {headings.length >= 2 && <Toc headings={headings} />}
-      <article className="panel article prose" data-ui>
-        <MdxContent source={post.body} />
+      <article className="panel article prose" data-ui lang={contentLang}>
+        <MdxContent source={post.body} lang={lang} />
       </article>
       <CodeCopy />
       {related.length > 0 && (
         <section className="panel related-posts" data-ui aria-labelledby="related-heading">
           <div className="related-posts__head">
-            <h2 id="related-heading">相关推荐</h2>
+            <h2 id="related-heading">{t.related}</h2>
             <ReadingDots />
           </div>
           <ul className="related-posts__list">
             {related.map((r) => (
               <li key={r.slug}>
-                <Link href={`/blog/${r.slug}`}>
-                  <span className="related-posts__title">{r.title}</span>
+                <Link href={localePath(lang, `/blog/${r.slug}`)}>
+                  <span
+                    className="related-posts__title"
+                    lang={r.contentLang === lang ? undefined : HTML_LANG[r.contentLang]}
+                  >
+                    {r.title}
+                  </span>
                   <span className="related-posts__meta">
-                    {getCategory(r.category)?.name ?? r.category}
+                    {getCategory(r.category, lang)?.name ?? r.category}
                     {" · "}
-                    约 {r.readingMinutes} 分钟
+                    {t.minutes(r.readingMinutes)}
                   </span>
                 </Link>
               </li>
@@ -155,18 +160,18 @@ async function PostBody({ params }: { params: Promise<{ slug: string }> }) {
           </ul>
         </section>
       )}
-      <nav className="post-nav" aria-label="上一篇和下一篇">
+      <nav className="post-nav" aria-label={t.pager}>
         {older ? (
-          <Link href={`/blog/${older.slug}`} className="panel">
-            <small>上一篇</small>
+          <Link href={localePath(lang, `/blog/${older.slug}`)} className="panel">
+            <small>{t.older}</small>
             {older.title}
           </Link>
         ) : (
           <span />
         )}
         {newer && (
-          <Link href={`/blog/${newer.slug}`} className="panel">
-            <small>下一篇</small>
+          <Link href={localePath(lang, `/blog/${newer.slug}`)} className="panel">
+            <small>{t.newer}</small>
             {newer.title}
           </Link>
         )}

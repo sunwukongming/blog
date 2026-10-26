@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useReducer, useRef, type CSSProperties } from "react";
+import { useT } from "@/components/i18n/LangProvider";
+import { GAME2048_MESSAGES } from "./Game2048.messages";
 import { KEY_DIR, useKeys, useRecord, useSwipe, type Dir } from "./input";
 
 /** gone：被合并掉的方块，滑到目标位置后在下一步移除，这样合并也有滑动动画 */
@@ -152,6 +154,7 @@ function boardHint(tiles: Tile[]) {
 }
 
 export default function Game2048() {
+  const t = useT(GAME2048_MESSAGES);
   const [state, dispatch] = useReducer(reducer, null, newGame);
   const [best, submitBest] = useRecord("2048", (next, prev) => next > prev);
   const canUndo = !!state.past && !state.over;
@@ -191,16 +194,20 @@ export default function Game2048() {
     <div className="game">
       <div className="game-bar">
         <span>
-          分数<b>{state.score}</b>
+          {t.score}
+          <b>{state.score}</b>
         </span>
         <span>
-          最高<b>{best ?? 0}</b>
+          {t.best}
+          <b>{best ?? 0}</b>
         </span>
-        <span title="当前盘面最大块">
-          最大<b>{mergeHint.max || "—"}</b>
+        <span title={t.maxTitle}>
+          {t.max}
+          <b>{mergeHint.max || "—"}</b>
         </span>
-        <span title="下一档目标 = 当前最大块 ×2（通往更高幂次）">
-          目标<b>{mergeHint.max ? mergeHint.nextTier : 4}</b>
+        <span title={t.targetTitle}>
+          {t.target}
+          <b>{mergeHint.max ? mergeHint.nextTier : 4}</b>
           {mergeHint.max > 0 ? <small style={{ marginLeft: 4, opacity: 0.7 }}>←{mergeHint.max}</small> : null}
         </span>
         <span className="spacer" />
@@ -211,17 +218,17 @@ export default function Game2048() {
           aria-disabled={!canUndo}
           onClick={() => dispatch({ type: "undo" })}
         >
-          撤销
+          {t.undo}
         </button>
         <button type="button" className="game-btn" onClick={() => dispatch({ type: "new" })}>
-          新游戏
+          {t.newGame}
         </button>
       </div>
       {!state.over && !(state.won && !state.keepGoing) && mergeHint.max > 0 && (
         <p className={mergeHint.mergeable > 0 ? "game-tip" : "game-tip game-tip--alert"} aria-live="polite">
           {mergeHint.mergeable > 0
-            ? `下一档目标 ${mergeHint.nextTier}：盘面最大 ${mergeHint.max}，有 ${mergeHint.mergeable} 处可合并`
-            : `下一档目标 ${mergeHint.nextTier}：最大已是 ${mergeHint.max}，暂无相邻同号，先调整再拼`}
+            ? t.hintMergeable(mergeHint.nextTier, mergeHint.max, mergeHint.mergeable)
+            : t.hintStuck(mergeHint.nextTier, mergeHint.max)}
         </p>
       )}
       <div className="game-stage t2048" {...swipe}>
@@ -241,42 +248,40 @@ export default function Game2048() {
         ))}
         {state.over && (
           <div className="game-overlay">
-            <strong>没有路可走了</strong>
-            <p>这局得了 {state.score} 分</p>
+            <strong>{t.overTitle}</strong>
+            <p>{t.overScore(state.score)}</p>
             <span style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
               {state.past && (
                 <button type="button" className="game-btn" onClick={() => dispatch({ type: "undo" })}>
-                  撤销一步
+                  {t.undoStep}
                 </button>
               )}
               <button type="button" className="game-btn game-btn--primary" onClick={() => dispatch({ type: "new" })}>
-                再来一局
+                {t.playAgain}
               </button>
             </span>
           </div>
         )}
         {state.won && !state.keepGoing && !state.over && (
           <div className="game-overlay">
-            <strong>2048！</strong>
-            <p>凑出来了，还要继续往上冲吗？</p>
+            <strong>{t.wonTitle}</strong>
+            <p>{t.wonText}</p>
             <span style={{ display: "flex", gap: 8 }}>
               <button
                 type="button"
                 className="game-btn game-btn--primary"
                 onClick={() => dispatch({ type: "continue" })}
               >
-                继续
+                {t.keepGoing}
               </button>
               <button type="button" className="game-btn" onClick={() => dispatch({ type: "new" })}>
-                新游戏
+                {t.newGame}
               </button>
             </span>
           </div>
         )}
       </div>
-      <p className="game-hint">
-        滑动或方向键移动。顶栏「最大 / 下一档」与可合并提示帮助盯目标；撤销仍用按钮或 U / Backspace。
-      </p>
+      <p className="game-hint">{t.help}</p>
     </div>
   );
 }

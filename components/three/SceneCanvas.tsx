@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Canvas } from "@react-three/fiber";
 import { PerformanceMonitor } from "@react-three/drei";
+import { useLang, usePagePath } from "@/components/i18n/LangProvider";
+import { localePath } from "@/lib/i18n";
 import type { PostMeta } from "@/lib/posts";
 import { WORLD_BG, focusedCategory, worldFor } from "@/lib/worlds";
 import Room from "./worlds/Room";
@@ -16,7 +18,9 @@ import { LabelPortal, reduceMotion, RenderOnInput } from "./utils";
 const FADE_MS = 260;
 
 export default function SceneCanvas({ posts }: { posts: PostMeta[] }) {
-  const pathname = usePathname();
+  // 去掉语言前缀后的路径，决定显示哪个世界；场景里的跳转再加回当前语言的前缀
+  const pathname = usePagePath();
+  const lang = useLang();
   const router = useRouter();
   const target = worldFor(pathname);
   const [world, setWorld] = useState(target);
@@ -48,7 +52,7 @@ export default function SceneCanvas({ posts }: { posts: PostMeta[] }) {
   }, [target, world]);
   const covered = target !== world;
 
-  const navigate = (href: string) => router.push(href);
+  const navigate = (href: string) => router.push(localePath(lang, href));
 
   return (
     <div className="scene-root" aria-hidden="true">

@@ -1,6 +1,9 @@
 // 贪吃蛇关卡：20×20 的地图，# 是墙，S 是蛇头（蛇身向左延伸两格，开局向右走）
+import type { Messages } from "@/lib/i18n";
+
 export type SnakeLevel = {
-  name: string;
+  /** 关卡名每种语言一份，用 useLang() 取 */
+  name: Messages<string>;
   /** 吃够多少过关；金色食物算 3 个 */
   goal: number;
   /** 开局每走一格的毫秒数，每吃一个快 2ms */
@@ -16,13 +19,13 @@ const EMPTY = "....................";
 
 export const SNAKE_LEVELS: SnakeLevel[] = [
   {
-    name: "热身",
+    name: { zh: "热身", en: "Warm-up", ja: "ウォームアップ" },
     goal: 6,
     speed: 160,
     map: [...Array(10).fill(EMPTY), ".......S............", ...Array(9).fill(EMPTY)],
   },
   {
-    name: "四根柱子",
+    name: { zh: "四根柱子", en: "Four Pillars", ja: "四本柱" },
     goal: 8,
     speed: 150,
     map: [
@@ -49,7 +52,7 @@ export const SNAKE_LEVELS: SnakeLevel[] = [
     ],
   },
   {
-    name: "十字路口",
+    name: { zh: "十字路口", en: "Crossroads", ja: "十字路" },
     goal: 10,
     speed: 145,
     bonus: true,
@@ -77,7 +80,7 @@ export const SNAKE_LEVELS: SnakeLevel[] = [
     ],
   },
   {
-    name: "回廊",
+    name: { zh: "回廊", en: "Cloister", ja: "回廊" },
     goal: 10,
     speed: 140,
     bonus: true,
@@ -105,7 +108,7 @@ export const SNAKE_LEVELS: SnakeLevel[] = [
     ],
   },
   {
-    name: "穿墙",
+    name: { zh: "穿墙", en: "Wraparound", ja: "ワープ" },
     goal: 12,
     speed: 125,
     wrap: true,
@@ -134,7 +137,7 @@ export const SNAKE_LEVELS: SnakeLevel[] = [
     ],
   },
   {
-    name: "走廊",
+    name: { zh: "走廊", en: "Switchbacks", ja: "つづら折り" },
     goal: 12,
     speed: 130,
     bonus: true,
@@ -162,7 +165,7 @@ export const SNAKE_LEVELS: SnakeLevel[] = [
     ],
   },
   {
-    name: "石阵",
+    name: { zh: "石阵", en: "Stone Field", ja: "石の陣" },
     goal: 14,
     speed: 120,
     bonus: true,
@@ -190,7 +193,7 @@ export const SNAKE_LEVELS: SnakeLevel[] = [
     ],
   },
   {
-    name: "闸门",
+    name: { zh: "闸门", en: "Floodgates", ja: "水門" },
     goal: 14,
     speed: 115,
     bonus: true,
@@ -218,7 +221,7 @@ export const SNAKE_LEVELS: SnakeLevel[] = [
     ],
   },
   {
-    name: "迷宫",
+    name: { zh: "迷宫", en: "Maze", ja: "迷路" },
     goal: 16,
     speed: 110,
     bonus: true,
@@ -246,7 +249,7 @@ export const SNAKE_LEVELS: SnakeLevel[] = [
     ],
   },
   {
-    name: "终点",
+    name: { zh: "终点", en: "Finale", ja: "フィナーレ" },
     goal: 20,
     speed: 100,
     wrap: true,

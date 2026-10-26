@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useEffectEvent, useRef, useState, type CSSProperties, type PointerEvent } from "react";
+import { useLang, useT } from "@/components/i18n/LangProvider";
+import { BREAKOUT_MESSAGES } from "./Breakout.messages";
 import { BREAKOUT_LEVELS } from "./breakoutLevels";
 import { buzz, higher, saveRecord, setBuzzMuted, useBuzzMuted, useKeys, useRecord } from "./input";
 import LevelSelect from "./LevelSelect";
@@ -25,11 +27,12 @@ const MAX_LIVES = 5;
 
 type Item = "W" | "S" | "L" | "M";
 type Ball = { x: number; y: number; vx: number; vy: number };
-const ITEM_LOOK: Record<Item, { label: string; color: string }> = {
-  W: { label: "宽", color: "#7af5c0" },
-  S: { label: "慢", color: "#6fa8ff" },
-  L: { label: "命", color: "#ff5c8a" },
-  M: { label: "多", color: "#ffe066" },
+// 道具上的字随语言变化，见 Breakout.messages.ts 的 items
+const ITEM_LOOK: Record<Item, { color: string }> = {
+  W: { color: "#7af5c0" },
+  S: { color: "#6fa8ff" },
+  L: { color: "#ff5c8a" },
+  M: { color: "#ffe066" },
 };
 
 type Brick = { x: number; y: number; hp: number; maxHp: number; metal: boolean; item?: Item; color: string };
@@ -286,7 +289,7 @@ function step(g: Game, dt: number, held: number): StepResult {
   return result;
 }
 
-function draw(el: HTMLCanvasElement | null, g: Game) {
+function draw(el: HTMLCanvasElement | null, g: Game, labels: Record<Item, string>) {
   const ctx = el?.getContext("2d");
   if (!el || !ctx) return;
   const k = el.width / W;
@@ -335,7 +338,7 @@ function draw(el: HTMLCanvasElement | null, g: Game) {
     ctx.roundRect(d.x - 16, d.y - 10, 32, 20, 10);
     ctx.fill();
     ctx.fillStyle = "#14021f";
-    ctx.fillText(look.label, d.x, d.y + 1);
+    ctx.fillText(labels[d.kind], d.x, d.y + 1);
   }
 
   const accent = getComputedStyle(el).getPropertyValue("--accent").trim() || "#ff3ea5";
@@ -357,6 +360,8 @@ function draw(el: HTMLCanvasElement | null, g: Game) {
 }
 
 export default function Breakout() {
+  const t = useT(BREAKOUT_MESSAGES);
+  const lang = useLang();
   const canvas = useRef<HTMLCanvasElement>(null);
   const [initial] = useState(() => newGame(0));
   const game = useRef<Game>(initial);
@@ -410,6 +415,10 @@ export default function Breakout() {
     });
   };
 
+  // 用最新语言的道具文字画；切换语言时也重画一次
+  const paint = useEffectEvent(() => draw(canvas.current, game.current, t.items));
+  useEffect(() => paint(), [t]);
+
   useEffect(() => {
     const el = canvas.current;
     if (!el) return;
@@ -417,7 +426,7 @@ export default function Breakout() {
       const w = Math.round(el.clientWidth * Math.min(devicePixelRatio, 2));
       el.width = w;
       el.height = Math.round((w * H) / W);
-      draw(el, game.current);
+      paint();
     });
     ro.observe(el);
     return () => ro.disconnect();
@@ -456,7 +465,7 @@ export default function Breakout() {
 
   // 发球前球拍也能动，所以 aim 状态也要跑循环
   useEffect(() => {
-    draw(canvas.current, game.current);
+    paint();
     if (phase !== "running" && phase !== "aim") return;
     let raf = 0;
     let last = performance.now();
@@ -467,7 +476,7 @@ export default function Breakout() {
       const h = held.current;
       const g = game.current;
       const r = step(g, dt, Number(h.right) - Number(h.left));
-      draw(canvas.current, g);
+      paint();
       // 道具到期时刷新状态栏
       const effects = `${g.time < g.wideUntil}${g.time < g.slowUntil}:${g.balls.length}`;
       if (effects !== shown) {
@@ -568,7 +577,7 @@ export default function Breakout() {
       <div className="game-bar">
         {phase === "select" ? (
           <span>
-            选择关卡
+            {t.selectLevel}
             <b>
               {unlocked ?? 1}/{BREAKOUT_LEVELS.length}
             </b>
@@ -576,12 +585,13 @@ export default function Breakout() {
         ) : (
           <>
             <span>
-              第 {hud.level + 1} 关<b>{level.name}</b>
+              {t.levelN(hud.level + 1)}
+              <b>{level.name[lang]}</b>
               <span
                 className="breakout-level-bar"
                 data-late={hud.level + 1 >= Math.max(1, BREAKOUT_LEVELS.length - 1) || undefined}
-                title={`关卡 ${hud.level + 1} / ${BREAKOUT_LEVELS.length}`}
-                aria-label={`第 ${hud.level + 1} 关，共 ${BREAKOUT_LEVELS.length} 关`}
+                title={t.levelBarTitle(hud.level + 1, BREAKOUT_LEVELS.length)}
+                aria-label={t.levelBarAria(hud.level + 1, BREAKOUT_LEVELS.length)}
               >
                 <i
                   style={{
@@ -594,12 +604,13 @@ export default function Breakout() {
               </span>
             </span>
             <span>
-              分数<b>{hud.score}</b>
+              {t.score}
+              <b>{hud.score}</b>
               <span
                 className="breakout-score-bar"
                 data-hot={hud.score >= 2000 || undefined}
-                title={`分数 ${hud.score}（满刻度按 本关×800 与 500 取大）`}
-                aria-label={`分数 ${hud.score}`}
+                title={t.scoreBarTitle(hud.score)}
+                aria-label={t.scoreAria(hud.score)}
               >
                 <i
                   style={{
@@ -608,8 +619,8 @@ export default function Breakout() {
                 />
               </span>
             </span>
-            <span title="多球与残命同屏（掉球扣一命；多球道具可叠加）">
-              生命
+            <span title={t.livesGroupTitle}>
+              {t.lives}
               <b className={hud.lives <= 1 ? "game-tip--alert" : undefined}>
                 {"♥".repeat(Math.max(0, hud.lives)) || "0"}
               </b>
@@ -618,20 +629,21 @@ export default function Breakout() {
                 className="breakout-lives-bar"
                 data-low={hud.lives <= 1 || undefined}
                 data-mid={hud.lives === 2 || undefined}
-                title={`生命 ${hud.lives}/5（道具可回血至上限）`}
-                aria-label={`生命 ${hud.lives} 之 5`}
+                title={t.livesBarTitle(hud.lives)}
+                aria-label={t.livesBarAria(hud.lives)}
               >
                 <i style={{ width: `${Math.min(100, Math.round((hud.lives / 5) * 100))}%` }} />
               </span>
-              <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>球
+              <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
+              {t.balls}
               <b className={hud.balls > 1 ? "game-tip--alert" : undefined}>{hud.balls}</b>
-              {hud.balls > 1 ? <small style={{ marginLeft: 4, opacity: 0.85 }}>多球</small> : null}
+              {hud.balls > 1 ? <small style={{ marginLeft: 4, opacity: 0.85 }}>{t.multiBall}</small> : null}
               <span
                 className="breakout-balls-bar"
                 data-multi={hud.balls > 1 || undefined}
                 data-many={hud.balls >= 3 || undefined}
-                title={`场上球 ${hud.balls}（满刻度按 5）`}
-                aria-label={`球数 ${hud.balls}`}
+                title={t.ballsBarTitle(hud.balls)}
+                aria-label={t.ballsBarAria(hud.balls)}
               >
                 <i style={{ width: `${Math.min(100, Math.round((hud.balls / 5) * 100))}%` }} />
               </span>
@@ -639,8 +651,8 @@ export default function Breakout() {
                 className="breakout-combo-now-bar"
                 data-hot={hud.combo >= 5 || undefined}
                 data-mid={(hud.combo >= 3 && hud.combo < 5) || undefined}
-                title={`当前连击 ×${hud.combo}（满刻度按 10）`}
-                aria-label={`当前连击 ${hud.combo}`}
+                title={t.comboNowTitle(hud.combo)}
+                aria-label={t.comboNowAria(hud.combo)}
               >
                 <i
                   style={{
@@ -654,10 +666,8 @@ export default function Breakout() {
                 data-near={
                   (hud.bestCombo > 0 && hud.combo >= hud.bestCombo * 0.7 && hud.combo < hud.bestCombo) || undefined
                 }
-                title={
-                  hud.bestCombo > 0 ? `连击相对峰值 ${hud.combo}/${hud.bestCombo}` : `连击 ×${hud.combo}（尚无峰值）`
-                }
-                aria-label={hud.bestCombo > 0 ? `连击相对峰值 ${hud.combo}/${hud.bestCombo}` : `连击 ${hud.combo}`}
+                title={hud.bestCombo > 0 ? t.comboVsPeak(hud.combo, hud.bestCombo) : t.comboNoPeakTitle(hud.combo)}
+                aria-label={hud.bestCombo > 0 ? t.comboVsPeak(hud.combo, hud.bestCombo) : t.comboN(hud.combo)}
               >
                 <i
                   style={{
@@ -673,8 +683,8 @@ export default function Breakout() {
                 className="breakout-clear-bar"
                 data-done={hud.progress >= 100 || undefined}
                 data-late={(hud.progress >= 70 && hud.progress < 100) || undefined}
-                title={`清砖进度 ${hud.progress}%（剩 ${hud.brickLeft}/${hud.brickTotal}）`}
-                aria-label={`清砖 ${hud.progress} percent`}
+                title={t.clearBarTitle(hud.progress, hud.brickLeft, hud.brickTotal)}
+                aria-label={t.clearBarAria(hud.progress)}
               >
                 <i
                   style={{
@@ -686,8 +696,8 @@ export default function Breakout() {
                 className="breakout-remain-bar"
                 data-low={(hud.brickLeft > 0 && hud.brickLeft <= 3) || undefined}
                 data-empty={hud.brickLeft === 0 || undefined}
-                title={`剩余砖 ${hud.brickLeft}/${hud.brickTotal}`}
-                aria-label={`剩余砖 ${hud.brickLeft}`}
+                title={t.bricksLeft(hud.brickLeft, hud.brickTotal)}
+                aria-label={t.bricksLeftAria(hud.brickLeft)}
               >
                 <i
                   style={{
@@ -702,12 +712,12 @@ export default function Breakout() {
                 data-hot={(hud.seconds > 0 && hud.score / hud.seconds >= 40) || undefined}
                 data-slow={(hud.seconds >= 20 && hud.score / Math.max(1, hud.seconds) < 8) || undefined}
                 title={
-                  hud.seconds > 0
-                    ? `得分配速 ${Math.round((hud.score / hud.seconds) * 10) / 10}/s（满刻度按 50/s）`
-                    : "得分配速 —"
+                  hud.seconds > 0 ? t.scorePaceTitle(Math.round((hud.score / hud.seconds) * 10) / 10) : t.scorePaceNone
                 }
                 aria-label={
-                  hud.seconds > 0 ? `每秒约 ${Math.round((hud.score / hud.seconds) * 10) / 10} 分` : "得分配速未知"
+                  hud.seconds > 0
+                    ? t.scorePaceAria(Math.round((hud.score / hud.seconds) * 10) / 10)
+                    : t.scorePaceUnknown
                 }
               >
                 <i
@@ -722,13 +732,13 @@ export default function Breakout() {
                 data-slow={(hud.seconds >= 25 && hud.progress / Math.max(1, hud.seconds) < 1) || undefined}
                 title={
                   hud.seconds > 0
-                    ? `清砖配速 ${Math.round((hud.progress / hud.seconds) * 10) / 10}%/s（满刻度按 5%/s）`
-                    : "清砖配速 —"
+                    ? t.clearPaceTitle(Math.round((hud.progress / hud.seconds) * 10) / 10)
+                    : t.clearPaceNone
                 }
                 aria-label={
                   hud.seconds > 0
-                    ? `每秒约清 ${Math.round((hud.progress / hud.seconds) * 10) / 10} percent`
-                    : "清砖配速未知"
+                    ? t.clearPaceAria(Math.round((hud.progress / hud.seconds) * 10) / 10)
+                    : t.clearPaceUnknown
                 }
               >
                 <i
@@ -743,8 +753,8 @@ export default function Breakout() {
                 className="breakout-combo-ratio-bar"
                 data-hot={(hud.bestCombo > 0 && hud.combo >= hud.bestCombo && hud.combo >= 3) || undefined}
                 data-warm={(hud.bestCombo > 0 && hud.combo / hud.bestCombo >= 0.6) || undefined}
-                title={hud.bestCombo > 0 ? `连击相对峰值 ${hud.combo}/${hud.bestCombo}` : `连击 ${hud.combo}`}
-                aria-label={hud.bestCombo > 0 ? `连击 ${hud.combo} 相对峰 ${hud.bestCombo}` : `连击 ${hud.combo}`}
+                title={hud.bestCombo > 0 ? t.comboVsPeak(hud.combo, hud.bestCombo) : t.comboN(hud.combo)}
+                aria-label={hud.bestCombo > 0 ? t.comboVsPeakAria(hud.combo, hud.bestCombo) : t.comboN(hud.combo)}
               >
                 <i
                   style={{
@@ -760,8 +770,10 @@ export default function Breakout() {
                 className="breakout-left-ratio-bar"
                 data-low={(hud.brickTotal > 0 && hud.brickLeft / hud.brickTotal <= 0.2) || undefined}
                 data-high={(hud.brickTotal > 0 && hud.brickLeft / hud.brickTotal >= 0.7) || undefined}
-                title={hud.brickTotal > 0 ? `剩余砖 ${hud.brickLeft}/${hud.brickTotal}` : "剩余砖 —"}
-                aria-label={hud.brickTotal > 0 ? `剩余砖 ${hud.brickLeft} 块，共 ${hud.brickTotal}` : "剩余砖未知"}
+                title={hud.brickTotal > 0 ? t.bricksLeft(hud.brickLeft, hud.brickTotal) : t.bricksLeftNone}
+                aria-label={
+                  hud.brickTotal > 0 ? t.bricksLeftOfAria(hud.brickLeft, hud.brickTotal) : t.bricksLeftUnknown
+                }
               >
                 <i
                   style={{
@@ -775,8 +787,8 @@ export default function Breakout() {
                 className="breakout-metal-share-bar"
                 data-high={(hud.brickLeft > 0 && hud.metalLeft / hud.brickLeft >= 0.45) || undefined}
                 data-clear={(hud.brickLeft > 0 && hud.metalLeft === 0) || undefined}
-                title={hud.brickLeft > 0 ? `金属占比 ${hud.metalLeft}/${hud.brickLeft}` : "金属占比 —"}
-                aria-label={hud.brickLeft > 0 ? `剩余砖中金属 ${hud.metalLeft} 块` : "金属占比未知"}
+                title={hud.brickLeft > 0 ? t.metalShareTitle(hud.metalLeft, hud.brickLeft) : t.metalShareNone}
+                aria-label={hud.brickLeft > 0 ? t.metalShareAria(hud.metalLeft) : t.metalShareUnknown}
               >
                 <i
                   style={{
@@ -790,8 +802,8 @@ export default function Breakout() {
                 className="breakout-multi-ball-bar"
                 data-hot={hud.balls >= 3 || undefined}
                 data-solo={hud.balls <= 1 || undefined}
-                title={`场上球 ${hud.balls}（满刻度按 3）`}
-                aria-label={`场上球 ${hud.balls} 个`}
+                title={t.ballsOnFieldTitle(hud.balls)}
+                aria-label={t.ballsOnFieldAria(hud.balls)}
               >
                 <i
                   style={{
@@ -799,14 +811,15 @@ export default function Breakout() {
                   }}
                 />
               </span>
-              <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>速
+              <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
+              {t.speed}
               <b className={hud.lives <= 1 || hud.slow ? "game-tip--alert" : undefined}>{hud.ballSpeed}</b>
               <span
                 className="breakout-speed-bar"
                 data-slow={hud.slow || undefined}
                 data-fast={hud.ballSpeed >= 420 || undefined}
-                title={`球速 ${hud.ballSpeed}${hud.slow ? "（减速中）" : ""}`}
-                aria-label={`球速 ${hud.ballSpeed}`}
+                title={t.speedTitle(hud.ballSpeed, hud.slow)}
+                aria-label={t.speedAria(hud.ballSpeed)}
               >
                 <i
                   style={{
@@ -824,26 +837,29 @@ export default function Breakout() {
               data-metal-air={hud.metalLeft > 0 || hud.dropsAir > 0 || undefined}
               data-combo={hud.combo >= 5 || undefined}
               title={[
-                `本关进度 ${hud.progress}% · 砖 ${hud.brickLeft}/${hud.brickTotal}`,
-                `连击 ${hud.combo}${hud.bestCombo > 0 ? `（峰${hud.bestCombo}）` : ""}`,
-                hud.dropsAir > 0 ? `空降道具 ${hud.dropsAir}` : "",
-                hud.metalLeft > 0 ? `金属砖 ${hud.metalLeft}` : "",
-                hud.wide ? `加宽 ${hud.wideLeft.toFixed(1)}s` : "",
-                hud.slow ? `减速 ${hud.slowLeft.toFixed(1)}s` : "",
-                `拍宽 ${hud.paddleW}`,
+                t.progressPart(hud.progress, hud.brickLeft, hud.brickTotal),
+                t.comboPart(hud.combo, hud.bestCombo),
+                hud.dropsAir > 0 ? t.dropsPart(hud.dropsAir) : "",
+                hud.metalLeft > 0 ? t.metalPart(hud.metalLeft) : "",
+                hud.wide ? t.widePart(hud.wideLeft) : "",
+                hud.slow ? t.slowPart(hud.slowLeft) : "",
+                t.paddlePart(hud.paddleW),
               ]
                 .filter(Boolean)
                 .join(" · ")}
             >
-              连击<b className={hud.combo >= 5 ? "game-tip--alert" : undefined}>{hud.combo}</b>
-              {hud.bestCombo > 0 ? <small style={{ marginLeft: 2, opacity: 0.7 }}>峰{hud.bestCombo}</small> : null}
+              {t.combo}
+              <b className={hud.combo >= 5 ? "game-tip--alert" : undefined}>{hud.combo}</b>
+              {hud.bestCombo > 0 ? (
+                <small style={{ marginLeft: 2, opacity: 0.7 }}>{t.peak(hud.bestCombo)}</small>
+              ) : null}
               {hud.bestCombo > 0 ? (
                 <span
                   className="breakout-combo-peak-bar"
                   data-combo-peak={(hud.combo >= hud.bestCombo && hud.combo > 0) || undefined}
                   data-hot={hud.combo >= 5 || undefined}
-                  title={`连击峰条：当前 ${hud.combo} / 峰 ${hud.bestCombo}`}
-                  aria-label={`连击相对峰值 ${hud.combo}/${hud.bestCombo}`}
+                  title={t.comboPeakBarTitle(hud.combo, hud.bestCombo)}
+                  aria-label={t.comboVsPeak(hud.combo, hud.bestCombo)}
                 >
                   <i
                     className="breakout-combo-peak-bar__fill"
@@ -854,9 +870,10 @@ export default function Breakout() {
                 </span>
               ) : null}
               <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
-              关卡
+              {t.level}
               <b>{hud.progress}%</b>
-              <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>砖
+              <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
+              {t.bricks}
               <b className={hud.brickLeft <= 3 && hud.brickLeft > 0 ? "game-tip--alert" : undefined}>
                 {hud.brickLeft}/{hud.brickTotal}
               </b>
@@ -864,8 +881,8 @@ export default function Breakout() {
                 className="breakout-brick-bar"
                 data-low={(hud.brickLeft <= 3 && hud.brickLeft > 0) || undefined}
                 data-done={hud.brickLeft === 0 || undefined}
-                title={`剩余砖 ${hud.brickLeft}/${hud.brickTotal}（条=已清除比例）`}
-                aria-label={`已清除砖 ${Math.max(0, hud.brickTotal - hud.brickLeft)} / ${hud.brickTotal}`}
+                title={t.brickBarTitle(hud.brickLeft, hud.brickTotal)}
+                aria-label={t.brickBarAria(Math.max(0, hud.brickTotal - hud.brickLeft), hud.brickTotal)}
               >
                 <i
                   style={{
@@ -882,12 +899,13 @@ export default function Breakout() {
                 style={{ ["--bo-pct" as string]: `${hud.progress}%` } as CSSProperties}
               />
               <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
-              拍宽<b className={hud.wide ? "game-tip--alert" : undefined}>{hud.paddleW}</b>
+              {t.paddle}
+              <b className={hud.wide ? "game-tip--alert" : undefined}>{hud.paddleW}</b>
               <span
                 className="breakout-paddle-bar"
                 data-wide={hud.wide || undefined}
-                title={`拍宽 ${hud.paddleW}（满刻度按 120）`}
-                aria-label={`拍宽 ${hud.paddleW}`}
+                title={t.paddleBarTitle(hud.paddleW)}
+                aria-label={t.paddlePart(hud.paddleW)}
               >
                 <i style={{ width: `${Math.min(100, Math.round((hud.paddleW / 120) * 100))}%` }} />
               </span>
@@ -898,11 +916,12 @@ export default function Breakout() {
                     className="breakout-metal-air"
                     data-air={hud.dropsAir > 0 || undefined}
                     data-metal={hud.metalLeft > 0 || undefined}
-                    title={`金属|空降：金属砖 ${hud.metalLeft} · 空降道具 ${hud.dropsAir}`}
+                    title={t.metalAirTitle(hud.metalLeft, hud.dropsAir)}
                   >
                     {hud.metalLeft > 0 ? (
                       <>
-                        金属<b>{hud.metalLeft}</b>
+                        {t.metal}
+                        <b>{hud.metalLeft}</b>
                       </>
                     ) : null}
                     {hud.metalLeft > 0 && hud.dropsAir > 0 ? (
@@ -910,15 +929,16 @@ export default function Breakout() {
                     ) : null}
                     {hud.dropsAir > 0 ? (
                       <>
-                        空降<b className="game-tip--alert">{hud.dropsAir}</b>
+                        {t.air}
+                        <b className="game-tip--alert">{hud.dropsAir}</b>
                       </>
                     ) : null}
                     <span
                       className="breakout-metal-air-bar"
                       data-metal={hud.metalLeft > 0 || undefined}
                       data-air={hud.dropsAir > 0 || undefined}
-                      title={`金属 ${hud.metalLeft} · 空降 ${hud.dropsAir}`}
-                      aria-label={`金属 ${hud.metalLeft} 空降 ${hud.dropsAir}`}
+                      title={t.metalAirBarTitle(hud.metalLeft, hud.dropsAir)}
+                      aria-label={t.metalAirBarAria(hud.metalLeft, hud.dropsAir)}
                     >
                       <i
                         className="breakout-metal-air-bar__metal"
@@ -948,13 +968,13 @@ export default function Breakout() {
                   <span className="breakout-item-timer">
                     {hud.wide && (
                       <>
-                        <b style={{ color: ITEM_LOOK.W.color }}>宽</b>
+                        <b style={{ color: ITEM_LOOK.W.color }}>{t.items.W}</b>
                         <small style={{ marginLeft: 2, color: ITEM_LOOK.W.color }}>{hud.wideLeft.toFixed(1)}s</small>
                         <span
                           className="breakout-item-timer-bar breakout-item-timer-bar--wide"
                           data-low={hud.wideLeft <= 3 || undefined}
-                          title={`加宽剩余 ${hud.wideLeft.toFixed(1)}s / ${WIDE_TIME}s`}
-                          aria-label={`加宽剩余 ${hud.wideLeft.toFixed(1)} 秒`}
+                          title={t.wideLeftTitle(hud.wideLeft, WIDE_TIME)}
+                          aria-label={t.wideLeftAria(hud.wideLeft)}
                         >
                           <i style={{ width: `${Math.min(100, Math.round((hud.wideLeft / WIDE_TIME) * 100))}%` }} />
                         </span>
@@ -963,13 +983,13 @@ export default function Breakout() {
                     {hud.wide && hud.slow ? <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small> : null}
                     {hud.slow && (
                       <>
-                        <b style={{ color: ITEM_LOOK.S.color }}>慢</b>
+                        <b style={{ color: ITEM_LOOK.S.color }}>{t.items.S}</b>
                         <small style={{ marginLeft: 2, color: ITEM_LOOK.S.color }}>{hud.slowLeft.toFixed(1)}s</small>
                         <span
                           className="breakout-item-timer-bar breakout-item-timer-bar--slow"
                           data-low={hud.slowLeft <= 3 || undefined}
-                          title={`减速剩余 ${hud.slowLeft.toFixed(1)}s / ${WIDE_TIME}s`}
-                          aria-label={`减速剩余 ${hud.slowLeft.toFixed(1)} 秒`}
+                          title={t.slowLeftTitle(hud.slowLeft, WIDE_TIME)}
+                          aria-label={t.slowLeftAria(hud.slowLeft)}
                         >
                           <i style={{ width: `${Math.min(100, Math.round((hud.slowLeft / WIDE_TIME) * 100))}%` }} />
                         </span>
@@ -983,11 +1003,11 @@ export default function Breakout() {
         )}
         <span className="spacer" />
         <button type="button" className="game-btn" aria-pressed={buzzMuted} onClick={() => setBuzzMuted(!buzzMuted)}>
-          {buzzMuted ? "震动关" : "震动开"}
+          {buzzMuted ? t.buzzOff : t.buzzOn}
         </button>
         {(phase === "running" || phase === "aim" || phase === "paused") && (
           <button type="button" className="game-btn" onClick={toggle}>
-            {phase === "paused" ? "继续" : "暂停"}
+            {phase === "paused" ? t.resume : t.pause}
           </button>
         )}
       </div>
@@ -1001,24 +1021,28 @@ export default function Breakout() {
           aria-live="polite"
         >
           {hud.lives <= 1 && hud.balls > 1
-            ? `多球/残命：多球×${hud.balls} · 残命 ${hud.lives} · 速 ${hud.ballSpeed} · 拍 ${hud.paddleW}`
+            ? t.tipMultiLow(hud)
             : hud.lives <= 1
-              ? `多球/残命：残命 ${hud.lives} · 球×${hud.balls} · 速 ${hud.ballSpeed} · 拍 ${hud.paddleW}`
+              ? t.tipLow(hud)
               : hud.balls > 1
-                ? `多球/残命：多球×${hud.balls} · ♥×${hud.lives} · 速 ${hud.ballSpeed} · 连击 ${hud.combo}`
+                ? t.tipMulti(hud)
                 : hud.brickLeft <= 3 && hud.brickLeft > 0
-                  ? `多球/残命：♥×${hud.lives} · 球×${hud.balls} · 残局 ${hud.brickLeft} 块 · 拍 ${hud.paddleW}`
-                  : `连击|进度|道具：连${hud.combo}${hud.bestCombo > 0 ? `/峰${hud.bestCombo}` : ""} · ${hud.progress}%（砖 ${hud.brickLeft}/${hud.brickTotal}）${hud.metalLeft > 0 || hud.dropsAir > 0 ? ` · 金属|空降 ${hud.metalLeft}/${hud.dropsAir}` : ""}${hud.wide ? ` · 宽${hud.wideLeft.toFixed(1)}s` : ""}${hud.slow ? ` · 慢${hud.slowLeft.toFixed(1)}s` : ""} · ♥×${hud.lives} · 球×${hud.balls} · 速 ${hud.ballSpeed} · 连击 ${hud.combo}`}
+                  ? t.tipEndgame(hud)
+                  : t.tipDefault(hud)}
         </p>
       )}
       {(phase === "running" || phase === "aim" || phase === "paused" || phase === "select") && (
-        <p className="game-tip breakout-items" aria-label="道具说明">
-          道具：
-          <b style={{ color: ITEM_LOOK.W.color }}>宽</b>加长挡板 ·<b style={{ color: ITEM_LOOK.S.color }}>慢</b>减速 ·
-          <b style={{ color: ITEM_LOOK.L.color }}>命</b>多一命 ·<b style={{ color: ITEM_LOOK.M.color }}>多</b>分裂多球
-          {hud.wide || hud.slow || hud.balls > 1
-            ? ` · 当前${hud.wide ? `加宽${hud.wideLeft.toFixed(1)}s` : ""}${hud.wide && hud.slow ? "/" : ""}${hud.slow ? `减速${hud.slowLeft.toFixed(1)}s` : ""}${hud.balls > 1 ? `${hud.wide || hud.slow ? "/" : ""}多球×${hud.balls}` : ""}`
-            : " · 打碎带标记的砖后用挡板接住"}
+        <p className="game-tip breakout-items" aria-label={t.itemsAria}>
+          {t.itemsLabel}
+          <b style={{ color: ITEM_LOOK.W.color }}>{t.items.W}</b>
+          {t.itemWideDesc}
+          <b style={{ color: ITEM_LOOK.S.color }}>{t.items.S}</b>
+          {t.itemSlowDesc}
+          <b style={{ color: ITEM_LOOK.L.color }}>{t.items.L}</b>
+          {t.itemLifeDesc}
+          <b style={{ color: ITEM_LOOK.M.color }}>{t.items.M}</b>
+          {t.itemMultiDesc}
+          {hud.wide || hud.slow || hud.balls > 1 ? t.itemsActive(hud) : t.itemsHint}
         </p>
       )}
       <div
@@ -1042,61 +1066,60 @@ export default function Breakout() {
           if (phase === "aim") serve();
         }}
       >
-        <canvas ref={canvas} aria-label={`打砖块，第 ${hud.level + 1} 关，${hud.score} 分`} />
+        <canvas ref={canvas} aria-label={t.canvasAria(hud.level + 1, hud.score)} />
         {phase === "aim" && (
           <p className="breakout-hint">
-            <span className="when-mouse">点击棋盘或按空格发球</span>
-            <span className="when-touch">拖动手指移球拍，点一下发球；也可用下方按钮</span>
+            <span className="when-mouse">{t.aimMouse}</span>
+            <span className="when-touch">{t.aimTouch}</span>
           </p>
         )}
         {phase !== "aim" && phase !== "running" && (
           <div className="game-overlay">
             {phase === "select" && (
               <LevelSelect
-                title="选择关卡"
-                levels={BREAKOUT_LEVELS.map((l) => ({ name: l.name }))}
+                title={t.selectLevel}
+                levels={BREAKOUT_LEVELS.map((l) => ({ name: l.name[lang] }))}
                 unlocked={unlocked ?? 1}
                 onPick={(i) => start(i)}
               >
                 <p>
-                  从选中的关卡一路打下去，3 条命。关卡越高球越快、球拍越短。
-                  <span style={{ color: ITEM_LOOK.W.color }}>宽</span>{" "}
-                  <span style={{ color: ITEM_LOOK.S.color }}>慢</span>{" "}
-                  <span style={{ color: ITEM_LOOK.L.color }}>命</span>{" "}
-                  <span style={{ color: ITEM_LOOK.M.color }}>多</span> 是道具（多=多球），用球拍接住
-                  {best ? ` · 最高 ${best} 分` : ""}
+                  {t.selectIntro}
+                  <span style={{ color: ITEM_LOOK.W.color }}>{t.items.W}</span>{" "}
+                  <span style={{ color: ITEM_LOOK.S.color }}>{t.items.S}</span>{" "}
+                  <span style={{ color: ITEM_LOOK.L.color }}>{t.items.L}</span>{" "}
+                  <span style={{ color: ITEM_LOOK.M.color }}>{t.items.M}</span> {t.selectItems}
+                  {best ? t.selectBest(best) : ""}
                 </p>
               </LevelSelect>
             )}
             {phase === "paused" && (
               <>
-                <strong>暂停中</strong>
+                <strong>{t.paused}</strong>
                 <span style={{ display: "flex", gap: 8 }}>
                   <button type="button" className="game-btn game-btn--primary" onClick={toggle}>
-                    继续
+                    {t.resume}
                   </button>
                   <button type="button" className="game-btn" onClick={() => setPhase("select")}>
-                    选关
+                    {t.pickLevel}
                   </button>
                 </span>
               </>
             )}
             {phase === "clear" && (
               <>
-                <strong>第 {hud.level + 1} 关通过！</strong>
-                <p>
-                  下一关：{BREAKOUT_LEVELS[hud.level + 1]?.name} · 目前 {hud.score} 分
-                </p>
+                <strong>{t.levelClear(hud.level + 1)}</strong>
+                <p>{t.nextUp(BREAKOUT_LEVELS[hud.level + 1]?.name[lang] ?? "", hud.score)}</p>
                 <button type="button" className="game-btn game-btn--primary" onClick={nextLevel}>
-                  下一关
+                  {t.nextLevel}
                 </button>
               </>
             )}
             {(phase === "over" || phase === "done") && (
               <>
-                <strong>{phase === "done" ? "全部通关！" : record ? "新纪录！" : "球没接住"}</strong>
+                <strong>{phase === "done" ? t.allClear : record ? t.newRecord : t.missed}</strong>
                 <p>
-                  {hud.score} 分 · 打到第 {hud.level + 1} 关{phase === "done" && record ? " · 新纪录" : ""}
+                  {t.result(hud.score, hud.level + 1)}
+                  {phase === "done" && record ? t.resultRecord : ""}
                 </p>
                 <span style={{ display: "flex", gap: 8 }}>
                   <button
@@ -1104,10 +1127,10 @@ export default function Breakout() {
                     className="game-btn game-btn--primary"
                     onClick={() => start(phase === "done" ? 0 : hud.level)}
                   >
-                    {phase === "done" ? "再打一遍" : "重打这关"}
+                    {phase === "done" ? t.playAgain : t.retryLevel}
                   </button>
                   <button type="button" className="game-btn" onClick={() => setPhase("select")}>
-                    选关
+                    {t.pickLevel}
                   </button>
                 </span>
               </>
@@ -1115,10 +1138,10 @@ export default function Breakout() {
           </div>
         )}
       </div>
-      <div className="pad pad--breakout" aria-label="球拍">
+      <div className="pad pad--breakout" aria-label={t.padAria}>
         <button
           type="button"
-          aria-label="左移"
+          aria-label={t.moveLeft}
           onPointerDown={(e) => {
             e.preventDefault();
             held.current.left = true;
@@ -1133,7 +1156,7 @@ export default function Breakout() {
         </button>
         <button
           type="button"
-          aria-label="发球 / 暂停"
+          aria-label={t.serveOrPause}
           className="pad__text"
           onPointerDown={(e) => {
             e.preventDefault();
@@ -1141,11 +1164,11 @@ export default function Breakout() {
             else toggle();
           }}
         >
-          {phase === "aim" ? "发球" : phase === "paused" ? "继续" : "暂停"}
+          {phase === "aim" ? t.serve : phase === "paused" ? t.resume : t.pause}
         </button>
         <button
           type="button"
-          aria-label="右移"
+          aria-label={t.moveRight}
           onPointerDown={(e) => {
             e.preventDefault();
             held.current.right = true;

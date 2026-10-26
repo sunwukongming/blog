@@ -1,0 +1,56 @@
+---
+title: "Redis Lua: Folding Multi-Key Checks into One Atomic Execution"
+summary: "Use EVAL/FUNCTION to fold read-check-write into a single script and avoid GET+SET races. Covers the KEYS/ARGV conventions, replication and timeouts, and when to reach for WATCH/transactions or Redlock instead."
+---
+
+A common pattern: read stock → check whether there's enough → decrement. Split into separate `GET`/`SET` calls, another client can slip in between and you oversell. Redis **Lua / Functions** fold this into a **single-threaded, atomic** execution.
+
+## Minimal decrement
+
+```lua
+-- KEYS[1]=stock key, ARGV[1]=delta
+local n = tonumber(redis.call("GET", KEYS[1]) or "0")
+local d = tonumber(ARGV[1])
+if n < d then
+  return {0, n}
+end
+redis.call("DECRBY", KEYS[1], d)
+return {1, n - d}
+```
+
+```ts
+const [ok, left] = await redis.eval(script, 1, "sku:42:stock", "1");
+```
+
+Commands inside the script run serially against the same instance; externally it's a single round trip. Returning an array is easier to unpack than a plain string.
+
+## KEYS / ARGV conventions
+
+- **KEYS**: only actual keys, so the cluster can validate slots; cross-slot access is rejected outright.
+- **ARGV**: non-key values—numbers, identifiers, caller IDs.
+- Don't build key names by string concatenation inside the script and then `CALL` them—in cluster mode, slot checks rely on the KEYS list.
+
+On Redis 7+, **FUNCTION** (`FCALL`) is preferred: the code stays resident and can be versioned, so you're not repeatedly shipping large source blobs through `EVAL`.
+
+## Replication, timeouts, and side effects
+
+- Write commands go into AOF/the replication stream; for read-only scripts use `EVAL_RO` / `FCALL_RO`.
+- Long loops block the single thread: cap them and avoid `KEYS *`.
+- Don't depend on external state other than the current time; if you need wall-clock time use `redis.call("TIME")` and accept the replication-lag semantics.
+
+## Versus WATCH / transactions / locks
+
+| Mechanism | Good for |
+| --- | --- |
+| Lua / Function | Short check-and-write on a single key or multiple keys in the same slot |
+| `WATCH`+`MULTI` | Few optimistic conflicts, and you want the logic to stay in the client |
+| Redlock, etc. | Mutual exclusion across resources and services (expensive; use sparingly) |
+
+If it fits in a short script on one instance, prefer the script; reach for locks only across shards or systems.
+
+## Takeaway
+
+- Do read-check-write in one Lua/Function call to eliminate races in the intermediate state.
+- Keep KEYS and ARGV distinct; in a cluster, only touch keys in the same slot.
+- Keep scripts short; pick the right entry points for replication and read-only use.
+- Don't force a script across shards—change the model or the business boundary instead.

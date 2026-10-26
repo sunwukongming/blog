@@ -1,43 +1,48 @@
 "use client";
 
+import { useT } from "@/components/i18n/LangProvider";
+import { GAME_BEST_MESSAGES } from "./GameBest.messages";
 import { useRecord, useRecordList } from "./input";
 
 const never = () => false;
 
 function MinesBest() {
+  const t = useT(GAME_BEST_MESSAGES);
   const [easy, medium, mediumTall] = useRecordList([
     "minesweeper-easy",
     "minesweeper-medium",
     "minesweeper-medium-tall",
   ]);
   const parts: string[] = [];
-  if (easy !== null) parts.push(`初级 ${easy}s`);
+  if (easy !== null) parts.push(t.minesEasy(easy));
   const mid = medium ?? mediumTall;
-  if (mid !== null) parts.push(`中级 ${mid}s`);
-  return <span className="game-card__best">{parts.length ? parts.join(" · ") : "还没玩过"}</span>;
+  if (mid !== null) parts.push(t.minesMedium(mid));
+  return <span className="game-card__best">{parts.length ? parts.join(" · ") : t.never}</span>;
 }
 
 function MemoryBest() {
+  const t = useT(GAME_BEST_MESSAGES);
   const [easy, normal, hard, legacy] = useRecordList(["memory-easy", "memory-normal", "memory-hard", "memory"]);
   const norm = normal ?? legacy;
   const parts: string[] = [];
-  if (easy !== null) parts.push(`简单 ${easy}`);
-  if (norm !== null) parts.push(`普通 ${norm}`);
-  if (hard !== null) parts.push(`困难 ${hard}`);
-  return <span className="game-card__best">{parts.length ? `最少 ${parts.join(" / ")} 步` : "还没玩过"}</span>;
+  if (easy !== null) parts.push(t.memoryEasy(easy));
+  if (norm !== null) parts.push(t.memoryNormal(norm));
+  if (hard !== null) parts.push(t.memoryHard(hard));
+  return <span className="game-card__best">{parts.length ? t.memoryFewest(parts.join(" / ")) : t.never}</span>;
 }
 
 function ScoreBest({ slug }: { slug: string }) {
+  const t = useT(GAME_BEST_MESSAGES);
   const RECORD: Record<string, { key: string; label: (v: number) => string }> = {
-    snake: { key: "snake-unlocked", label: (v) => `闯到第 ${v} 关` },
-    tetris: { key: "tetris", label: (v) => `最高 ${v} 分` },
-    "2048": { key: "2048", label: (v) => `最高 ${v} 分` },
-    breakout: { key: "breakout-unlocked", label: (v) => `闯到第 ${v} 关` },
-    poker: { key: "poker", label: (v) => `最多 ${v} 筹码` },
+    snake: { key: "snake-unlocked", label: t.stage },
+    tetris: { key: "tetris", label: t.score },
+    "2048": { key: "2048", label: t.score },
+    breakout: { key: "breakout-unlocked", label: t.stage },
+    poker: { key: "poker", label: t.chips },
   };
   const rec = RECORD[slug];
   const [best] = useRecord(rec?.key ?? slug, never);
-  return <span className="game-card__best">{best === null || !rec ? "还没玩过" : rec.label(best)}</span>;
+  return <span className="game-card__best">{best === null || !rec ? t.never : rec.label(best)}</span>;
 }
 
 export default function GameBest({ slug }: { slug: string }) {

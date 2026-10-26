@@ -9,9 +9,11 @@ import {
   type MouseEvent,
   type PointerEvent,
 } from "react";
+import { useT } from "@/components/i18n/LangProvider";
 import { buzz, useKeys, useRecord } from "./input";
+import { MINESWEEPER_MESSAGES, type MineHud, type OpenSeg, type TimeSeg } from "./Minesweeper.messages";
 
-type Level = { key: string; label: string; w: number; h: number; mines: number };
+type Level = { key: string; name: "easy" | "medium"; w: number; h: number; mines: number };
 type Cell = { mine: boolean; adj: number; open: boolean; flag: boolean };
 type Phase = "ready" | "playing" | "won" | "lost";
 type Game = { level: Level; cells: Cell[]; phase: Phase; startedAt: number; endedAt: number; exploded: number };
@@ -19,10 +21,10 @@ type Game = { level: Level; cells: Cell[]; phase: Phase; startedAt: number; ende
 // 手机竖屏上 16×16 的格子太小点不准，中级换成 10×16，雷的密度不变
 const narrow = window.matchMedia("(max-width: 600px)").matches;
 const LEVELS: Level[] = [
-  { key: "easy", label: "初级", w: 9, h: 9, mines: 10 },
+  { key: "easy", name: "easy", w: 9, h: 9, mines: 10 },
   narrow
-    ? { key: "medium-tall", label: "中级", w: 10, h: 16, mines: 25 }
-    : { key: "medium", label: "中级", w: 16, h: 16, mines: 40 },
+    ? { key: "medium-tall", name: "medium", w: 10, h: 16, mines: 25 }
+    : { key: "medium", name: "medium", w: 16, h: 16, mines: 40 },
 ];
 
 const LONG_PRESS_MS = 400;
@@ -165,6 +167,7 @@ function cellLabel(c: Cell, lost: boolean) {
 }
 
 export default function Minesweeper() {
+  const t = useT(MINESWEEPER_MESSAGES);
   const [game, setGame] = useState(() => newGame(LEVELS[0]));
   const [flagMode, setFlagMode] = useState(false);
   const [now, setNow] = useState(Date.now);
@@ -207,6 +210,25 @@ export default function Minesweeper() {
     setPeakMeta({ key: level.key, n: chordOpenable });
   }
   const peakOpenable = phase === "ready" || peakMeta.key !== level.key ? 0 : Math.max(peakMeta.n, chordOpenable);
+  const levelName = t.levels[level.name];
+  const timeSeg: TimeSeg = seconds < 30 ? "early" : seconds < 60 ? "mid" : seconds < 120 ? "late" : "over";
+  const openSeg: OpenSeg =
+    safeProgress <= 0 ? "zero" : safeProgress <= 20 ? "early" : safeProgress < 75 ? "mid" : lateClear ? "late" : "high";
+  const hud: MineHud = {
+    safeProgress,
+    safeOpen,
+    safeTotal,
+    safeLeft,
+    chordReady,
+    chordOpenable,
+    peakOpenable,
+    lateClear,
+    flags,
+    mines: level.mines,
+    flagDense,
+    seconds,
+    best,
+  };
 
   useEffect(() => {
     if (phase !== "playing") return;
@@ -366,16 +388,16 @@ export default function Minesweeper() {
             aria-pressed={l.key === level.key}
             onClick={() => restart(l)}
           >
-            {l.label}
+            {t.levels[l.name]}
           </button>
         ))}
         <span className="spacer" />
         <span
           className="mine-remaining"
           data-low={phase === "playing" && level.mines - flags <= 5 && level.mines - flags > 0 ? true : undefined}
-          title="剩余雷数 = 本局雷数 − 已插旗；≤5 时高亮提醒收官"
+          title={t.minesLeftTitle}
         >
-          剩余雷
+          {t.minesLeft}
           <b
             className={
               phase === "playing" && level.mines - flags <= 3 && level.mines - flags > 0 ? "game-tip--alert" : undefined
@@ -384,14 +406,14 @@ export default function Minesweeper() {
             {level.mines - flags}
           </b>
           {phase === "playing" && level.mines - flags <= 3 && level.mines - flags > 0 ? (
-            <small style={{ marginLeft: 4, opacity: 0.85 }}>收官</small>
+            <small style={{ marginLeft: 4, opacity: 0.85 }}>{t.endgame}</small>
           ) : null}
           <span
             className="mine-remaining-bar"
             data-low={(phase === "playing" && level.mines - flags <= 5 && level.mines - flags > 0) || undefined}
             data-clear={(phase === "playing" && level.mines - flags <= 0) || undefined}
-            title={`剩余雷 ${Math.max(0, level.mines - flags)} / ${level.mines}（旗 ${flags}）`}
-            aria-label={`剩余雷 ${Math.max(0, level.mines - flags)}`}
+            title={t.minesLeftBarTitle(Math.max(0, level.mines - flags), level.mines, flags)}
+            aria-label={t.minesLeftAria(Math.max(0, level.mines - flags))}
           >
             <i
               className="mine-remaining-bar__fill"
@@ -400,13 +422,15 @@ export default function Minesweeper() {
               }}
             />
           </span>
-          <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>旗<b>{flags}</b>
+          <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
+          {t.flag}
+          <b>{flags}</b>
           <span
             className="mine-flags-bar"
             data-over={flags > level.mines || undefined}
             data-match={flags === level.mines || undefined}
-            title={`已插旗 ${flags} / 雷 ${level.mines}`}
-            aria-label={`已插旗 ${flags}`}
+            title={t.flagsBarTitle(flags, level.mines)}
+            aria-label={t.flagsAria(flags)}
           >
             <i
               className="mine-flags-bar__fill"
@@ -433,9 +457,10 @@ export default function Minesweeper() {
                     ? "late"
                     : "high"
           }
-          title={`Chord|开图：开图 ${safeProgress}%（${safeOpen}/${safeTotal}）· Chord×${chordReady}${chordReady > 0 ? ` 可点 · 可翻${chordOpenable}` : ""}${peakOpenable > 0 ? ` · 可翻峰${peakOpenable}` : ""}${lateClear && chordOpenable > 0 ? " · 收官可翻" : ""} · 旗 ${flags}/${level.mines}${flagDense ? " · 旗密" : ""}`}
+          title={t.progressTitle(hud)}
         >
-          开图<b>{safeProgress}%</b>
+          {t.opened}
+          <b>{safeProgress}%</b>
           <small>
             {safeOpen}/{safeTotal}
           </small>
@@ -453,34 +478,26 @@ export default function Minesweeper() {
                       ? "late"
                       : "high"
             }
-            title={`开图进度 ${safeProgress}%（${safeOpen}/${safeTotal}）`}
-            aria-label={`开图进度 ${safeProgress} percent`}
+            title={t.openBarTitle(safeProgress, safeOpen, safeTotal)}
+            aria-label={t.openBarAria(safeProgress)}
           >
             <i className="mine-open-bar__fill" style={{ width: `${Math.min(100, Math.max(0, safeProgress))}%` }} />
           </span>
           <small className="mine-progress__seg" style={{ marginLeft: 6 }}>
-            {safeProgress <= 0
-              ? "未开"
-              : safeProgress <= 20
-                ? "前段"
-                : safeProgress < 75
-                  ? "中段"
-                  : lateClear
-                    ? "收官"
-                    : "后段"}
+            {t.openSeg[openSeg]}
           </small>
           <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
-          旗密
+          {t.flagDensity}
           <b className={flagDense ? "game-tip--alert" : undefined}>
             {flags}/{level.mines}
           </b>
-          {flagDense ? <small style={{ marginLeft: 4, opacity: 0.85 }}>密</small> : null}
+          {flagDense ? <small style={{ marginLeft: 4, opacity: 0.85 }}>{t.dense}</small> : null}
           <span
             className="mine-density-bar"
             data-dense={flagDense || undefined}
             data-over={flags > level.mines || undefined}
-            title={`插旗密度 ${flags}/${level.mines}`}
-            aria-label={`插旗 ${flags} 之 ${level.mines}`}
+            title={t.densityTitle(flags, level.mines)}
+            aria-label={t.flagsOfAria(flags, level.mines)}
           >
             <i
               className="mine-density-bar__fill"
@@ -493,12 +510,8 @@ export default function Minesweeper() {
             className="mine-pace-bar"
             data-fast={(seconds > 0 && safeOpen / seconds >= 1.5) || undefined}
             data-slow={(seconds >= 30 && safeOpen / Math.max(1, seconds) < 0.4) || undefined}
-            title={
-              seconds > 0
-                ? `开图配速 ${Math.round((safeOpen / seconds) * 100) / 100} 格/s（满刻度按 2 格/s）`
-                : "开图配速 —"
-            }
-            aria-label={seconds > 0 ? `每秒开启约 ${Math.round((safeOpen / seconds) * 100) / 100} 格` : "开图配速未知"}
+            title={seconds > 0 ? t.paceTitle(Math.round((safeOpen / seconds) * 100) / 100) : t.paceTitleNone}
+            aria-label={seconds > 0 ? t.paceAria(Math.round((safeOpen / seconds) * 100) / 100) : t.paceAriaNone}
           >
             <i
               className="mine-pace-bar__fill"
@@ -512,11 +525,12 @@ export default function Minesweeper() {
             className="mine-safe-left-bar"
             data-late={lateClear || undefined}
             data-urgent={(safeLeft > 0 && safeLeft <= 8) || undefined}
-            title={`剩余安全格 ${safeLeft} / ${safeTotal}`}
-            aria-label={`剩余安全格 ${safeLeft}`}
+            title={t.safeLeftTitle(safeLeft, safeTotal)}
+            aria-label={t.safeLeftAria(safeLeft)}
           >
             <small style={{ opacity: 0.75 }}>
-              剩安<b>{safeLeft}</b>
+              {t.safeLeftShort}
+              <b>{safeLeft}</b>
             </small>
             <span className="mine-safe-left-bar__track">
               <i
@@ -537,8 +551,8 @@ export default function Minesweeper() {
               className="mine-chord-ready-bar"
               data-ready={chordReady > 0 || undefined}
               data-many={chordReady >= 3 || undefined}
-              title={`Chord 可点格 ${chordReady}（满刻度按 5）`}
-              aria-label={`Chord 可点 ${chordReady}`}
+              title={t.chordReadyTitle(chordReady)}
+              aria-label={t.chordReadyAria(chordReady)}
             >
               <i
                 className="mine-chord-ready-bar__fill"
@@ -553,15 +567,16 @@ export default function Minesweeper() {
                 data-late-open={lateClear || undefined}
                 data-peak={peakOpenable > 0 || undefined}
               >
-                {chordOpenable > 0 ? (lateClear ? "收官可翻" : "可翻") : "可翻峰"}
+                {chordOpenable > 0 ? (lateClear ? t.lateOpenable : t.openable) : t.openablePeak}
                 {chordOpenable > 0 ? <b className="game-tip--alert">{chordOpenable}</b> : null}
                 {peakOpenable > 0 ? (
                   <small
                     className="mine-chord-peak"
                     style={{ marginLeft: 4, opacity: 0.75 }}
-                    title={`本局 Chord 可翻峰值 ${peakOpenable}`}
+                    title={t.chordPeakTitle(peakOpenable)}
                   >
-                    峰<b>{peakOpenable}</b>
+                    {t.peak}
+                    <b>{peakOpenable}</b>
                   </small>
                 ) : null}
                 {peakOpenable > 0 ? (
@@ -569,8 +584,8 @@ export default function Minesweeper() {
                     className="mine-chord-peak-bar"
                     data-peak={(chordOpenable >= peakOpenable && chordOpenable > 0) || undefined}
                     data-late={lateClear || undefined}
-                    title={`可翻相对峰值 ${chordOpenable}/${peakOpenable}`}
-                    aria-label={`可翻相对峰值 ${chordOpenable}/${peakOpenable}`}
+                    title={t.peakBar(chordOpenable, peakOpenable)}
+                    aria-label={t.peakBar(chordOpenable, peakOpenable)}
                   >
                     <i
                       className="mine-chord-peak-bar__fill"
@@ -589,20 +604,24 @@ export default function Minesweeper() {
           data-seg={seconds < 30 ? "early" : seconds < 60 ? "mid" : seconds < 120 ? "late" : "over"}
           title={
             best != null
-              ? `用时 ${seconds}s · 最快 ${best}s · 段 ${seconds < 30 ? "前段(<30s)" : seconds < 60 ? "中段(30–60s)" : seconds < 120 ? "后段(1–2min)" : "超时(≥2min)"}${phase === "playing" && best > 0 ? ` · 进度约 ${Math.min(100, Math.round((seconds / best) * 100))}%` : ""}`
-              : `用时 ${seconds}s · 段 ${seconds < 30 ? "前段" : seconds < 60 ? "中段" : seconds < 120 ? "后段" : "超时"}`
+              ? t.timerTitle(
+                  seconds,
+                  best,
+                  t.timeSegLong[timeSeg],
+                  phase === "playing" && best > 0 ? Math.min(100, Math.round((seconds / best) * 100)) : null,
+                )
+              : t.timerTitleNoBest(seconds, t.timeSeg[timeSeg])
           }
         >
-          时间<b className={seconds >= 60 ? "game-tip--alert" : undefined}>{seconds}</b>
+          {t.time}
+          <b className={seconds >= 60 ? "game-tip--alert" : undefined}>{seconds}</b>
           <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
-          <small className="mine-timer__seg">
-            {seconds < 30 ? "前段" : seconds < 60 ? "中段" : seconds < 120 ? "后段" : "超时"}
-          </small>
+          <small className="mine-timer__seg">{t.timeSeg[timeSeg]}</small>
           <span
             className="mine-timer-seg-bar"
             data-seg={seconds < 30 ? "early" : seconds < 60 ? "mid" : seconds < 120 ? "late" : "over"}
-            title={`段内进度 ${seconds < 120 ? seconds % 30 : Math.min(30, seconds - 120)}/30s（当前${seconds < 30 ? "前段" : seconds < 60 ? "中段" : seconds < 120 ? "后段" : "超时"}）`}
-            aria-label={`计时段内进度`}
+            title={t.segBarTitle(seconds < 120 ? seconds % 30 : Math.min(30, seconds - 120), t.timeSeg[timeSeg])}
+            aria-label={t.segBarAria}
           >
             <i
               className="mine-timer-seg-bar__fill"
@@ -618,8 +637,8 @@ export default function Minesweeper() {
             className="mine-openable-now-bar"
             data-ready={chordOpenable > 0 || undefined}
             data-many={chordOpenable >= 5 || undefined}
-            title={`可翻格 ${chordOpenable}（满刻度按 8）`}
-            aria-label={`可翻 ${chordOpenable} 格`}
+            title={t.openableNowTitle(chordOpenable)}
+            aria-label={t.openableNowAria(chordOpenable)}
           >
             <i
               className="mine-openable-now-bar__fill"
@@ -632,8 +651,8 @@ export default function Minesweeper() {
             className="mine-flag-slack-bar"
             data-over={flags > level.mines || undefined}
             data-tight={(flags >= level.mines && flags > 0) || undefined}
-            title={`未标雷 ${Math.max(0, level.mines - flags)}/${level.mines}（旗 ${flags}）`}
-            aria-label={`未标雷 ${Math.max(0, level.mines - flags)}`}
+            title={t.slackTitle(Math.max(0, level.mines - flags), level.mines, flags)}
+            aria-label={t.slackAria(Math.max(0, level.mines - flags))}
           >
             <i
               className="mine-flag-slack-bar__fill"
@@ -650,10 +669,8 @@ export default function Minesweeper() {
             className="mine-open-pace-bar"
             data-hot={(seconds > 0 && safeOpen / seconds >= 2) || undefined}
             data-slow={(seconds >= 30 && safeOpen / Math.max(1, seconds) < 0.4) || undefined}
-            title={
-              seconds > 0 ? `开图配速 ${Math.round((safeOpen / seconds) * 10) / 10}/s（满刻度按 3/s）` : "开图配速 —"
-            }
-            aria-label={seconds > 0 ? `每秒约开 ${Math.round((safeOpen / seconds) * 10) / 10} 格` : "开图配速未知"}
+            title={seconds > 0 ? t.openPaceTitle(Math.round((safeOpen / seconds) * 10) / 10) : t.paceTitleNone}
+            aria-label={seconds > 0 ? t.openPaceAria(Math.round((safeOpen / seconds) * 10) / 10) : t.paceAriaNone}
           >
             <i
               className="mine-open-pace-bar__fill"
@@ -666,8 +683,8 @@ export default function Minesweeper() {
             className="mine-flag-ratio-bar"
             data-over={flags > level.mines || undefined}
             data-low={(level.mines > 0 && flags / level.mines < 0.3 && safeOpen > 0) || undefined}
-            title={`插旗进度 ${flags}/${level.mines}`}
-            aria-label={`插旗 ${flags} 之 ${level.mines}`}
+            title={t.flagRatioTitle(flags, level.mines)}
+            aria-label={t.flagsOfAria(flags, level.mines)}
           >
             <i
               className="mine-flag-ratio-bar__fill"
@@ -680,10 +697,8 @@ export default function Minesweeper() {
             className="mine-flag-pace-bar"
             data-hot={(seconds > 0 && flags / seconds >= 0.35) || undefined}
             data-slow={(seconds >= 25 && flags / Math.max(1, seconds) < 0.08) || undefined}
-            title={
-              seconds > 0 ? `插旗配速 ${Math.round((flags / seconds) * 100) / 100}/s（满刻度按 0.5/s）` : "插旗配速 —"
-            }
-            aria-label={seconds > 0 ? `每秒约插旗 ${Math.round((flags / seconds) * 100) / 100}` : "插旗配速未知"}
+            title={seconds > 0 ? t.flagPaceTitle(Math.round((flags / seconds) * 100) / 100) : t.flagPaceTitleNone}
+            aria-label={seconds > 0 ? t.flagPaceAria(Math.round((flags / seconds) * 100) / 100) : t.flagPaceAriaNone}
           >
             <i
               className="mine-flag-pace-bar__fill"
@@ -699,8 +714,8 @@ export default function Minesweeper() {
               (phase === "playing" && seconds >= 20 && (safeOpen + flags) / Math.max(1, cells.length) < 0.15) ||
               undefined
             }
-            title={`已触碰约 ${safeOpen + flags}/${cells.length}（开格+旗）`}
-            aria-label={`已触碰 ${safeOpen + flags} 格，共 ${cells.length}`}
+            title={t.touchTitle(safeOpen + flags, cells.length)}
+            aria-label={t.touchAria(safeOpen + flags, cells.length)}
           >
             <i
               className="mine-touch-ratio-bar__fill"
@@ -713,14 +728,8 @@ export default function Minesweeper() {
             className="mine-safe-pace-bar"
             data-hot={(seconds > 0 && safeOpen / seconds >= 0.3) || undefined}
             data-slow={(seconds >= 25 && safeOpen / Math.max(1, seconds) < 0.08) || undefined}
-            title={
-              seconds > 0
-                ? `安全格配速 ${Math.round((safeOpen / seconds) * 100) / 100}/s（满刻度按 0.4/s）`
-                : "安全格配速 —"
-            }
-            aria-label={
-              seconds > 0 ? `每秒约开安全格 ${Math.round((safeOpen / seconds) * 100) / 100}` : "安全格配速未知"
-            }
+            title={seconds > 0 ? t.safePaceTitle(Math.round((safeOpen / seconds) * 100) / 100) : t.safePaceTitleNone}
+            aria-label={seconds > 0 ? t.safePaceAria(Math.round((safeOpen / seconds) * 100) / 100) : t.safePaceAriaNone}
           >
             <i
               className="mine-safe-pace-bar__fill"
@@ -733,8 +742,8 @@ export default function Minesweeper() {
             className="mine-clear-ratio-bar"
             data-hot={(safeTotal > 0 && safeOpen / safeTotal >= 0.85) || undefined}
             data-low={(safeTotal > 0 && safeOpen / safeTotal <= 0.15 && seconds >= 20) || undefined}
-            title={safeTotal > 0 ? `安全格进度 ${safeOpen}/${safeTotal}` : "安全格进度 —"}
-            aria-label={`安全格已开 ${safeOpen}，共 ${safeTotal}`}
+            title={safeTotal > 0 ? t.clearRatioTitle(safeOpen, safeTotal) : t.clearRatioTitleNone}
+            aria-label={t.clearRatioAria(safeOpen, safeTotal)}
           >
             <i
               className="mine-clear-ratio-bar__fill"
@@ -747,8 +756,8 @@ export default function Minesweeper() {
             className="mine-safe-remain-ratio-bar"
             data-low={(safeTotal > 0 && (safeTotal - safeOpen) / safeTotal <= 0.2) || undefined}
             data-high={(safeTotal > 0 && (safeTotal - safeOpen) / safeTotal >= 0.75 && seconds >= 15) || undefined}
-            title={safeTotal > 0 ? `安全格剩余 ${safeTotal - safeOpen}/${safeTotal}` : "安全格剩余 —"}
-            aria-label={`安全格剩余 ${safeTotal - safeOpen}，共 ${safeTotal}`}
+            title={safeTotal > 0 ? t.remainRatioTitle(safeTotal - safeOpen, safeTotal) : t.remainRatioTitleNone}
+            aria-label={t.remainRatioAria(safeTotal - safeOpen, safeTotal)}
           >
             <i
               className="mine-safe-remain-ratio-bar__fill"
@@ -764,14 +773,14 @@ export default function Minesweeper() {
             title={
               best != null && best > 0
                 ? seconds > 0
-                  ? `相对最快 ${Math.round((best / Math.max(seconds, 0.01)) * 100)}%（PB ${best}s）`
-                  : `PB ${best}s`
-                : "相对最快 —"
+                  ? t.bestGapTitle(Math.round((best / Math.max(seconds, 0.01)) * 100), best)
+                  : t.pb(best)
+                : t.bestGapTitleNone
             }
             aria-label={
               best != null && best > 0 && seconds > 0
-                ? `当前用时相对最快 ${Math.round((best / Math.max(seconds, 0.01)) * 100)}%`
-                : "相对最快未知"
+                ? t.bestGapAria(Math.round((best / Math.max(seconds, 0.01)) * 100))
+                : t.bestGapAriaNone
             }
           >
             <i
@@ -788,13 +797,13 @@ export default function Minesweeper() {
           {best != null && phase === "playing" && best > 0 ? (
             <>
               <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
-              <small title="相对本档最快">{seconds <= best ? "未破线" : "已慢于最快"}</small>
+              <small title={t.vsBestTitle}>{seconds <= best ? t.underBest : t.overBest}</small>
               <span
                 className="mine-timer-best-bar"
                 data-over={seconds > best || undefined}
                 data-near={(seconds > best * 0.8 && seconds <= best) || undefined}
-                title={`用时 ${seconds}s / 最快 ${best}s（${Math.min(999, Math.round((seconds / best) * 100))}%）`}
-                aria-label={`用时相对最快 ${Math.min(999, Math.round((seconds / best) * 100))} percent`}
+                title={t.timerBestTitle(seconds, best, Math.min(999, Math.round((seconds / best) * 100)))}
+                aria-label={t.timerBestAria(Math.min(999, Math.round((seconds / best) * 100)))}
               >
                 <i
                   className="mine-timer-best-bar__fill"
@@ -805,7 +814,8 @@ export default function Minesweeper() {
           ) : null}
         </span>
         <span>
-          最快<b>{best ?? "—"}</b>
+          {t.best}
+          <b>{best ?? "—"}</b>
         </span>
       </div>
       <div
@@ -821,7 +831,7 @@ export default function Minesweeper() {
         onPointerCancel={endPress}
         onPointerLeave={endPress}
         role="grid"
-        aria-label={`扫雷 ${level.label}`}
+        aria-label={t.gridAria(levelName)}
       >
         {cells.map((c, i) => (
           <button
@@ -839,7 +849,11 @@ export default function Minesweeper() {
             data-n={c.open && !c.mine ? c.adj : undefined}
             data-focus={focus === i || undefined}
             data-holding={holding === i || undefined}
-            aria-label={`第 ${Math.floor(i / level.w) + 1} 行第 ${(i % level.w) + 1} 列${c.flag ? "，已插旗" : c.open ? `，${c.mine ? "雷" : c.adj}` : ""}`}
+            aria-label={t.cellAria(
+              Math.floor(i / level.w) + 1,
+              (i % level.w) + 1,
+              c.flag ? "flag" : c.open ? (c.mine ? "mine" : c.adj) : null,
+            )}
             onFocus={() => setFocus(i)}
           >
             {cellLabel(c, phase === "lost")}
@@ -860,53 +874,53 @@ export default function Minesweeper() {
           aria-live="polite"
         >
           {phase === "ready"
-            ? "首击安全区：第一下落点及其周围不会埋雷，可放心开图。"
+            ? t.tipReady
             : chordReady > 0
-              ? `Chord|开图同条：Chord×${chordReady} 可点 · 可翻 ${chordOpenable}${peakOpenable > 0 ? `（峰${peakOpenable}）` : ""} · 开图 ${safeProgress}% · 旗 ${flags}/${level.mines} · 中键/双击翻周围`
+              ? t.tipChord(hud)
               : lateClear
-                ? `收官可翻：还剩 ${safeLeft} 格 · 可翻 ${chordOpenable} · Chord×${chordReady} · 开图 ${safeProgress}% · 旗位对齐后 chord`
+                ? t.tipLate(hud)
                 : phase === "playing" && level.mines - flags <= 3 && level.mines - flags > 0
-                  ? `剩余雷仅 ${level.mines - flags} · 开图 ${safeProgress}% · 旗位对齐后再 chord`
+                  ? t.tipFewMines(hud)
                   : flagDense
-                    ? `开图/旗密同条：开图 ${safeProgress}% · 旗 ${flags}/${level.mines}（密）· 核对数字再 chord，忌盲插`
+                    ? t.tipDense(hud)
                     : phase === "playing" && safeOpen > 0 && safeProgress <= 20
-                      ? `首击后：安全区已展开 · 开图 ${safeProgress}%（${safeOpen}/${safeTotal}）· 先清边再标旗，旗数=数字可 chord`
+                      ? t.tipEarly(hud)
                       : safeOpen === 0
-                        ? `首击安全区已生效 · 开图 0% · 旗 ${flags}/${level.mines} · 计时${seconds}s（${seconds < 30 ? "前段" : seconds < 60 ? "中段" : seconds < 120 ? "后段" : "超时"}）`
-                        : `开图 ${safeProgress}%（${safeOpen}/${safeTotal}）· 旗 ${flags}/${level.mines} · 计时${seconds}s/${seconds < 30 ? "前段" : seconds < 60 ? "中段" : seconds < 120 ? "后段" : "超时"}${best != null ? ` · 最快 ${best}s` : ""} · 旗数=数字时可 chord`}
+                        ? t.tipNoOpen(hud, t.timeSeg[timeSeg])
+                        : t.tipNormal(hud, t.timeSeg[timeSeg])}
         </p>
       )}
       <div className="game-bar">
         <button type="button" className="game-btn" aria-pressed={flagMode} onClick={() => setFlagMode(!flagMode)}>
-          <FlagIcon /> 插旗模式
+          <FlagIcon /> {t.flagMode}
         </button>
         <span className="spacer" />
         <button type="button" className="game-btn" onClick={() => restart()}>
-          重新开始
+          {t.restart}
         </button>
       </div>
       <p className="game-hint" aria-live="polite">
         {phase === "won" ? (
-          `全部排完，用时 ${seconds} 秒${record ? "，新纪录！" : ""}`
+          t.won(seconds, record)
         ) : phase === "lost" ? (
-          "踩雷了。点“重新开始”或按 R 再来一局。"
+          t.lost
         ) : (
           <>
             <span className="when-mouse">
               {lateClear
-                ? `开图 ${safeProgress}%，还剩 ${safeLeft} 格。中键或双击已翻数字 chord（旗数对齐）收官更快。`
+                ? t.mouseLate(hud)
                 : phase === "playing" && level.mines - flags <= 3 && level.mines - flags > 0
-                  ? `还剩 ${level.mines - flags} 颗雷。中键或双击已翻数字可快速翻周围（旗数要对齐）。`
+                  ? t.mouseFewMines(level.mines - flags)
                   : best !== null
-                    ? `${level.label}最快 ${best} 秒。点/中键/双击已翻数字可 chord；回车翻开，空格或 F 插旗。`
-                    : "点已翻数字、中键或双击可 chord（旗数=数字）。回车翻开，空格/F 插旗。第一下安全区。"}
+                    ? t.mouseBest(levelName, best)
+                    : t.mouseDefault}
             </span>
             <span className="when-touch">
               {lateClear
-                ? `开图 ${safeProgress}%，还剩 ${safeLeft} 格。点已翻数字（旗数对齐）chord 收官。`
+                ? t.touchLate(hud)
                 : phase === "playing" && level.mines - flags <= 3 && level.mines - flags > 0
-                  ? `还剩 ${level.mines - flags} 颗雷。点已翻开的数字（旗数对齐）可一次翻周围。`
-                  : `${best !== null ? `${level.label}最快 ${best} 秒。` : ""}轻点翻开，长按插旗；点已翻数字可 chord。第一下安全区。`}
+                  ? t.touchFewMines(level.mines - flags)
+                  : `${best !== null ? t.touchBest(levelName, best) : ""}${t.touchDefault}`}
             </span>
           </>
         )}

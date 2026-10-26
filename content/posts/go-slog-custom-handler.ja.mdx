@@ -1,0 +1,70 @@
+---
+title: "Go slog の Handler を自作する：Enabled / Handle / WithAttrs の契約"
+summary: "Options、パイプライン、ミドルウェアについては別記事があります。この記事では slog.Handler を自分で実装するときに必ず守るべき 3 つのメソッドと、WithGroup で陥りやすい落とし穴だけを扱います。"
+---
+
+`JSONHandler` の Options、ミドルウェアによるラップ、LevelVar については本サイトに既存記事があります。**自分で Handler を書く場合**（サンプリング、外部送信、Record の書き換え）、守るべき契約は「コンパイルが通る」よりずっと厳密です。
+
+## 3 つのメソッド
+
+```go
+type Handler interface {
+    Enabled(context.Context, slog.Level) bool
+    Handle(context.Context, slog.Record) error
+    WithAttrs([]slog.Attr) Handler
+    WithGroup(string) Handler
+}
+```
+
+| メソッド | 約束事 |
+|---|---|
+| `Enabled` | 軽量であること。Logger はまずこれを問い合わせてからフィールドを確保します。ここで I/O をしないでください。 |
+| `Handle` | 実際に書き出します。`Record` の attrs は `Record.Attrs` で走査し、内部構造を前提にしないでください。 |
+| `WithAttrs` / `WithGroup` | **新しい Handler**（または同等のイミュータブルなビュー）を返します。後続の `logger.With` はこれらで状態を積み重ねます。 |
+
+## よくある失敗
+
+1. **WithAttrs で receiver を書き換えて self を返す**：並行実行時にフィールドが混線します。コピーしてから attrs を付けるべきです。  
+2. **Handle で `Record.Time` / `PC` を無視する**：AddSource の経路が途切れます。  
+3. **Enabled が常に true で、Handle の中で捨てる**：ホットパスでの余計なアロケーションが増えます。  
+4. **WithGroup で文字列のプレフィックスだけ変えて次の層をラップしない**：標準の JSONHandler のグループのネストと一致せず、収集側でパースしにくくなります。
+
+## 最小限の委譲スケルトン
+
+```go
+type Wrap struct {
+    next  slog.Handler
+    attrs []slog.Attr
+}
+
+func (w Wrap) Enabled(ctx context.Context, l slog.Level) bool {
+    return w.next.Enabled(ctx, l)
+}
+
+func (w Wrap) Handle(ctx context.Context, r slog.Record) error {
+    r.AddAttrs(w.attrs...)
+    return w.next.Handle(ctx, r)
+}
+
+func (w Wrap) WithAttrs(attrs []slog.Attr) slog.Handler {
+    c := w
+    c.attrs = append(slices.Clip(w.attrs), attrs...)
+    return c
+}
+
+func (w Wrap) WithGroup(name string) slog.Handler {
+    return Wrap{next: w.next.WithGroup(name), attrs: w.attrs}
+}
+```
+
+まず委譲し、それから拡張します。サンプリングやリモートへの書き込みは `Handle` に置き、バックプレッシャーと破棄ポリシーを考えておきましょう。
+
+## 本サイトの他の記事との関係
+
+- **JSONHandler Options**：出力の形を決めるもので、独自の型は書きません。  
+- **pipeline / middleware**：既存の Handler を複数組み合わせます。  
+- **本記事**：本当に `implements slog.Handler` するときの契約です。
+
+## まとめ
+
+Handler 自作の核心は **イミュータブルな With\*** と **軽量な Enabled** です。契約を守れてから、サンプリング率や送信フォーマットを考えましょう。

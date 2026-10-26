@@ -1,0 +1,70 @@
+---
+title: "Writing Your Own Go slog Handler: The Enabled / Handle / WithAttrs Contract"
+summary: "Options, pipelines, and middleware have their own posts. This one is only about the three methods you must get right when implementing slog.Handler yourself, plus the easy traps in WithGroup."
+---
+
+`JSONHandler` Options, middleware wrappers, and LevelVar are already covered on this site. **When you write your own Handler** (sampling, shipping logs out, rewriting the Record), the contract is narrower than "it compiles".
+
+## The three methods
+
+```go
+type Handler interface {
+    Enabled(context.Context, slog.Level) bool
+    Handle(context.Context, slog.Record) error
+    WithAttrs([]slog.Attr) Handler
+    WithGroup(string) Handler
+}
+```
+
+| Method | Contract |
+|---|---|
+| `Enabled` | Cheap; the Logger asks first, then allocates fields. Don't do I/O here. |
+| `Handle` | Actually writes the output; iterate a `Record`'s attrs with `Record.Attrs` and don't assume its private structure. |
+| `WithAttrs` / `WithGroup` | Return a **new Handler** (or an equivalent immutable view); later `logger.With` calls rely on them to stack state. |
+
+## Common failures
+
+1. **WithAttrs mutates the receiver and returns self**: fields bleed across goroutines under concurrency. Copy first, then attach the attrs.  
+2. **Ignoring `Record.Time` / `PC` in Handle**: the AddSource chain breaks.  
+3. **Enabled always returns true and Handle drops the record**: extra allocations on the hot path.  
+4. **WithGroup only changes a string prefix without wrapping the next layer**: inconsistent with the standard JSONHandler's group nesting, and hard for collectors to parse.
+
+## Minimal delegating skeleton
+
+```go
+type Wrap struct {
+    next  slog.Handler
+    attrs []slog.Attr
+}
+
+func (w Wrap) Enabled(ctx context.Context, l slog.Level) bool {
+    return w.next.Enabled(ctx, l)
+}
+
+func (w Wrap) Handle(ctx context.Context, r slog.Record) error {
+    r.AddAttrs(w.attrs...)
+    return w.next.Handle(ctx, r)
+}
+
+func (w Wrap) WithAttrs(attrs []slog.Attr) slog.Handler {
+    c := w
+    c.attrs = append(slices.Clip(w.attrs), attrs...)
+    return c
+}
+
+func (w Wrap) WithGroup(name string) slog.Handler {
+    return Wrap{next: w.next.WithGroup(name), attrs: w.attrs}
+}
+```
+
+Delegate first, then extend; put sampling or remote writes in `Handle`, and think through backpressure and drop policy.
+
+## Versus the other posts on this site
+
+- **JSONHandler Options**: shape the output without writing your own type.  
+- **pipeline / middleware**: compose several existing Handlers.  
+- **This post**: the contract for when you really `implements slog.Handler`.
+
+## Summary
+
+The core of a custom Handler is **immutable With\*** and a **cheap Enabled**. Hold to the contract first, then worry about sampling rates and output formats.

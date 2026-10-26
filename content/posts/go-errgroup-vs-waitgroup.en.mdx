@@ -1,0 +1,68 @@
+---
+title: "Go errgroup vs WaitGroup: Choosing by Cancellation Semantics and Error Aggregation"
+summary: "errgroup limits and cancellation have their own post. This one only compares it with WaitGroup: when a hand-rolled wg+err is enough, and when WithContext earns its keep."
+---
+
+`sync.WaitGroup` only guarantees "everything finished"; `errgroup` adds **cancel on first error** and **error aggregation**. The choice isn't "the newer library is nicer", it's whether you need those two things.
+
+## Comparison
+
+| Need | WaitGroup | errgroup |
+|---|---|---|
+| Wait for N goroutines to finish | ✅ | ✅ |
+| Stop the rest when any one fails | Manage cancel + broadcast yourself | `WithContext` out of the box |
+| Collect the first / all errors | Manage `atomic`/`chan`/`Mutex` yourself | `Wait()` returns the first error |
+| Concurrency limit | Manage a semaphore yourself | `SetLimit` |
+| Zero dependencies | Standard library | `x/sync` |
+
+## When WaitGroup is enough
+
+- Pure fan-out where **errors can be ignored or just logged** (metrics collection, cache warm-up).  
+- Lifecycle is managed by an outer `ctx`, tasks already respect `ctx.Done()`, and all you're missing is "wait for everyone".  
+- The error policy is "run everything, then aggregate", without cutting siblings off midway.
+
+```go
+var wg sync.WaitGroup
+var mu sync.Mutex
+var errs []error
+for _, id := range ids {
+  wg.Add(1)
+  go func(id string) {
+    defer wg.Done()
+    if err := work(ctx, id); err != nil {
+      mu.Lock(); errs = append(errs, err); mu.Unlock()
+    }
+  }(id)
+}
+wg.Wait()
+```
+
+Short and transparent; the price is wiring up cancellation and limits yourself.
+
+## Signs you should reach for errgroup
+
+1. **Stop on failure**: when one dependency is down, hammering the other 50 only amplifies the cascade.  
+2. **Request-scoped lifecycle**: everything must be cleaned up before the handler returns, and cancellation must propagate to the leaves.  
+3. **Only the first error matters**: the caller wants a single `if err := g.Wait()` exit path.
+
+```go
+g, ctx := errgroup.WithContext(parent)
+g.SetLimit(8)
+for _, id := range ids {
+  id := id
+  g.Go(func() error { return work(ctx, id) })
+}
+return g.Wait()
+```
+
+## Pitfalls of mixing them
+
+| Mixing | Consequence |
+|---|---|
+| Calling `wg.Add` inside an errgroup for unrelated tasks | `Wait` returns early while the tail is still running |
+| WaitGroup tasks ignoring the outer cancel | "Looks like everything finished", but they keep hitting downstream after the timeout |
+| Feeding degradable errors into errgroup's first error | A partial failure kills the whole group |
+
+## In one sentence
+
+Need **wait-for-all + your own error handling** → WaitGroup; need **cancel on first error + limits** → errgroup (and read the limits post on this site to carry `SetLimit` / ctx down to the leaves). Same thread as `go-errgroup-limits` and `go-concurrency-pitfalls`: pick primitives by their boundaries, not by what's trendy.

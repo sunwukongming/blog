@@ -1,11 +1,15 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useLang } from "@/components/i18n/LangProvider";
 import PostList from "@/components/PostList";
-import { CATEGORIES } from "@/lib/categories";
+import { getCategories } from "@/lib/categories";
+import { UI } from "@/lib/messages";
 import type { PostMeta } from "@/lib/posts";
 
 export default function PostFilter({ posts }: { posts: PostMeta[] }) {
+  const lang = useLang();
+  const t = UI[lang].filter;
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("all");
 
@@ -23,20 +27,20 @@ export default function PostFilter({ posts }: { posts: PostMeta[] }) {
     <div className="post-filter">
       <div className="post-filter__controls">
         <label className="post-filter__search">
-          <span className="sr-only">搜索文章</span>
+          <span className="sr-only">{t.search}</span>
           <input
             type="search"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="搜索标题或摘要…"
+            placeholder={t.placeholder}
             autoComplete="off"
           />
         </label>
-        <div className="post-filter__cats" role="group" aria-label="按分类筛选">
+        <div className="post-filter__cats" role="group" aria-label={t.byCategory}>
           <button type="button" className="game-btn" aria-pressed={cat === "all"} onClick={() => setCat("all")}>
-            全部
+            {t.all}
           </button>
-          {CATEGORIES.map((c) => (
+          {getCategories(lang).map((c) => (
             <button
               key={c.slug}
               type="button"
@@ -51,13 +55,9 @@ export default function PostFilter({ posts }: { posts: PostMeta[] }) {
         </div>
       </div>
       <p className="post-filter__count" aria-live="polite">
-        显示 {filtered.length} / {posts.length} 篇
+        {t.count(filtered.length, posts.length)}
       </p>
-      {filtered.length ? (
-        <PostList posts={filtered} summary />
-      ) : (
-        <p className="lede">没有匹配的文章，试试别的词或分类。</p>
-      )}
+      {filtered.length ? <PostList posts={filtered} lang={lang} summary /> : <p className="lede">{t.empty}</p>}
     </div>
   );
 }

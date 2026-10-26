@@ -3,44 +3,26 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import PostList from "@/components/PostList";
-import { CATEGORIES, getCategory } from "@/lib/categories";
+import { CATEGORY_SLUGS, getCategory } from "@/lib/categories";
+import { HTML_LANG, localePath } from "@/lib/i18n";
+import { getLang } from "@/lib/lang";
+import { UI } from "@/lib/messages";
+import { absUrl, pageMeta } from "@/lib/meta";
 import { getAllPosts } from "@/lib/posts";
-import { SITE, SITE_URL } from "@/lib/site";
+import { getSite, SITE_URL } from "@/lib/site";
 
 export function generateStaticParams() {
-  return CATEGORIES.map((c) => ({ slug: c.slug }));
+  return CATEGORY_SLUGS.map((slug) => ({ slug }));
 }
 
-export async function generateMetadata({ params }: PageProps<"/categories/[slug]">): Promise<Metadata> {
-  const category = getCategory((await params).slug);
+export async function generateMetadata({ params }: PageProps<"/[lang]/categories/[slug]">): Promise<Metadata> {
+  const lang = await getLang();
+  const category = getCategory((await params).slug, lang);
   if (!category) return {};
-  const title = category.name;
-  const description = category.blurb;
-  const url = SITE_URL ? `${SITE_URL}/categories/${category.slug}` : undefined;
-  return {
-    title,
-    description,
-    alternates: url ? { canonical: url } : undefined,
-    openGraph: {
-      title,
-      description,
-      type: "website",
-      url,
-      siteName: SITE.name,
-      locale: "zh_CN",
-      images: SITE_URL ? [{ url: `${SITE_URL}/icon.svg`, alt: title }] : undefined,
-    },
-    twitter: {
-      card: "summary",
-      title,
-      description,
-      // batch43: 与 openGraph.images 对齐
-      images: SITE_URL ? [`${SITE_URL}/icon.svg`] : undefined,
-    },
-  };
+  return pageMeta({ lang, path: `/categories/${category.slug}`, title: category.name, description: category.blurb });
 }
 
-export default function CategoryPage({ params }: PageProps<"/categories/[slug]">) {
+export default function CategoryPage({ params }: PageProps<"/[lang]/categories/[slug]">) {
   return (
     <main data-world="orbit" className="page">
       {/* 窄屏时聚焦的行星画在这块空白里 */}
@@ -53,31 +35,31 @@ export default function CategoryPage({ params }: PageProps<"/categories/[slug]">
 }
 
 async function CategoryPanel({ params }: { params: Promise<{ slug: string }> }) {
-  const category = getCategory((await params).slug);
+  const lang = await getLang();
+  const t = UI[lang].categories;
+  const site = getSite(lang);
+  const category = getCategory((await params).slug, lang);
   if (!category) notFound();
-  const posts = (await getAllPosts()).filter((p) => p.category === category.slug);
+  const posts = (await getAllPosts(lang)).filter((p) => p.category === category.slug);
   const minutes = posts.reduce((n, p) => n + p.readingMinutes, 0);
-  const pageUrl = SITE_URL ? `${SITE_URL}/categories/${category.slug}` : `/categories/${category.slug}`;
-  // batch49: CollectionPage JSON-LD 复核 numberOfItems/isPartOf/about + mainEntity ItemList
-  // batch54: 再核 inLanguage=zh-CN、numberOfItems 与 mainEntity.ItemList 对齐；未改字段语义
   const collectionLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    name: `${category.name} · ${SITE.name}`,
+    name: `${category.name} · ${site.name}`,
     description: category.blurb,
-    url: pageUrl,
-    inLanguage: "zh-CN",
+    url: absUrl(lang, `/categories/${category.slug}`),
+    inLanguage: HTML_LANG[lang],
     numberOfItems: posts.length,
-    isPartOf: SITE_URL ? { "@type": "WebSite", name: SITE.name, url: SITE_URL } : undefined,
+    isPartOf: SITE_URL ? { "@type": "WebSite", name: site.name, url: absUrl(lang, "/") } : undefined,
     about: { "@type": "Thing", name: category.name },
     mainEntity: {
       "@type": "ItemList",
-      name: `${category.name} 文章`,
+      name: t.postsOf(category.name),
       numberOfItems: posts.length,
       itemListElement: posts.map((post, i) => ({
         "@type": "ListItem",
         position: i + 1,
-        url: SITE_URL ? `${SITE_URL}/blog/${post.slug}` : `/blog/${post.slug}`,
+        url: absUrl(lang, `/blog/${post.slug}`),
         name: post.title,
       })),
     },
@@ -85,23 +67,17 @@ async function CategoryPanel({ params }: { params: Promise<{ slug: string }> }) 
 
   return (
     <section className="panel side" data-ui style={{ display: "grid", gap: 12 }}>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionLd) }}
-      />
-      <Link href="/categories" className="back">
-        ← 回到星系
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionLd) }} />
+      <Link href={localePath(lang, "/categories")} className="back">
+        {t.back}
       </Link>
       <h1 className="display" style={{ fontSize: "clamp(32px, 5vw, 48px)" }}>
         <span className="dot" style={{ background: category.color, width: 14, height: 14 }} />
         {category.name}
       </h1>
       <p className="lede">{category.blurb}</p>
-      <p className="cat-stats">
-        {posts.length} 篇·约 {minutes} 分钟阅读
-        {posts[0] ? `·最新 ${posts[0].date}` : ""}
-      </p>
-      {posts.length ? <PostList posts={posts} summary /> : <p className="lede">这颗星球上还没有文章。</p>}
+      <p className="cat-stats">{t.stats(posts.length, minutes, posts[0]?.date)}</p>
+      {posts.length ? <PostList posts={posts} lang={lang} summary /> : <p className="lede">{t.empty}</p>}
     </section>
   );
 }

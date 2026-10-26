@@ -1,15 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useT } from "@/components/i18n/LangProvider";
 import { buzz, lower, useKeys, useRecord, useRecordList } from "./input";
+import { MEMORY_MESSAGES } from "./Memory.messages";
 
-type Diff = { key: string; label: string; cols: number; rows: number };
+type Diff = { key: "easy" | "normal" | "hard"; cols: number; rows: number };
 type Card = { id: number; pair: number; flipped: boolean; matched: boolean };
 
 const DIFFS: Diff[] = [
-  { key: "easy", label: "简单", cols: 3, rows: 4 },
-  { key: "normal", label: "普通", cols: 4, rows: 4 },
-  { key: "hard", label: "困难", cols: 5, rows: 4 },
+  { key: "easy", cols: 3, rows: 4 },
+  { key: "normal", cols: 4, rows: 4 },
+  { key: "hard", cols: 5, rows: 4 },
 ];
 const SYMBOLS = ["♠", "♥", "♦", "♣", "★", "●", "▲", "■", "◆", "☀"];
 const FLIP_BACK_MS = 650;
@@ -38,7 +40,9 @@ function recordKey(diff: Diff) {
 }
 
 export default function Memory() {
+  const t = useT(MEMORY_MESSAGES);
   const [diff, setDiff] = useState<Diff>(DIFFS[1]);
+  const diffLabel = t.diff[diff.key];
   const pairs = (diff.cols * diff.rows) / 2;
   const [cards, setCards] = useState<Card[]>(() => deal(8));
   const [open, setOpen] = useState<number[]>([]);
@@ -61,7 +65,7 @@ export default function Memory() {
   const allDiffBests = DIFFS.map((d, i) => {
     const v = allDiffRaw[i];
     const n = d.key === "normal" ? (v ?? legacy) : v;
-    return { label: d.label, best: n };
+    return { label: t.diff[d.key], best: n };
   });
   const reported = useRef(false);
   const cardRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -120,13 +124,13 @@ export default function Memory() {
         return n;
       });
       buzz(nextStreak >= 3 ? [18, 40, 18] : 18);
-      setAnnounce(nextStreak >= 2 ? `配对成功，${SYMBOLS[pairA]}，连击 ×${nextStreak}` : "配对成功，" + SYMBOLS[pairA]);
+      setAnnounce(nextStreak >= 2 ? t.announceCombo(SYMBOLS[pairA], nextStreak) : t.announceMatch(SYMBOLS[pairA]));
       setCards((prev) => prev.map((x) => (x.id === a || x.id === i ? { ...x, flipped: true, matched: true } : x)));
       return;
     }
 
     setStreak(0);
-    setAnnounce("不同，已翻回");
+    setAnnounce(t.announceMiss);
     setLock(true);
     window.setTimeout(() => {
       setCards((prev) => prev.map((x) => (x.id === a || x.id === i ? { ...x, flipped: false } : x)));
@@ -199,15 +203,15 @@ export default function Memory() {
             aria-pressed={d.key === diff.key}
             onClick={() => restart(d)}
           >
-            {d.label}
+            {t.diff[d.key]}
           </button>
         ))}
         <span
           className="memory-diff-bar"
           data-hard={diff.key === "hard" || undefined}
           data-easy={diff.key === "easy" || undefined}
-          title={`难度 ${diff.label}（${DIFFS.findIndex((d) => d.key === diff.key) + 1}/${DIFFS.length}）`}
-          aria-label={`难度 ${diff.label}`}
+          title={t.diffTitle(diffLabel, DIFFS.findIndex((d) => d.key === diff.key) + 1, DIFFS.length)}
+          aria-label={t.diffAria(diffLabel)}
         >
           <i
             className="memory-diff-bar__fill"
@@ -233,15 +237,15 @@ export default function Memory() {
           data-level={streak >= 5 ? "hot" : streak >= 3 ? "warm" : streak >= 2 ? "on" : undefined}
           title={
             endgame && streak >= 2
-              ? `双高+最少步：剩 ${leftPairs} 对 · ×${streak}${bestStreak > 1 ? ` · 峰 ${bestStreak}` : ""} · 最少 ${shownBest ?? "—"} 步`
+              ? t.hudBothTitle(leftPairs, streak, bestStreak, shownBest ?? "—")
               : endgame
-                ? `残局：还剩 ${leftPairs} 对 · 连击 ${streak} · 最少 ${shownBest ?? "—"}`
+                ? t.hudEndTitle(leftPairs, streak, shownBest ?? "—")
                 : bestStreak > 1
-                  ? `连击 ${streak} · 峰 ${bestStreak} · 最少 ${shownBest ?? "—"} · 已配 ${matchedCount}/${pairs}`
-                  : `已配 ${matchedCount}/${pairs} · 连击 ${streak} · 最少 ${shownBest ?? "—"}（翻错清零）`
+                  ? t.hudPeakTitle(streak, bestStreak, shownBest ?? "—", matchedCount, pairs)
+                  : t.hudPlainTitle(matchedCount, pairs, streak, shownBest ?? "—")
           }
         >
-          配对
+          {t.pairs}
           <b>
             {matchedCount}/{pairs}
           </b>
@@ -249,8 +253,8 @@ export default function Memory() {
             className="memory-matched-bar"
             data-done={(matchedCount >= pairs && pairs > 0) || undefined}
             data-high={(pairs > 0 && matchedCount / pairs >= 0.7) || undefined}
-            title={`已配 ${matchedCount} / ${pairs}`}
-            aria-label={`已配 ${matchedCount} 对`}
+            title={t.matchedTitle(matchedCount, pairs)}
+            aria-label={t.matchedAria(matchedCount)}
           >
             <i
               className="memory-matched-bar__fill"
@@ -259,13 +263,13 @@ export default function Memory() {
               }}
             />
           </span>
-          {endgame ? <small style={{ marginLeft: 4, opacity: 0.85 }}>残局{leftPairs}</small> : null}
+          {endgame ? <small style={{ marginLeft: 4, opacity: 0.85 }}>{t.endgameShort(leftPairs)}</small> : null}
           <span
             className="memory-left-bar"
             data-end={endgame || undefined}
             data-urgent={(leftPairs > 0 && leftPairs <= 2) || undefined}
-            title={`剩余 ${leftPairs} 对 / ${pairs}`}
-            aria-label={`剩余 ${leftPairs} 对`}
+            title={t.leftTitle(leftPairs, pairs)}
+            aria-label={t.leftAria(leftPairs)}
           >
             <i
               className="memory-left-bar__fill"
@@ -287,11 +291,12 @@ export default function Memory() {
               data-good={matchedCount / moves >= 0.7 || undefined}
               data-ok={(matchedCount / moves >= 0.45 && matchedCount / moves < 0.7) || undefined}
               data-low={matchedCount / moves < 0.45 || undefined}
-              title={`配对效率 ${Math.min(100, Math.round((matchedCount / moves) * 100))}%（已配 ${matchedCount} / 步 ${moves}）`}
-              aria-label={`配对效率 ${Math.min(100, Math.round((matchedCount / moves) * 100))} percent`}
+              title={t.effTitle(Math.min(100, Math.round((matchedCount / moves) * 100)), matchedCount, moves)}
+              aria-label={t.effAria(Math.min(100, Math.round((matchedCount / moves) * 100)))}
             >
               <small style={{ marginLeft: 4, opacity: 0.75 }}>
-                效率<b>{Math.min(100, Math.round((matchedCount / moves) * 100))}%</b>
+                {t.eff}
+                <b>{Math.min(100, Math.round((matchedCount / moves) * 100))}%</b>
               </small>
               <i
                 className="memory-eff-bar__fill"
@@ -300,15 +305,16 @@ export default function Memory() {
             </span>
           ) : null}
           <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
-          连击<b>{streak}</b>
-          {bestStreak > 1 ? <small style={{ marginLeft: 4, opacity: 0.7 }}>峰{bestStreak}</small> : null}
+          {t.combo}
+          <b>{streak}</b>
+          {bestStreak > 1 ? <small style={{ marginLeft: 4, opacity: 0.7 }}>{t.peakShort(bestStreak)}</small> : null}
           {bestStreak > 1 ? (
             <span
               className="memory-streak-peak-bar"
               data-peak={(streak >= bestStreak && streak > 0) || undefined}
               data-hot={streak >= 5 || undefined}
-              title={`连击相对峰值 ${streak}/${bestStreak}`}
-              aria-label={`连击相对峰值 ${streak}/${bestStreak}`}
+              title={t.streakPeak(streak, bestStreak)}
+              aria-label={t.streakPeak(streak, bestStreak)}
             >
               <i
                 className="memory-streak-peak-bar__fill"
@@ -318,7 +324,7 @@ export default function Memory() {
           ) : null}
           {endgame && streak >= 2 ? (
             <small className="memory-end-combo__both" style={{ marginLeft: 6 }}>
-              双高
+              {t.both}
             </small>
           ) : null}
           <span
@@ -327,7 +333,7 @@ export default function Memory() {
             style={{ ["--combo-pct" as string]: `${Math.min(100, streak * 20)}%` } as CSSProperties}
           />
           <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
-          最少
+          {t.fewest}
           <b className={shownBest != null && moves > 0 && moves <= shownBest ? "game-tip--alert" : undefined}>
             {shownBest ?? "—"}
           </b>
@@ -335,13 +341,11 @@ export default function Memory() {
             className="memory-pb-bar"
             data-lead={(shownBest != null && moves > 0 && moves <= shownBest) || undefined}
             data-over={(shownBest != null && moves > shownBest) || undefined}
-            title={
-              shownBest != null && moves > 0 ? `相对最少 ${moves}/${shownBest}（满格=追平或更好）` : "尚无本档最少纪录"
-            }
+            title={shownBest != null && moves > 0 ? t.pbTitle(moves, shownBest) : t.pbNone}
             aria-label={
               shownBest != null && moves > 0
-                ? `相对最少 ${Math.min(100, Math.round((shownBest / Math.max(moves, shownBest)) * 100))} percent`
-                : "无最少纪录"
+                ? t.pbAria(Math.min(100, Math.round((shownBest / Math.max(moves, shownBest)) * 100)))
+                : t.pbAriaNone
             }
           >
             <i
@@ -371,19 +375,16 @@ export default function Memory() {
                       ? "warn"
                       : "bad"
             }
-            title={
-              shownBest != null && moves > 0
-                ? `本局 ${moves} 步 · 最少 ${shownBest} · 步差 ${moves - shownBest >= 0 ? "+" : ""}${moves - shownBest}（色阶 good≤0 / ok≤+2 / warn≤+5 / bad>+5）`
-                : `本局 ${moves} 步`
-            }
+            title={shownBest != null && moves > 0 ? t.deltaTitle(moves, shownBest) : t.movesThisRound(moves)}
           >
-            步数<b>{moves}</b>
+            {t.moves}
+            <b>{moves}</b>
             <span
               className="memory-moves-budget-bar"
               data-over={(pairs > 0 && moves > pairs * 3) || undefined}
               data-tight={(pairs > 0 && moves > pairs * 2 && moves <= pairs * 3) || undefined}
-              title={`步数预算 ${moves}/${Math.max(1, pairs * 3)}（软上限 3×对数）`}
-              aria-label={`步数预算 ${moves} / ${Math.max(1, pairs * 3)}`}
+              title={t.budgetTitle(moves, Math.max(1, pairs * 3))}
+              aria-label={t.budgetAria(moves, Math.max(1, pairs * 3))}
             >
               <i
                 className="memory-moves-budget-bar__fill"
@@ -394,7 +395,8 @@ export default function Memory() {
             </span>
             {shownBest != null && moves > 0 ? (
               <small className="memory-moves-delta__diff" style={{ marginLeft: 4 }}>
-                步差{moves - shownBest >= 0 ? "+" : ""}
+                {t.deltaLabel}
+                {moves - shownBest >= 0 ? "+" : ""}
                 <b className={moves > shownBest ? "game-tip--alert" : undefined}>{moves - shownBest}</b>
               </small>
             ) : null}
@@ -402,10 +404,10 @@ export default function Memory() {
               <span
                 className="memory-record-headroom"
                 data-lead={shownBest - moves >= 3 || undefined}
-                title={`破纪录余量 ${shownBest - moves} 步（当前 ${moves} / 最少 ${shownBest}）`}
-                aria-label={`破纪录余量 ${shownBest - moves} 步`}
+                title={t.headroomTitle(shownBest - moves, moves, shownBest)}
+                aria-label={t.headroomAria(shownBest - moves)}
               >
-                <small style={{ marginLeft: 4, opacity: 0.75 }}>余{shownBest - moves}</small>
+                <small style={{ marginLeft: 4, opacity: 0.75 }}>{t.headroomShort(shownBest - moves)}</small>
                 <i
                   className="memory-record-headroom__fill"
                   style={{
@@ -446,13 +448,14 @@ export default function Memory() {
           </span>
         </span>
         <span>
-          时间<b>{seconds}</b>
+          {t.time}
+          <b>{seconds}</b>
           <span
             className="memory-time-bar"
             data-long={seconds >= 60 || undefined}
             data-over={seconds >= 90 || undefined}
-            title={`用时 ${seconds}s（满刻度 90s）`}
-            aria-label={`用时 ${seconds} 秒`}
+            title={t.timeTitle(seconds)}
+            aria-label={t.timeAria(seconds)}
           >
             <i
               className="memory-time-bar__fill"
@@ -463,12 +466,8 @@ export default function Memory() {
             className="memory-pace-bar"
             data-slow={(matchedCount > 0 && seconds / matchedCount >= 8) || undefined}
             data-fast={(matchedCount > 0 && seconds / matchedCount <= 3) || undefined}
-            title={
-              matchedCount > 0
-                ? `配速 ${Math.round((seconds / matchedCount) * 10) / 10}s/对（满刻度按 12s/对）`
-                : "配速 —（尚未配对）"
-            }
-            aria-label={matchedCount > 0 ? `配速每对 ${Math.round((seconds / matchedCount) * 10) / 10} 秒` : "配速未知"}
+            title={matchedCount > 0 ? t.paceTitle(Math.round((seconds / matchedCount) * 10) / 10) : t.paceNone}
+            aria-label={matchedCount > 0 ? t.paceAria(Math.round((seconds / matchedCount) * 10) / 10) : t.paceAriaNone}
           >
             <i
               className="memory-pace-bar__fill"
@@ -481,8 +480,8 @@ export default function Memory() {
             className="memory-streak-now-bar"
             data-hot={streak >= 5 || undefined}
             data-warm={(streak >= 2 && streak < 5) || undefined}
-            title={`当前连击 ×${streak}（满刻度按 5）`}
-            aria-label={`当前连击 ${streak}`}
+            title={t.streakNowTitle(streak)}
+            aria-label={t.streakNowAria(streak)}
           >
             <i
               className="memory-streak-now-bar__fill"
@@ -495,8 +494,8 @@ export default function Memory() {
             data-warm={
               (Math.max(0, moves - matchedCount * 2) >= 4 && Math.max(0, moves - matchedCount * 2) < 8) || undefined
             }
-            title={`多余翻步 ${Math.max(0, moves - matchedCount * 2)}（满刻度按 12；理想每对 2 步）`}
-            aria-label={`多余翻步 ${Math.max(0, moves - matchedCount * 2)}`}
+            title={t.wasteTitle(Math.max(0, moves - matchedCount * 2))}
+            aria-label={t.wasteAria(Math.max(0, moves - matchedCount * 2))}
           >
             <i
               className="memory-waste-bar__fill"
@@ -509,8 +508,8 @@ export default function Memory() {
             className="memory-flip-rate-bar"
             data-hot={(seconds > 0 && moves / seconds >= 0.7) || undefined}
             data-slow={(seconds >= 20 && moves / Math.max(1, seconds) < 0.25) || undefined}
-            title={seconds > 0 ? `翻步速率 ${Math.round((moves / seconds) * 60)}/min（满刻度按 40/min）` : "翻步速率 —"}
-            aria-label={seconds > 0 ? `每分钟约 ${Math.round((moves / seconds) * 60)} 步` : "翻步速率未知"}
+            title={seconds > 0 ? t.flipRateTitle(Math.round((moves / seconds) * 60)) : t.flipRateNone}
+            aria-label={seconds > 0 ? t.flipRateAria(Math.round((moves / seconds) * 60)) : t.flipRateAriaNone}
           >
             <i
               className="memory-flip-rate-bar__fill"
@@ -524,12 +523,10 @@ export default function Memory() {
             data-hot={(seconds > 0 && matchedCount / seconds >= 0.25) || undefined}
             data-slow={(seconds >= 30 && matchedCount / Math.max(1, seconds) < 0.06) || undefined}
             title={
-              seconds > 0
-                ? `配对速率 ${Math.round((matchedCount / seconds) * 60 * 10) / 10}/min（满刻度按 15/min）`
-                : "配对速率 —"
+              seconds > 0 ? t.matchRateTitle(Math.round((matchedCount / seconds) * 60 * 10) / 10) : t.matchRateNone
             }
             aria-label={
-              seconds > 0 ? `每分钟约配对 ${Math.round((matchedCount / seconds) * 60 * 10) / 10} 对` : "配对速率未知"
+              seconds > 0 ? t.matchRateAria(Math.round((matchedCount / seconds) * 60 * 10) / 10) : t.matchRateAriaNone
             }
           >
             <i
@@ -543,8 +540,8 @@ export default function Memory() {
             className="memory-streak-ratio-bar"
             data-hot={(streak >= 3 && bestStreak > 0 && streak >= bestStreak) || undefined}
             data-warm={(streak >= 2 && bestStreak > 0 && streak / bestStreak >= 0.6) || undefined}
-            title={bestStreak > 0 ? `连对相对峰值 ${streak}/${bestStreak}` : `连对 ${streak}`}
-            aria-label={bestStreak > 0 ? `连对 ${streak} 相对峰 ${bestStreak}` : `连对 ${streak}`}
+            title={bestStreak > 0 ? t.streakRatioTitle(streak, bestStreak) : t.streakOnly(streak)}
+            aria-label={bestStreak > 0 ? t.streakRatioAria(streak, bestStreak) : t.streakOnly(streak)}
           >
             <i
               className="memory-streak-ratio-bar__fill"
@@ -561,10 +558,8 @@ export default function Memory() {
             className="memory-accuracy-bar"
             data-hot={(moves > 0 && (matchedCount * 2) / moves >= 0.85) || undefined}
             data-cold={(moves >= 8 && (matchedCount * 2) / Math.max(1, moves) < 0.45) || undefined}
-            title={
-              moves > 0 ? `翻牌命中率 ${Math.round(((matchedCount * 2) / moves) * 100)}%（理想 100%）` : "翻牌命中率 —"
-            }
-            aria-label={moves > 0 ? `翻牌命中率 ${Math.round(((matchedCount * 2) / moves) * 100)}%` : "翻牌命中率未知"}
+            title={moves > 0 ? t.accuracyTitle(Math.round(((matchedCount * 2) / moves) * 100)) : t.accuracyNone}
+            aria-label={moves > 0 ? t.accuracyAria(Math.round(((matchedCount * 2) / moves) * 100)) : t.accuracyAriaNone}
           >
             <i
               className="memory-accuracy-bar__fill"
@@ -577,8 +572,8 @@ export default function Memory() {
             className="memory-remain-ratio-bar"
             data-hot={(pairs - matchedCount <= 2 && pairs - matchedCount > 0) || undefined}
             data-cold={(pairs > 0 && (pairs - matchedCount) / pairs >= 0.75 && seconds >= 25) || undefined}
-            title={pairs > 0 ? `剩余配对 ${pairs - matchedCount}/${pairs}` : "剩余配对 —"}
-            aria-label={`剩余配对 ${pairs - matchedCount}`}
+            title={pairs > 0 ? t.remainTitle(pairs - matchedCount, pairs) : t.remainNone}
+            aria-label={t.remainAria(pairs - matchedCount)}
           >
             <i
               className="memory-remain-ratio-bar__fill"
@@ -591,8 +586,8 @@ export default function Memory() {
             className="memory-done-ratio-bar"
             data-hot={(pairs > 0 && matchedCount / pairs >= 0.85) || undefined}
             data-low={(pairs > 0 && matchedCount / pairs <= 0.2 && seconds >= 20) || undefined}
-            title={pairs > 0 ? `已配对 ${matchedCount}/${pairs}` : "已配对 —"}
-            aria-label={`已配对 ${matchedCount} 对，共 ${pairs}`}
+            title={pairs > 0 ? t.doneTitle(matchedCount, pairs) : t.doneNone}
+            aria-label={t.doneAria(matchedCount, pairs)}
           >
             <i
               className="memory-done-ratio-bar__fill"
@@ -605,13 +600,9 @@ export default function Memory() {
             className="memory-match-pace-bar"
             data-hot={(seconds > 0 && matchedCount / seconds >= 0.25) || undefined}
             data-slow={(seconds >= 25 && matchedCount / Math.max(1, seconds) < 0.06) || undefined}
-            title={
-              seconds > 0
-                ? `配对配速 ${Math.round((matchedCount / seconds) * 100) / 100}/s（满刻度按 0.3/s）`
-                : "配对配速 —"
-            }
+            title={seconds > 0 ? t.matchPaceTitle(Math.round((matchedCount / seconds) * 100) / 100) : t.matchPaceNone}
             aria-label={
-              seconds > 0 ? `每秒约配对 ${Math.round((matchedCount / seconds) * 100) / 100} 对` : "配对配速未知"
+              seconds > 0 ? t.matchPaceAria(Math.round((matchedCount / seconds) * 100) / 100) : t.matchPaceAriaNone
             }
           >
             <i
@@ -625,10 +616,8 @@ export default function Memory() {
             className="memory-moves-eff-bar"
             data-hot={(moves > 0 && matchedCount / moves >= 0.45) || undefined}
             data-low={(moves >= 8 && matchedCount / Math.max(1, moves) < 0.2) || undefined}
-            title={
-              moves > 0 ? `步效 ${Math.round((matchedCount / moves) * 100) / 100} 对/步（满刻度按 0.5）` : "步效 —"
-            }
-            aria-label={moves > 0 ? `每步约配对 ${Math.round((matchedCount / moves) * 100) / 100}` : "步效未知"}
+            title={moves > 0 ? t.movesEffTitle(Math.round((matchedCount / moves) * 100) / 100) : t.movesEffNone}
+            aria-label={moves > 0 ? t.movesEffAria(Math.round((matchedCount / moves) * 100) / 100) : t.movesEffAriaNone}
           >
             <i
               className="memory-moves-eff-bar__fill"
@@ -641,35 +630,56 @@ export default function Memory() {
       </div>
       <p className={endgame || streak >= 2 ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">
         {endgame && streak >= 2
-          ? `双高+最少步：${matchedCount}/${pairs}（${pairs ? Math.round((matchedCount / pairs) * 100) : 0}%）· 剩 ${leftPairs} · ×${streak}${bestStreak > 1 ? `（峰 ${bestStreak}）` : ""} · 最少 ${shownBest ?? "—"} · 焦点 第${focusRow}行${focusCol}列`
+          ? t.tipBoth(
+              matchedCount,
+              pairs,
+              pairs ? Math.round((matchedCount / pairs) * 100) : 0,
+              leftPairs,
+              streak,
+              bestStreak,
+              shownBest ?? "—",
+              t.focusPos(focusRow, focusCol),
+            )
           : endgame
-            ? `残局进度：${matchedCount}/${pairs}（${pairs ? Math.round((matchedCount / pairs) * 100) : 0}%）· 剩 ${leftPairs} 对 · 焦点 第${focusRow}行${focusCol}列 · 连击 ${streak}${bestStreak > 1 ? `（峰 ${bestStreak}）` : ""}`
+            ? t.tipEnd(
+                matchedCount,
+                pairs,
+                pairs ? Math.round((matchedCount / pairs) * 100) : 0,
+                leftPairs,
+                t.focusPos(focusRow, focusCol),
+                streak,
+                bestStreak,
+              )
             : streak >= 5
-              ? `连击热：×${streak} · 条格 ${Math.min(100, streak * 20)}%（×5 满格）· 峰 ${bestStreak > 1 ? bestStreak : streak}`
+              ? t.tipHot(streak, Math.min(100, streak * 20), bestStreak > 1 ? bestStreak : streak)
               : streak >= 2
-                ? `连击条：×${streak} · 条格 ${Math.min(100, streak * 20)}%${bestStreak > 1 ? ` · 峰 ${bestStreak}` : ""} · 翻错清零`
-                : `本局连击 ${streak}${bestStreak > 1 ? `（本档峰 ${bestStreak}）` : ""}`}
+                ? t.tipCombo(streak, Math.min(100, streak * 20), bestStreak)
+                : t.tipPlain(streak, bestStreak)}
         {" · "}
-        最少 <b>{shownBest ?? "—"}</b> 步
+        {t.tipFewestBefore}
+        <b>{shownBest ?? "—"}</b>
+        {t.tipFewestAfter}
         {shownBest != null && moves > 0
-          ? ` · 步差色 ${moves - shownBest >= 0 ? "+" : ""}${moves - shownBest}（${
-              moves <= shownBest ? "good" : moves - shownBest <= 2 ? "ok" : moves - shownBest <= 5 ? "warn" : "bad"
-            }）${moves - shownBest > 2 ? " · 条脉冲" : ""}`
-          : ` · 本局 ${moves} 步`}
+          ? t.tipDelta(
+              moves - shownBest,
+              moves <= shownBest ? "good" : moves - shownBest <= 2 ? "ok" : moves - shownBest <= 5 ? "warn" : "bad",
+              moves - shownBest > 2,
+            )
+          : t.tipMoves(moves)}
         {" · "}
-        各档：
+        {t.perDiff}
         {allDiffBests.map((x, i) => (
           <span key={DIFFS[i].key}>
             {i > 0 ? " · " : ""}
             {x.label} <b className={DIFFS[i].key === diff.key ? "game-tip--alert" : undefined}>{x.best ?? "—"}</b>
           </span>
         ))}
-        {endgame ? " · 方向键移焦后回车翻，少翻错" : " · 切换难度保留连击峰"}
+        {endgame ? t.tipEndHint : t.tipSwitchHint}
       </p>
       <div
         className="memory"
         role="grid"
-        aria-label={`记忆翻牌 ${diff.label}`}
+        aria-label={t.gridAria(diffLabel)}
         style={{ gridTemplateColumns: `repeat(${diff.cols}, 1fr)` }}
       >
         {cards.map((c, i) => {
@@ -687,7 +697,7 @@ export default function Memory() {
               data-open={show || undefined}
               data-matched={c.matched || undefined}
               data-focus={focus === i || undefined}
-              aria-label={show ? `牌面 ${SYMBOLS[c.pair]}` : `第 ${i + 1} 张，背面`}
+              aria-label={show ? t.cardFace(SYMBOLS[c.pair]) : t.cardBack(i + 1)}
               disabled={lock || c.matched}
               onClick={() => flip(i)}
               onFocus={() => setFocus(i)}
@@ -705,7 +715,7 @@ export default function Memory() {
       <div className="game-bar">
         <span className="spacer" />
         <button type="button" className="game-btn" onClick={() => restart()}>
-          重新开始
+          {t.restart}
         </button>
       </div>
       <p className="sr-only" aria-live="polite">
@@ -713,14 +723,14 @@ export default function Memory() {
       </p>
       <p className="game-hint" aria-live="polite">
         {won
-          ? `全部配对，用了 ${moves} 步、${seconds} 秒${bestStreak > 1 ? `，最高连击 ×${bestStreak}` : ""}${shownBest !== null && moves <= shownBest ? "，新纪录！" : "。"}`
+          ? t.hintWon(moves, seconds, bestStreak, shownBest !== null && moves <= shownBest)
           : endgame
-            ? `残局焦点：第${focusRow}行${focusCol}列（牌 ${focus + 1}），还剩 ${leftPairs} 对；方向键移焦，回车/空格翻牌。`
+            ? t.hintEnd(t.focusPos(focusRow, focusCol), focus + 1, leftPairs)
             : streak >= 2
-              ? `连击 ×${streak}！连续配对会累加；翻错就清零。`
+              ? t.hintCombo(streak)
               : shownBest !== null
-                ? `${diff.label}本机最少 ${shownBest} 步。连续配对可连击；方向键移动，Home/End 跳首尾，回车或空格翻牌。`
-                : "连续配对会显示连击。方向键移动焦点，Home/End 跳首尾，回车或空格翻牌；也可点选。步数越少越好。"}
+                ? t.hintBest(diffLabel, shownBest)
+                : t.hintDefault}
       </p>
     </div>
   );

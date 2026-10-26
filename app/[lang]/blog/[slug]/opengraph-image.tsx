@@ -1,22 +1,29 @@
 import { getCategory } from "@/lib/categories";
+import { notFound } from "next/navigation";
+import { hasLocale, type Locale } from "@/lib/i18n";
+import { UI } from "@/lib/messages";
 import { ogImage, OG_SIZE } from "@/lib/og";
 import { getAllPosts, getPost } from "@/lib/posts";
 
-export const alt = "文章分享图";
+export const alt = "GM Lab";
 export const size = OG_SIZE;
 export const contentType = "image/png";
 
-export async function generateStaticParams() {
-  const posts = await getAllPosts();
-  return posts.map((p) => ({ slug: p.slug }));
+// 只预生成有这种语言译文的文章（中文全部），其余在第一次被请求时生成
+export async function generateStaticParams({ params }: { params: { lang: string } }) {
+  const lang = params.lang as Locale;
+  const posts = await getAllPosts(lang);
+  return posts.filter((p) => p.contentLang === lang).map((p) => ({ slug: p.slug }));
 }
 
-export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
-  const post = await getPost((await params).slug);
-  if (!post) return ogImage({ title: "GM Lab" });
-  const tag = getCategory(post.category)?.name;
-  const subtitle = post.summary
-    ? `约 ${post.readingMinutes} 分钟 · ${post.summary}`
-    : `约 ${post.readingMinutes} 分钟`;
-  return ogImage({ title: post.title, subtitle, tag });
+// 图片路由属于 Route Handler，拿不到 next/root-params，语言从 params 里取
+export default async function Image({ params }: { params: Promise<{ lang: string; slug: string }> }) {
+  const { lang, slug } = await params;
+  if (!hasLocale(lang)) notFound();
+  const post = await getPost(slug, lang);
+  if (!post) return ogImage({ title: "GM Lab", lang });
+  const tag = getCategory(post.category, lang)?.name;
+  const minutes = UI[lang].post.minutes(post.readingMinutes);
+  const subtitle = post.summary ? `${minutes} · ${post.summary}` : minutes;
+  return ogImage({ title: post.title, subtitle, tag, lang: post.contentLang });
 }

@@ -1,0 +1,53 @@
+---
+title: "Postgres Advisory Locks: Coordinating Business-Level Mutual Exclusion with bigint"
+summary: "Application-level mutual exclusion with pg_advisory_lock / try_advisory_lock: choosing keys, session vs. transaction locks, how they divide work with row locks and unique constraints, and the release pitfalls under connection pooling."
+---
+
+Some mutual exclusion doesn't map to any single row: "only one settlement per tenant at a time," "don't run imports for the same external ID in parallel." Postgres **advisory locks** use a pair of `bigint`s (or a single `bigint`) as the lock name, independent of any table structure.
+
+## Session locks vs. transaction locks
+
+```sql
+-- Transaction-level: released automatically on COMMIT/ROLLBACK
+SELECT pg_advisory_xact_lock(42, hashtext('tenant:7:settle'));
+
+-- Session-level: explicit unlock, or disconnect
+SELECT pg_try_advisory_lock(hashtext('job:import:99'));
+-- ... do the work ...
+SELECT pg_advisory_unlock(hashtext('job:import:99'));
+```
+
+- **`pg_advisory_xact_lock`**: tied to the transaction, so it's pool-friendly (the lock can't outlive the borrowed connection being returned—it's released when the transaction ends).
+- **`pg_advisory_lock`**: session-level; with pooling you must lock and unlock on the **same connection** and release before returning it, or other requests will trip over a leftover lock.
+
+The `try_` variants are non-blocking and return `false` immediately if the lock is taken—good for "if someone's already on it, skip."
+
+## Choosing keys
+
+- Stable: the same business meaning always maps to the same `bigint` (or the two-part `(classid, objid)`).
+- Avoid colliding with other advisory-lock ranges in the system: you can pin `classid` to a business-specific range.
+- `hashtext` / `hashtextextended` can collide; on critical paths, explicitly assigned integers are safer.
+
+## Versus row locks and unique constraints
+
+| Mechanism | Use |
+| --- | --- |
+| `UNIQUE` / exclusion constraints | Mutual exclusion on the data itself |
+| `SELECT … FOR UPDATE` | Locking existing rows |
+| Advisory locks | A "logical critical section" with no row to lock, or spanning multiple tables |
+
+If it can be expressed as a constraint, prefer the constraint; advisory locks fill in mutual exclusion for *processes* and don't replace data integrity.
+
+## Operations
+
+```sql
+SELECT * FROM pg_locks WHERE locktype = 'advisory';
+```
+
+For locks held a long time, look at the holding backend and `query_start`. On the application side, emit metrics when `try_` fails so critical jobs aren't silently skipped.
+
+## Takeaway
+
+- Use advisory locks for business mutual exclusion with no row to lock; with pooling, prefer transaction-level.
+- Session locks must be unlocked in pairs on the same connection.
+- Constraints protect the data; advisory locks protect the process. Keys should be stable and observable.

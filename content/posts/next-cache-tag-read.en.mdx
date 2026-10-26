@@ -1,0 +1,53 @@
+---
+title: "Next.js Cache Read Path: How Hits, Staleness, and Tag Invalidation Fit Together"
+summary: "The tag-revalidate post covers how to issue invalidations; cacheLife / unstable_cache cover lifetimes and keys. This one is only about the read path: how an incoming request hits, when an entry counts as stale, and what the next read sees after a tag is swept."
+---
+
+This site already covers **revalidateTag**, **cacheLife**, and **unstable_cache**. What ops people ask about most is the other half: **what actually happens on a read**.
+
+## The three states of a read (intuition)
+
+```text
+request → look up cache key
+  ├─ fresh: return directly
+  ├─ stale (within the stale window): may return the old value first and trigger background revalidation
+  └─ miss / expire: fetch from source synchronously, then write
+```
+
+The stale / revalidate / expire values in a `cacheLife` profile describe exactly these windows. `unstable_cache`'s `revalidate: seconds` is closer to "refill on the next request after expiry."
+
+## How tag invalidation shows up on reads
+
+```ts
+// Write path / Server Action
+revalidateTag("product");
+
+// Any later read: entries tagged "product" are treated as invalid on subsequent requests
+const product = await getProduct(id); // unstable_cache(..., { tags: ["product"] })
+```
+
+| Moment | What the reader sees |
+|---|---|
+| The next request right after the tag fires | Usually a miss or forced revalidation; it shouldn't keep blindly returning the old value |
+| TTL expired only, no tag | Depends on the stale window: possibly old first, then new |
+| Key arguments changed | A new key, unrelated to the old entry |
+
+## How it fits with the other three posts
+
+| Post | Covers |
+|---|---|
+| `next-cache-tag-revalidate` | Who calls `revalidateTag`, and when |
+| `next-cache-life` | How lifetime profiles are declared |
+| `next-unstable-cache` | How a function gets its key / tags / TTL |
+| **This post** | **How to interpret hits and the effects of invalidation on a single read** |
+
+## Troubleshooting checklist
+
+1. Still stale after invalidation: is it the exact same tag string? Does each instance have its own cache?  
+2. Occasional old values: are you inside the stale window, "returning first and refreshing in the background"—and is that acceptable to users?  
+3. Key churn: closing over cookies or headers in the function without putting them in `keyParts`/arguments means you'll read someone else's entry or always miss.  
+4. Dev and production caching behave differently: verify in production or with `next start`, not just `dev`.
+
+## Takeaway
+
+When writing config, think **keys and tags**; when debugging, think **which state this read is in: fresh, stale, or miss**. Once the read path is clear, TTLs and tags stop blaming each other.

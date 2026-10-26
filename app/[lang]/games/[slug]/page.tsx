@@ -3,44 +3,25 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import GamePlayer from "@/components/games/GamePlayer";
-import { GAMES, getPlayable } from "@/lib/games";
-import { SITE, SITE_URL } from "@/lib/site";
+import { getPlayable, PLAYABLE_SLUGS } from "@/lib/games";
+import { HTML_LANG, localePath } from "@/lib/i18n";
+import { getLang } from "@/lib/lang";
+import { UI } from "@/lib/messages";
+import { absUrl, pageMeta } from "@/lib/meta";
+import { getSite, SITE_URL } from "@/lib/site";
 
-// batch51: 单游戏 Twitter card=summary + images 与 OG 同源 icon.svg；WebApplication JSON-LD 见下方
 export function generateStaticParams() {
-  return GAMES.filter((g) => g.playable).map((g) => ({ slug: g.slug }));
+  return PLAYABLE_SLUGS.map((slug) => ({ slug }));
 }
 
-export async function generateMetadata({ params }: PageProps<"/games/[slug]">): Promise<Metadata> {
-  const game = getPlayable((await params).slug);
+export async function generateMetadata({ params }: PageProps<"/[lang]/games/[slug]">): Promise<Metadata> {
+  const lang = await getLang();
+  const game = getPlayable((await params).slug, lang);
   if (!game) return {};
-  const title = `${game.title} · ${SITE.name}`;
-  const description = game.summary;
-  const url = SITE_URL ? `${SITE_URL}/games/${game.slug}` : undefined;
-  const images = SITE_URL ? [{ url: `${SITE_URL}/icon.svg`, alt: `${game.title} · ${SITE.name}` }] : undefined;
-  return {
-    title: game.title,
-    description,
-    alternates: url ? { canonical: url } : undefined,
-    openGraph: {
-      title,
-      description,
-      type: "website",
-      siteName: SITE.name,
-      locale: "zh_CN",
-      url,
-      images,
-    },
-    twitter: {
-      card: "summary",
-      title,
-      description,
-      images: images?.map((i) => i.url),
-    },
-  };
+  return pageMeta({ lang, path: `/games/${game.slug}`, title: game.title, description: game.summary });
 }
 
-export default function GamePage({ params }: PageProps<"/games/[slug]">) {
+export default function GamePage({ params }: PageProps<"/[lang]/games/[slug]">) {
   return (
     <main data-world="drive" className="page page--game">
       <Suspense fallback={null}>
@@ -51,32 +32,30 @@ export default function GamePage({ params }: PageProps<"/games/[slug]">) {
 }
 
 async function GameBody({ params }: { params: Promise<{ slug: string }> }) {
-  const game = getPlayable((await params).slug);
+  const lang = await getLang();
+  const site = getSite(lang);
+  const game = getPlayable((await params).slug, lang);
   if (!game) notFound();
 
-  const pageUrl = SITE_URL ? `${SITE_URL}/games/${game.slug}` : `/games/${game.slug}`;
   const gameLd = {
     "@context": "https://schema.org",
     "@type": "WebApplication",
     name: game.title,
     description: game.summary,
-    url: pageUrl,
+    url: absUrl(lang, `/games/${game.slug}`),
     applicationCategory: "GameApplication",
     operatingSystem: "Any",
-    inLanguage: "zh-CN",
-    isPartOf: SITE_URL ? { "@type": "WebSite", name: SITE.name, url: SITE_URL } : undefined,
-    author: { "@type": "Person", name: SITE.author },
+    inLanguage: HTML_LANG[lang],
+    isPartOf: SITE_URL ? { "@type": "WebSite", name: site.name, url: absUrl(lang, "/") } : undefined,
+    author: { "@type": "Person", name: site.author },
   };
 
   return (
     <div className="game-wrap" data-game={game.slug}>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(gameLd) }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(gameLd) }} />
       <header className="game-head">
-        <Link href="/games" className="back">
-          ← 游戏
+        <Link href={localePath(lang, "/games")} className="back">
+          {UI[lang].games.back}
         </Link>
         <h1 className="game-title">{game.title}</h1>
       </header>

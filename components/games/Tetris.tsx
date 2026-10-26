@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useEffectEvent, useRef, useState, type PointerEvent } from "react";
+import { useT } from "@/components/i18n/LangProvider";
 import { buzz, useKeys, useRecord, useSwipe, type Dir } from "./input";
+import { TETRIS_MESSAGES, type TetrisClear } from "./Tetris.messages";
 
 const W = 10;
 const H = 20;
@@ -35,7 +37,7 @@ type Game = {
   /** last successful input was rotate (for T-Spin check) */
   lastWasRotate: boolean;
   /** latest clear announcement */
-  clearTip: string | null;
+  clearTip: TetrisClear | null;
   /** consecutive line-clear locks */
   combo: number;
   /** peak combo this run */
@@ -50,7 +52,7 @@ type Stats = {
   next: Kind[];
   hold: Kind | null;
   canHold: boolean;
-  clearTip: string | null;
+  clearTip: TetrisClear | null;
   combo: number;
   comboPeak: number;
   b2b: boolean;
@@ -210,8 +212,6 @@ const dropDistance = (g: Game) => {
 
 const grounded = (g: Game) => collides(g.board, g.piece, 0, 1);
 
-const CLEAR_NAMES = ["", "单消", "双消！", "三消！", "Tetris！！"];
-
 /** 3+ of 4 corners around T center occupied/OOB => T-Spin candidate */
 function tSpinCorners(g: Game) {
   const cx = g.piece.x + 1;
@@ -291,9 +291,8 @@ function lock(g: Game) {
     g.score += gained;
     g.lines += cleared;
     g.level = 1 + Math.floor(g.lines / 10);
-    const core = tspin ? (cleared >= 2 ? `T-Spin ${CLEAR_NAMES[cleared]}` : "T-Spin 单消！") : CLEAR_NAMES[cleared];
-    const parts = [b2b ? "Back-to-Back" : null, core, g.combo > 1 ? `连消 ×${g.combo}` : null].filter(Boolean);
-    g.clearTip = parts.join(" · ");
+    // 只记结算结果，文字在渲染时按当前语言拼
+    g.clearTip = { b2b, tspin, cleared, combo: g.combo };
     g.b2bArmed = difficult;
   } else {
     g.clearTip = null;
@@ -397,14 +396,7 @@ function draw(el: HTMLCanvasElement | null, g: Game, showPiece: boolean, view?: 
 }
 
 type Action = "left" | "right" | "rotate" | "down" | "drop" | "hold";
-const PAD: [Action, string, string][] = [
-  ["left", "←", "左移"],
-  ["rotate", "旋转", "旋转"],
-  ["down", "↓", "下移"],
-  ["drop", "落底", "直接落下"],
-  ["right", "→", "右移"],
-  ["hold", "Hold", "暂存 / 交换"],
-];
+const PAD: Action[] = ["left", "rotate", "down", "drop", "right", "hold"];
 const REPEAT: Partial<Record<Action, true>> = { left: true, right: true, down: true };
 const KEY_ACTION: Record<string, Action> = {
   ArrowLeft: "left",
@@ -428,6 +420,7 @@ const KEY_ACTION: Record<string, Action> = {
 };
 
 export default function Tetris() {
+  const t = useT(TETRIS_MESSAGES);
   const canvas = useRef<HTMLCanvasElement>(null);
   const [initial] = useState(newGame);
   const game = useRef<Game>(initial);
@@ -502,13 +495,7 @@ export default function Tetris() {
     if (!lock(g)) return gameOver();
     if (g.lines > before) {
       const n = g.lines - before;
-      buzz(
-        g.clearTip?.includes("Back-to-Back") || g.clearTip?.startsWith("T-Spin") || n >= 4
-          ? [20, 30, 20, 40]
-          : g.combo > 1
-            ? [15, 25, 15]
-            : 25,
-      );
+      buzz(g.clearTip?.b2b || g.clearTip?.tspin || n >= 4 ? [20, 30, 20, 40] : g.combo > 1 ? [15, 25, 15] : 25);
     }
     sync();
   };
@@ -724,24 +711,26 @@ export default function Tetris() {
     <div className="game">
       <div className="game-bar">
         <span>
-          分数<b>{stats.score}</b>
+          {t.score}
+          <b>{stats.score}</b>
           <span
             className="tetris-score-bar"
             data-hot={stats.score >= 5000 || undefined}
             data-huge={stats.score >= 10000 || undefined}
-            title={`本局分数 ${stats.score}（满刻度 10000）`}
-            aria-label={`分数 ${stats.score}`}
+            title={t.scoreTitle(stats.score)}
+            aria-label={t.scoreAria(stats.score)}
           >
             <i style={{ width: `${Math.min(100, Math.round((stats.score / 10000) * 100))}%` }} />
           </span>
         </span>
         <span>
-          行<b>{stats.lines}</b>
+          {t.lines}
+          <b>{stats.lines}</b>
           <span
             className="tetris-lines-bar"
             data-hot={stats.lines >= 40 || undefined}
-            title={`本局消行 ${stats.lines}（满刻度按 50）`}
-            aria-label={`消行 ${stats.lines}`}
+            title={t.linesTitle(stats.lines)}
+            aria-label={t.linesAria(stats.lines)}
           >
             <i style={{ width: `${Math.min(100, Math.round((stats.lines / 50) * 100))}%` }} />
           </span>
@@ -749,8 +738,8 @@ export default function Tetris() {
             className="tetris-sprint-bar"
             data-done={stats.lines >= 40 || undefined}
             data-near={(stats.lines >= 30 && stats.lines < 40) || undefined}
-            title={`40 行短冲 ${Math.min(40, stats.lines)}/40`}
-            aria-label={`短冲进度 ${Math.min(40, stats.lines)} 之 40`}
+            title={t.sprintTitle(Math.min(40, stats.lines))}
+            aria-label={t.sprintAria(Math.min(40, stats.lines))}
           >
             <i
               style={{
@@ -760,13 +749,14 @@ export default function Tetris() {
           </span>
         </span>
         <span>
-          等级<b>{stats.level}</b>
+          {t.level}
+          <b>{stats.level}</b>
           <span
             className="tetris-level-bar"
             data-hot={stats.level >= 10 || undefined}
             data-huge={stats.level >= 15 || undefined}
-            title={`等级 ${stats.level}（满刻度按 15）`}
-            aria-label={`等级 ${stats.level}`}
+            title={t.levelTitle(stats.level)}
+            aria-label={t.levelAria(stats.level)}
           >
             <i style={{ width: `${Math.min(100, Math.round((stats.level / 15) * 100))}%` }} />
           </span>
@@ -782,15 +772,16 @@ export default function Tetris() {
             data-cool={stats.canHold === false || undefined}
             data-combo={stats.combo > 1 || undefined}
             data-preview={stats.next[0] || undefined}
-            title={`连消|Hold：连消 ×${stats.combo}${stats.comboPeak > 1 ? ` · 峰 ${stats.comboPeak}` : ""} · B2B ${stats.b2b ? "就绪" : "—"} · Hold ${stats.canHold === false ? "冷却" : "可用"}${stats.hold ? `/${stats.hold}` : "/空"} · 距升级 ${stats.linesToLevel} · 预览 ${stats.next[0] ?? "—"} · 幽灵 ${stats.ghost} 格`}
+            title={t.hudTitle(stats)}
           >
-            连消<b className={stats.combo > 1 ? "game-tip--alert" : undefined}>×{stats.combo}</b>
+            {t.combo}
+            <b className={stats.combo > 1 ? "game-tip--alert" : undefined}>×{stats.combo}</b>
             <span
               className="tetris-combo-now-bar"
               data-hot={stats.combo >= 5 || undefined}
               data-warm={(stats.combo >= 2 && stats.combo < 5) || undefined}
-              title={`当前连消 ×${stats.combo}（满刻度按 8）`}
-              aria-label={`当前连消 ${stats.combo}`}
+              title={t.comboNowTitle(stats.combo)}
+              aria-label={t.comboNowAria(stats.combo)}
             >
               <i
                 className="tetris-combo-now-bar__fill"
@@ -803,8 +794,8 @@ export default function Tetris() {
               className="tetris-ghost-depth-bar"
               data-deep={stats.ghost >= 12 || undefined}
               data-shallow={(stats.ghost > 0 && stats.ghost <= 3) || undefined}
-              title={`幽灵落点深度 ${stats.ghost} 格（满刻度按 20）`}
-              aria-label={`幽灵深度 ${stats.ghost} 格`}
+              title={t.ghostDepthTitle(stats.ghost)}
+              aria-label={t.ghostDepthAria(stats.ghost)}
             >
               <i
                 className="tetris-ghost-depth-bar__fill"
@@ -817,8 +808,8 @@ export default function Tetris() {
               className="tetris-eff-bar"
               data-hot={(stats.lines > 0 && stats.score / stats.lines >= 300) || undefined}
               data-low={(stats.lines >= 5 && stats.score / Math.max(1, stats.lines) < 80) || undefined}
-              title={stats.lines > 0 ? `行均分 ${Math.round(stats.score / stats.lines)}（满刻度按 400）` : "行均分 —"}
-              aria-label={stats.lines > 0 ? `每行约 ${Math.round(stats.score / stats.lines)} 分` : "行均分未知"}
+              title={stats.lines > 0 ? t.effTitle(Math.round(stats.score / stats.lines)) : t.effTitleNone}
+              aria-label={stats.lines > 0 ? t.effAria(Math.round(stats.score / stats.lines)) : t.effAriaNone}
             >
               <i
                 className="tetris-eff-bar__fill"
@@ -831,8 +822,8 @@ export default function Tetris() {
               className="tetris-pressure-bar"
               data-hot={(stats.ghost > 0 && stats.ghost <= 3) || undefined}
               data-safe={stats.ghost >= 12 || undefined}
-              title={`堆高压力（幽灵越浅越高）深度 ${stats.ghost}（满压按深度 0）`}
-              aria-label={`堆高压力，幽灵深度 ${stats.ghost}`}
+              title={t.pressureTitle(stats.ghost)}
+              aria-label={t.pressureAria(stats.ghost)}
             >
               <i
                 className="tetris-pressure-bar__fill"
@@ -845,8 +836,8 @@ export default function Tetris() {
               className="tetris-level-fill-bar"
               data-near={stats.linesToLevel <= 3 || undefined}
               data-fresh={stats.linesToLevel >= 9 || undefined}
-              title={`本级进度 ${(10 - stats.linesToLevel) % 10}/10（距升级 ${stats.linesToLevel} 行）`}
-              aria-label={`本级进度 ${(10 - stats.linesToLevel) % 10} 之 10`}
+              title={t.levelFillTitle((10 - stats.linesToLevel) % 10, stats.linesToLevel)}
+              aria-label={t.levelFillAria((10 - stats.linesToLevel) % 10)}
             >
               <i
                 className="tetris-level-fill-bar__fill"
@@ -859,8 +850,8 @@ export default function Tetris() {
               className="tetris-score-level-bar"
               data-hot={stats.score / Math.max(1, stats.level) >= 2000 || undefined}
               data-cold={(stats.level >= 3 && stats.score / Math.max(1, stats.level) < 600) || undefined}
-              title={`级均分 ${Math.round(stats.score / Math.max(1, stats.level))}（满刻度 3000）`}
-              aria-label={`级均分 ${Math.round(stats.score / Math.max(1, stats.level))}`}
+              title={t.scoreLevelTitle(Math.round(stats.score / Math.max(1, stats.level)))}
+              aria-label={t.scoreLevelAria(Math.round(stats.score / Math.max(1, stats.level)))}
             >
               <i
                 className="tetris-score-level-bar__fill"
@@ -873,8 +864,8 @@ export default function Tetris() {
               className="tetris-lines-density-bar"
               data-hot={stats.lines / Math.max(1, stats.level) >= 10 || undefined}
               data-low={(stats.level >= 3 && stats.lines / Math.max(1, stats.level) < 6) || undefined}
-              title={`级均行 ${Math.round((stats.lines / Math.max(1, stats.level)) * 10) / 10}（满刻度按 12，理想约 10）`}
-              aria-label={`级均行 ${Math.round((stats.lines / Math.max(1, stats.level)) * 10) / 10}`}
+              title={t.linesDensityTitle(Math.round((stats.lines / Math.max(1, stats.level)) * 10) / 10)}
+              aria-label={t.linesDensityAria(Math.round((stats.lines / Math.max(1, stats.level)) * 10) / 10)}
             >
               <i
                 className="tetris-lines-density-bar__fill"
@@ -887,8 +878,8 @@ export default function Tetris() {
               className="tetris-level-remain-bar"
               data-near={stats.linesToLevel <= 2 || undefined}
               data-fresh={stats.linesToLevel >= 8 || undefined}
-              title={`距升级还剩 ${stats.linesToLevel} 行（满刻度 10）`}
-              aria-label={`距升级还剩 ${stats.linesToLevel} 行`}
+              title={t.levelRemainTitle(stats.linesToLevel)}
+              aria-label={t.levelRemainAria(stats.linesToLevel)}
             >
               <i
                 className="tetris-level-remain-bar__fill"
@@ -901,8 +892,8 @@ export default function Tetris() {
               className="tetris-level-done-bar"
               data-near={stats.linesToLevel <= 2 || undefined}
               data-fresh={stats.linesToLevel >= 8 || undefined}
-              title={`本级进度 ${Math.max(0, 10 - stats.linesToLevel)}/10 行`}
-              aria-label={`本级已消约 ${Math.max(0, 10 - stats.linesToLevel)} 行`}
+              title={t.levelDoneTitle(Math.max(0, 10 - stats.linesToLevel))}
+              aria-label={t.levelDoneAria(Math.max(0, 10 - stats.linesToLevel))}
             >
               <i
                 className="tetris-level-done-bar__fill"
@@ -915,8 +906,10 @@ export default function Tetris() {
               className="tetris-score-line-bar"
               data-hot={(stats.lines > 0 && stats.score / stats.lines >= 120) || undefined}
               data-low={(stats.lines >= 4 && stats.score / Math.max(1, stats.lines) < 40) || undefined}
-              title={stats.lines > 0 ? `分/行 ${Math.round(stats.score / stats.lines)}（满刻度按 150）` : "分/行 —"}
-              aria-label={stats.lines > 0 ? `平均每行 ${Math.round(stats.score / stats.lines)} 分` : "分行效率未知"}
+              title={stats.lines > 0 ? t.scoreLineTitle(Math.round(stats.score / stats.lines)) : t.scoreLineTitleNone}
+              aria-label={
+                stats.lines > 0 ? t.scoreLineAria(Math.round(stats.score / stats.lines)) : t.scoreLineAriaNone
+              }
             >
               <i
                 className="tetris-score-line-bar__fill"
@@ -926,8 +919,8 @@ export default function Tetris() {
               />
             </span>
             {stats.comboPeak > 1 ? (
-              <small style={{ marginLeft: 4, opacity: 0.7 }} title={`本局连消峰值 ×${stats.comboPeak}`}>
-                峰{stats.comboPeak}
+              <small style={{ marginLeft: 4, opacity: 0.7 }} title={t.comboPeakTitle(stats.comboPeak)}>
+                {t.peak(stats.comboPeak)}
               </small>
             ) : null}
             {stats.comboPeak > 1 ? (
@@ -935,8 +928,8 @@ export default function Tetris() {
                 className="tetris-combo-peak-bar"
                 data-peak={(stats.combo >= stats.comboPeak && stats.combo > 0) || undefined}
                 data-hot={stats.combo >= 5 || undefined}
-                title={`连消相对峰值 ${stats.combo}/${stats.comboPeak}`}
-                aria-label={`连消相对峰值 ${stats.combo}/${stats.comboPeak}`}
+                title={t.comboPeakBar(stats.combo, stats.comboPeak)}
+                aria-label={t.comboPeakBar(stats.combo, stats.comboPeak)}
               >
                 <i
                   className="tetris-combo-peak-bar__fill"
@@ -947,11 +940,11 @@ export default function Tetris() {
               </span>
             ) : null}
             <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
-            B2B<b className={stats.b2b ? "game-tip--alert" : undefined}>{stats.b2b ? "就绪" : "—"}</b>
+            B2B<b className={stats.b2b ? "game-tip--alert" : undefined}>{stats.b2b ? t.ready : "—"}</b>
             <span
               className="tetris-b2b-bar"
               data-armed={stats.b2b || undefined}
-              title={stats.b2b ? "B2B 已武装：下一次困难消行享加成" : "B2B 未武装"}
+              title={stats.b2b ? t.b2bArmedTitle : t.b2bIdleTitle}
               aria-label={stats.b2b ? "B2B armed" : "B2B idle"}
             >
               <i style={{ width: stats.b2b ? "100%" : "8%" }} />
@@ -959,19 +952,19 @@ export default function Tetris() {
             <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
             Hold
             <b className={stats.canHold === false ? undefined : "game-tip--alert"}>
-              {stats.canHold === false ? "冷却" : "可用"}
+              {stats.canHold === false ? t.cooling : t.available}
             </b>
             {stats.hold ? (
               <small style={{ marginLeft: 4, opacity: 0.75 }}>{stats.hold}</small>
             ) : (
-              <small style={{ marginLeft: 4, opacity: 0.55 }}>空</small>
+              <small style={{ marginLeft: 4, opacity: 0.55 }}>{t.empty}</small>
             )}
             <span
               className="tetris-hold-bar"
               data-cool={stats.canHold === false || undefined}
               data-ready={stats.canHold || undefined}
-              title={stats.canHold === false ? "Hold 条：冷却中" : "Hold 条：可用"}
-              aria-label={stats.canHold === false ? "Hold 冷却" : "Hold 可用"}
+              title={t.holdBarTitle(stats.canHold === false)}
+              aria-label={t.holdBarAria(stats.canHold === false)}
             >
               <i style={{ width: stats.canHold === false ? "28%" : "100%" }} />
             </span>
@@ -979,7 +972,7 @@ export default function Tetris() {
               className="tetris-hold-coolbar"
               data-cool={stats.canHold === false || undefined}
               data-ready={stats.canHold || undefined}
-              title={stats.canHold === false ? "Hold 冷却：落地后恢复" : "Hold 可用"}
+              title={t.holdCoolTitle(stats.canHold === false)}
               aria-hidden="true"
             >
               <i
@@ -991,7 +984,7 @@ export default function Tetris() {
               />
             </span>
             <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
-            预览
+            {t.preview}
             <b className={stats.next[0] === "I" || stats.next[0] === "T" ? "game-tip--alert" : undefined}>
               {stats.next[0] ?? "—"}
             </b>
@@ -999,8 +992,8 @@ export default function Tetris() {
               className="tetris-preview-bar"
               data-prime={stats.next[0] === "I" || stats.next[0] === "T" || undefined}
               data-i={stats.next[0] === "I" || undefined}
-              title={`预览 ${stats.next[0] ?? "空"}（I/T 高亮）`}
-              aria-label={`预览 ${stats.next[0] ?? "空"}`}
+              title={t.previewTitle(stats.next[0])}
+              aria-label={t.previewAria(stats.next[0])}
             >
               <i
                 style={{
@@ -1013,9 +1006,10 @@ export default function Tetris() {
               className="tetris-ghost-tier"
               data-tier={stats.ghost <= 2 ? "land" : stats.ghost <= 6 ? "low" : stats.ghost <= 12 ? "mid" : "high"}
               data-land={stats.ghost <= 2 || undefined}
-              title={`幽灵落距 ${stats.ghost} 格（land≤2 / low≤6 / mid≤12 / high>12）`}
+              title={t.ghostTierTitle(stats.ghost)}
             >
-              幽灵<b className={stats.ghost <= 2 ? "game-tip--alert" : undefined}>{stats.ghost}</b>
+              {t.ghost}
+              <b className={stats.ghost <= 2 ? "game-tip--alert" : undefined}>{stats.ghost}</b>
               <small className="tetris-ghost-tier__label" style={{ marginLeft: 4, opacity: 0.75 }}>
                 {stats.ghost <= 2 ? "land" : stats.ghost <= 6 ? "low" : stats.ghost <= 12 ? "mid" : "high"}
               </small>
@@ -1028,9 +1022,10 @@ export default function Tetris() {
               className="tetris-level-eta tetris-level-eta--tier"
               data-near={stats.linesToLevel <= 2 || undefined}
               data-tier={stats.linesToLevel <= 2 ? "near" : stats.linesToLevel <= 5 ? "mid" : "far"}
-              title={`距升级色阶：还差 ${stats.linesToLevel} 行（near≤2 / mid≤5 / far>5）`}
+              title={t.levelEtaTitle(stats.linesToLevel)}
             >
-              距升级<b className={stats.linesToLevel <= 2 ? "game-tip--alert" : undefined}>{stats.linesToLevel}</b>
+              {t.toLevel}
+              <b className={stats.linesToLevel <= 2 ? "game-tip--alert" : undefined}>{stats.linesToLevel}</b>
               <small className="tetris-level-eta__tier" style={{ marginLeft: 4, opacity: 0.75 }}>
                 {stats.linesToLevel <= 2 ? "near" : stats.linesToLevel <= 5 ? "mid" : "far"}
               </small>
@@ -1038,8 +1033,8 @@ export default function Tetris() {
                 className="tetris-level-fill"
                 data-near={stats.linesToLevel <= 2 || undefined}
                 data-tier={stats.linesToLevel <= 2 ? "near" : stats.linesToLevel <= 5 ? "mid" : "far"}
-                title={`升级进度 ${(10 - stats.linesToLevel) % 10}/10（还差 ${stats.linesToLevel}）`}
-                aria-label={`升级进度 ${10 - stats.linesToLevel}/10`}
+                title={t.levelUpTitle((10 - stats.linesToLevel) % 10, stats.linesToLevel)}
+                aria-label={t.levelUpAria(10 - stats.linesToLevel)}
               >
                 <i
                   className="tetris-level-fill__bar"
@@ -1051,22 +1046,23 @@ export default function Tetris() {
             </span>
           </span>
         ) : (
-          <span title="连消与 B2B 同屏：连续消行累加；Tetris/T-Spin 武装 B2B">
-            连消<b className={stats.combo > 1 ? "game-tip--alert" : undefined}>×{stats.combo}</b>
+          <span title={t.comboB2bTitle}>
+            {t.combo}
+            <b className={stats.combo > 1 ? "game-tip--alert" : undefined}>×{stats.combo}</b>
             <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
-            B2B<b className={stats.b2b ? "game-tip--alert" : undefined}>{stats.b2b ? "就绪" : "—"}</b>
+            B2B<b className={stats.b2b ? "game-tip--alert" : undefined}>{stats.b2b ? t.ready : "—"}</b>
           </span>
         )}
         <span className="spacer" />
         {(phase === "running" || phase === "paused") && (
           <button type="button" className="game-btn" onClick={toggle}>
-            {phase === "running" ? "暂停" : "继续"}
+            {phase === "running" ? t.pause : t.resume}
           </button>
         )}
       </div>
       {stats.clearTip && phase === "running" && (
         <p className="game-tip game-tip--alert" aria-live="polite">
-          {stats.clearTip}
+          {t.clearTip(stats.clearTip)}
         </p>
       )}
       {phase === "running" && !stats.clearTip && (
@@ -1078,43 +1074,37 @@ export default function Tetris() {
           }
           aria-live="polite"
         >
-          {`连消|Hold：×${stats.combo} · B2B ${stats.b2b ? "就绪" : "未武装"} · Hold ${stats.canHold === false ? "冷却条满" : "可用"}${stats.hold ? `/${stats.hold}` : "/空"} · 预览 ${stats.next[0] ?? "—"}${stats.next.length > 1 ? ` · ${stats.next.join("→")}` : ""}`}
-          {" · 幽灵 "}
-          {stats.ghost}
-          {" 格"}
-          {` · 距升级色阶 ${stats.linesToLevel} 行（${stats.linesToLevel <= 2 ? "near" : stats.linesToLevel <= 5 ? "mid" : "far"}）`}
+          {t.statusTip(stats)}
         </p>
       )}
       <div className="tetris">
         <div className="game-stage tetris-board" {...swipe}>
-          <canvas ref={canvas} aria-label={`俄罗斯方块，${stats.score} 分`} />
+          <canvas ref={canvas} aria-label={t.canvasAria(stats.score)} />
           {phase !== "running" && (
             <div className="game-overlay">
               {phase === "ready" && (
                 <>
-                  <strong>俄罗斯方块</strong>
-                  <p>右侧预览下一块与队列；消一行得分，一次消得越多分越高</p>
+                  <strong>{t.title}</strong>
+                  <p>{t.intro}</p>
                   <button type="button" className="game-btn game-btn--primary" onClick={() => setPhase("running")}>
-                    开始
+                    {t.start}
                   </button>
                 </>
               )}
               {phase === "paused" && (
                 <>
-                  <strong>暂停中</strong>
+                  <strong>{t.paused}</strong>
                   <button type="button" className="game-btn game-btn--primary" onClick={toggle}>
-                    继续
+                    {t.resume}
                   </button>
                 </>
               )}
               {phase === "over" && (
                 <>
-                  <strong>{record ? "新纪录！" : "堆到顶了"}</strong>
-                  <p>
-                    {stats.score} 分 · 消了 {stats.lines} 行
-                  </p>
+                  <strong>{record ? t.newRecord : t.toppedOut}</strong>
+                  <p>{t.result(stats.score, stats.lines)}</p>
                   <button type="button" className="game-btn game-btn--primary" onClick={restart}>
-                    再来一局
+                    {t.again}
                   </button>
                 </>
               )}
@@ -1122,11 +1112,9 @@ export default function Tetris() {
           )}
         </div>
         <div className="tetris-side">
-          <span
-            title={stats.canHold === false ? "Hold 冷却：落地后再可交换" : "C / Shift：与当前块交换；落地前每块限一次"}
-          >
-            暂存
-            <small style={{ marginLeft: 6, opacity: 0.8 }}>{stats.canHold === false ? "冷却" : "可用"}</small>
+          <span title={t.holdSideTitle(stats.canHold === false)}>
+            {t.hold}
+            <small style={{ marginLeft: 6, opacity: 0.8 }}>{stats.canHold === false ? t.cooling : t.available}</small>
             <span
               className="tetris-hold-coolbar tetris-hold-coolbar--side"
               data-cool={stats.canHold === false || undefined}
@@ -1145,7 +1133,7 @@ export default function Tetris() {
           <div
             className="tetris-next"
             data-dim={stats.canHold === false ? "true" : undefined}
-            aria-label={stats.hold ? `暂存 ${stats.hold} 形` : "暂存为空"}
+            aria-label={t.holdSlotAria(stats.hold)}
           >
             {Array.from({ length: 8 }, (_, i) => {
               const kind = stats.hold;
@@ -1153,11 +1141,11 @@ export default function Tetris() {
               return <i key={i} style={on && kind ? { background: COLORS[kind] } : undefined} />;
             })}
           </div>
-          <span title={`预览队列：${stats.next.join(" → ")}（7-bag）`}>
-            下一个
-            {stats.next[0] ? <small style={{ marginLeft: 6, opacity: 0.8 }}>首{stats.next[0]}</small> : null}
+          <span title={t.queueTitle(stats.next)}>
+            {t.next}
+            {stats.next[0] ? <small style={{ marginLeft: 6, opacity: 0.8 }}>{t.firstNext(stats.next[0])}</small> : null}
           </span>
-          <div className="tetris-next-queue" aria-label={`下一个：${stats.next.join("、")}`} data-preview-tip="true">
+          <div className="tetris-next-queue" aria-label={t.nextAria(stats.next)} data-preview-tip="true">
             {stats.next.map((kind, qi) => (
               <div key={`${kind}-${qi}`} className="tetris-next" data-queue={qi === 0 ? "primary" : "next"}>
                 {Array.from({ length: 8 }, (_, i) => {
@@ -1167,42 +1155,38 @@ export default function Tetris() {
               </div>
             ))}
           </div>
-          <span>最高</span>
+          <span>{t.best}</span>
           <b>{best ?? 0}</b>
         </div>
       </div>
       <div className="pad pad--tetris">
-        {PAD.map(([a, icon, label]) => (
+        {PAD.map((a) => (
           <button
             key={a}
             type="button"
-            aria-label={label}
-            className={a === "drop" ? "pad__text pad__drop" : icon.length > 1 ? "pad__text" : undefined}
+            aria-label={t.pad[a].label}
+            className={a === "drop" ? "pad__text pad__drop" : t.pad[a].icon.length > 1 ? "pad__text" : undefined}
             style={{ gridArea: a }}
             onPointerDown={press(a)}
             onPointerUp={stopRepeat}
             onPointerLeave={stopRepeat}
             onPointerCancel={stopRepeat}
           >
-            {icon}
+            {t.pad[a].icon}
           </button>
         ))}
         <button
           type="button"
-          aria-label={phase === "paused" ? "继续" : "暂停"}
+          aria-label={phase === "paused" ? t.resume : t.pause}
           className="pad__text"
           style={{ gridArea: "pause" }}
           onClick={toggle}
         >
-          {phase === "paused" ? "继续" : "暂停"}
+          {phase === "paused" ? t.resume : t.pause}
         </button>
       </div>
-      <p className="game-hint when-mouse">
-        右侧看下一个与暂存；连续消行有连消加成；Tetris / T-Spin 可累积 Back-to-Back。旋转卡住 T 形再消行可 T-Spin。
-      </p>
-      <p className="game-hint when-touch">
-        棋盘滑动：左右移动，上滑旋转，下滑落底；下方 Hold 暂存，↓ 加速，可点暂停。消行与 T-Spin 有顶部提示。
-      </p>
+      <p className="game-hint when-mouse">{t.hintMouse}</p>
+      <p className="game-hint when-touch">{t.hintTouch}</p>
     </div>
   );
 }

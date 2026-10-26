@@ -1,0 +1,68 @@
+---
+title: "Go の errgroup と WaitGroup：キャンセルのセマンティクスとエラー集約でどう選ぶか"
+summary: "errgroup の同時実行数制限とキャンセルについては別記事があります。この記事では WaitGroup との比較だけを扱います：手書きの wg+err で十分なのはいつか、WithContext が元を取れるのはいつか。"
+---
+
+`sync.WaitGroup` が保証するのは「すべて終わった」ことだけです。`errgroup` はさらに **最初のエラーでのキャンセル** と **エラーの集約** を提供します。選択の基準は「新しいライブラリのほうが良い」ではなく、この 2 つが必要かどうかです。
+
+## 比較表
+
+| 要件 | WaitGroup | errgroup |
+|---|---|---|
+| N 個のゴルーチンの終了を待つ | ✅ | ✅ |
+| どれか 1 つが失敗したら残りを止める | cancel とブロードキャストを自前で管理 | `WithContext` ですぐ使える |
+| 最初の / すべてのエラーを集める | `atomic`/`chan`/`Mutex` を自前で管理 | `Wait()` が最初のエラーを返す |
+| 同時実行数の上限 | セマフォを自前で管理 | `SetLimit` |
+| 依存ゼロ | 標準ライブラリ | `x/sync` |
+
+## WaitGroup で十分なケース
+
+- 純粋なファンアウトで、**エラーを無視するかログに残すだけでよい**場合（メトリクス収集、キャッシュのウォームアップ）。  
+- ライフサイクルは外側の `ctx` が一元管理しており、タスクはすでに `ctx.Done()` を尊重していて、足りないのは「全員を待つ」ことだけの場合。  
+- エラー方針が「全部走らせてから集約する」で、途中で兄弟タスクを止めたくない場合。
+
+```go
+var wg sync.WaitGroup
+var mu sync.Mutex
+var errs []error
+for _, id := range ids {
+  wg.Add(1)
+  go func(id string) {
+    defer wg.Done()
+    if err := work(ctx, id); err != nil {
+      mu.Lock(); errs = append(errs, err); mu.Unlock()
+    }
+  }(id)
+}
+wg.Wait()
+```
+
+短く、見通しが良いです。代償として、キャンセルと同時実行数の制限は自分で配線する必要があります。
+
+## errgroup を使うべきサイン
+
+1. **失敗したら止める**：依存先の 1 つが落ちているのに残り 50 個を叩き続けても、障害の連鎖を広げるだけです。  
+2. **リクエスト単位のライフサイクル**：handler が返る前にすべてを片付け、キャンセルを末端まで伝える必要があります。  
+3. **最初のエラーだけが重要**：呼び出し側は `if err := g.Wait()` の 1 本の経路で抜けたい場合です。
+
+```go
+g, ctx := errgroup.WithContext(parent)
+g.SetLimit(8)
+for _, id := range ids {
+  id := id
+  g.Go(func() error { return work(ctx, id) })
+}
+return g.Wait()
+```
+
+## 混在させたときの落とし穴
+
+| 混在のしかた | 結果 |
+|---|---|
+| errgroup の中で無関係なタスクのために `wg.Add` する | `Wait` が早く返り、残りのタスクがまだ動いている |
+| WaitGroup のタスクが外側の cancel を無視する | 「全員待ったように見える」が、実はタイムアウト後も下流を叩き続けている |
+| 縮退可能なエラーを errgroup の最初のエラーに入れる | 部分的な失敗でグループ全体を巻き添えにする |
+
+## ひとことで
+
+**全員を待つ + エラーは自前で処理** → WaitGroup、**最初のエラーでキャンセル + 同時実行数の制限** → errgroup（あわせて本サイトの制限の記事を読み、`SetLimit` / ctx を末端まで伝えましょう）。`go-errgroup-limits`、`go-concurrency-pitfalls` と同じ流れです：プリミティブは流行ではなく、境界で選びましょう。

@@ -1,27 +1,30 @@
 // 打砖块关卡：每行 10 格。
 // 1 普通砖，2 / 3 要打两下 / 三下，# 打不碎的金属块，. 空。
 // W / S / L / M 是打一下就碎、碎了会掉道具的砖：W 宽拍，S 减速，L 加命，M 多球
-export type BreakoutLevel = { name: string; rows: string[] };
+import type { Messages } from "@/lib/i18n";
+
+/** name 每种语言一份，用 useLang() 取 */
+export type BreakoutLevel = { name: Messages<string>; rows: string[] };
 
 export const BREAKOUT_LEVELS: BreakoutLevel[] = [
   {
-    name: "热身",
+    name: { zh: "热身", en: "Warm-up", ja: "ウォームアップ" },
     rows: ["1111111111", "1111111111", "11111W1111"],
   },
   {
-    name: "金字塔",
+    name: { zh: "金字塔", en: "Pyramid", ja: "ピラミッド" },
     rows: ["....11....", "...1111...", "..11S111..", ".1111M111.", "1111111111"],
   },
   {
-    name: "硬砖块",
+    name: { zh: "硬砖块", en: "Hard Bricks", ja: "硬いブロック" },
     rows: ["2222222222", "1111111111", "1W111111S1", "1111111111"],
   },
   {
-    name: "爱心",
+    name: { zh: "爱心", en: "Heart", ja: "ハート" },
     rows: [".11....11.", "1111..1111", "1111111111", ".11111111.", "..111L11..", "...1111...", "....11...."],
   },
   {
-    name: "侵略者",
+    name: { zh: "侵略者", en: "Invaders", ja: "インベーダー" },
     rows: [
       "..1....1..",
       "...1..1...",
@@ -34,15 +37,15 @@ export const BREAKOUT_LEVELS: BreakoutLevel[] = [
     ],
   },
   {
-    name: "堡垒",
+    name: { zh: "堡垒", en: "Fortress", ja: "要塞" },
     rows: [".33333333.", ".22222222.", "#..1111..#", "#..1W11..#", "#..11SM..#", "##......##"],
   },
   {
-    name: "棋盘",
+    name: { zh: "棋盘", en: "Checkerboard", ja: "チェッカー" },
     rows: ["1.2.1.2.1.", ".2.1.2.1.2", "1.2.S.2.1.", ".2.1.2.1.2", "3.3.3.3.3.", ".L........"],
   },
   {
-    name: "终极",
+    name: { zh: "终极", en: "Finale", ja: "ファイナル" },
     rows: ["3333333333", "2.2.22.2.2", "1111L11111", "##.#..#.##", "2222M22222", "1W11111S11"],
   },
 ];

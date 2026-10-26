@@ -50,8 +50,26 @@ type Game = {
   combo: number;
   bestCombo: number;
 };
-type Hud = { score: number; lives: number; level: number; wide: boolean; slow: boolean; wideLeft: number; slowLeft: number; balls: number; brickLeft: number; brickTotal: number; progress: number; combo: number; bestCombo: number; ballSpeed: number; paddleW: number; dropsAir: number; metalLeft: number; seconds: number };
-
+type Hud = {
+  score: number;
+  lives: number;
+  level: number;
+  wide: boolean;
+  slow: boolean;
+  wideLeft: number;
+  slowLeft: number;
+  balls: number;
+  brickLeft: number;
+  brickTotal: number;
+  progress: number;
+  combo: number;
+  bestCombo: number;
+  ballSpeed: number;
+  paddleW: number;
+  dropsAir: number;
+  metalLeft: number;
+  seconds: number;
+};
 
 /** breakable bricks still alive (metal ignored) */
 function brickStats(g: Game) {
@@ -208,7 +226,12 @@ function step(g: Game, dt: number, held: number): StepResult {
         break;
       }
 
-      if (b.vy > 0 && b.y + BALL_R >= PADDLE_Y && py + BALL_R <= PADDLE_Y + 4 && Math.abs(b.x - g.paddle) <= half + BALL_R) {
+      if (
+        b.vy > 0 &&
+        b.y + BALL_R >= PADDLE_Y &&
+        py + BALL_R <= PADDLE_Y + 4 &&
+        Math.abs(b.x - g.paddle) <= half + BALL_R
+      ) {
         const k = Math.max(-1, Math.min(1, (b.x - g.paddle) / half));
         const v = ballSpeed(g);
         b.vx = v * Math.sin(k * 1.05);
@@ -338,9 +361,28 @@ export default function Breakout() {
   const [initial] = useState(() => newGame(0));
   const game = useRef<Game>(initial);
   const held = useRef({ left: false, right: false });
-    const buzzMuted = useBuzzMuted();
-const [phase, setPhase] = useState<Phase>("select");
-  const [hud, setHud] = useState<Hud>({ score: 0, lives: 3, level: 0, wide: false, slow: false, wideLeft: 0, slowLeft: 0, balls: 1, brickLeft: 0, brickTotal: 0, progress: 0, combo: 0, bestCombo: 0, ballSpeed: 320, paddleW: 88 , dropsAir: 0, metalLeft: 0, seconds: 0});
+  const buzzMuted = useBuzzMuted();
+  const [phase, setPhase] = useState<Phase>("select");
+  const [hud, setHud] = useState<Hud>({
+    score: 0,
+    lives: 3,
+    level: 0,
+    wide: false,
+    slow: false,
+    wideLeft: 0,
+    slowLeft: 0,
+    balls: 1,
+    brickLeft: 0,
+    brickTotal: 0,
+    progress: 0,
+    combo: 0,
+    bestCombo: 0,
+    ballSpeed: 320,
+    paddleW: 88,
+    dropsAir: 0,
+    metalLeft: 0,
+    seconds: 0,
+  });
   const [record, setRecord] = useState(false);
   const [best] = useRecord("breakout", higher);
   const [unlocked] = useRecord("breakout-unlocked", higher);
@@ -463,7 +505,8 @@ const [phase, setPhase] = useState<Phase>("select");
 
   const toggle = () => {
     if (phase === "running" || phase === "aim") setPhase("paused");
-    else if (phase === "paused") setPhase(game.current.balls.every((b) => b.vy === 0 && b.vx === 0) ? "aim" : "running");
+    else if (phase === "paused")
+      setPhase(game.current.balls.every((b) => b.vy === 0 && b.vx === 0) ? "aim" : "running");
   };
 
   useKeys((key, repeat) => {
@@ -525,7 +568,10 @@ const [phase, setPhase] = useState<Phase>("select");
       <div className="game-bar">
         {phase === "select" ? (
           <span>
-            选择关卡<b>{unlocked ?? 1}/{BREAKOUT_LEVELS.length}</b>
+            选择关卡
+            <b>
+              {unlocked ?? 1}/{BREAKOUT_LEVELS.length}
+            </b>
           </span>
         ) : (
           <>
@@ -557,16 +603,16 @@ const [phase, setPhase] = useState<Phase>("select");
               >
                 <i
                   style={{
-                    width: `${Math.min(
-                      100,
-                      Math.round((hud.score / Math.max(500, (hud.level + 1) * 800)) * 100),
-                    )}%`,
+                    width: `${Math.min(100, Math.round((hud.score / Math.max(500, (hud.level + 1) * 800)) * 100))}%`,
                   }}
                 />
               </span>
             </span>
             <span title="多球与残命同屏（掉球扣一命；多球道具可叠加）">
-              生命<b className={hud.lives <= 1 ? "game-tip--alert" : undefined}>{"♥".repeat(Math.max(0, hud.lives)) || "0"}</b>
+              生命
+              <b className={hud.lives <= 1 ? "game-tip--alert" : undefined}>
+                {"♥".repeat(Math.max(0, hud.lives)) || "0"}
+              </b>
               <small style={{ marginLeft: 4, opacity: 0.7 }}>/5</small>
               <span
                 className="breakout-lives-bar"
@@ -577,8 +623,8 @@ const [phase, setPhase] = useState<Phase>("select");
               >
                 <i style={{ width: `${Math.min(100, Math.round((hud.lives / 5) * 100))}%` }} />
               </span>
-              <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
-              球<b className={hud.balls > 1 ? "game-tip--alert" : undefined}>{hud.balls}</b>
+              <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>球
+              <b className={hud.balls > 1 ? "game-tip--alert" : undefined}>{hud.balls}</b>
               {hud.balls > 1 ? <small style={{ marginLeft: 4, opacity: 0.85 }}>多球</small> : null}
               <span
                 className="breakout-balls-bar"
@@ -592,7 +638,7 @@ const [phase, setPhase] = useState<Phase>("select");
               <span
                 className="breakout-combo-now-bar"
                 data-hot={hud.combo >= 5 || undefined}
-                data-mid={hud.combo >= 3 && hud.combo < 5 || undefined}
+                data-mid={(hud.combo >= 3 && hud.combo < 5) || undefined}
                 title={`当前连击 ×${hud.combo}（满刻度按 10）`}
                 aria-label={`当前连击 ${hud.combo}`}
               >
@@ -604,18 +650,14 @@ const [phase, setPhase] = useState<Phase>("select");
               </span>
               <span
                 className="breakout-combo-gap-bar"
-                data-peak={hud.bestCombo > 0 && hud.combo >= hud.bestCombo || undefined}
-                data-near={hud.bestCombo > 0 && hud.combo >= hud.bestCombo * 0.7 && hud.combo < hud.bestCombo || undefined}
+                data-peak={(hud.bestCombo > 0 && hud.combo >= hud.bestCombo) || undefined}
+                data-near={
+                  (hud.bestCombo > 0 && hud.combo >= hud.bestCombo * 0.7 && hud.combo < hud.bestCombo) || undefined
+                }
                 title={
-                  hud.bestCombo > 0
-                    ? `连击相对峰值 ${hud.combo}/${hud.bestCombo}`
-                    : `连击 ×${hud.combo}（尚无峰值）`
+                  hud.bestCombo > 0 ? `连击相对峰值 ${hud.combo}/${hud.bestCombo}` : `连击 ×${hud.combo}（尚无峰值）`
                 }
-                aria-label={
-                  hud.bestCombo > 0
-                    ? `连击相对峰值 ${hud.combo}/${hud.bestCombo}`
-                    : `连击 ${hud.combo}`
-                }
+                aria-label={hud.bestCombo > 0 ? `连击相对峰值 ${hud.combo}/${hud.bestCombo}` : `连击 ${hud.combo}`}
               >
                 <i
                   style={{
@@ -630,7 +672,7 @@ const [phase, setPhase] = useState<Phase>("select");
               <span
                 className="breakout-clear-bar"
                 data-done={hud.progress >= 100 || undefined}
-                data-late={hud.progress >= 70 && hud.progress < 100 || undefined}
+                data-late={(hud.progress >= 70 && hud.progress < 100) || undefined}
                 title={`清砖进度 ${hud.progress}%（剩 ${hud.brickLeft}/${hud.brickTotal}）`}
                 aria-label={`清砖 ${hud.progress} percent`}
               >
@@ -642,7 +684,7 @@ const [phase, setPhase] = useState<Phase>("select");
               </span>
               <span
                 className="breakout-remain-bar"
-                data-low={hud.brickLeft > 0 && hud.brickLeft <= 3 || undefined}
+                data-low={(hud.brickLeft > 0 && hud.brickLeft <= 3) || undefined}
                 data-empty={hud.brickLeft === 0 || undefined}
                 title={`剩余砖 ${hud.brickLeft}/${hud.brickTotal}`}
                 aria-label={`剩余砖 ${hud.brickLeft}`}
@@ -650,42 +692,34 @@ const [phase, setPhase] = useState<Phase>("select");
                 <i
                   style={{
                     width: `${
-                      hud.brickTotal > 0
-                        ? Math.min(100, Math.round((hud.brickLeft / hud.brickTotal) * 100))
-                        : 0
+                      hud.brickTotal > 0 ? Math.min(100, Math.round((hud.brickLeft / hud.brickTotal) * 100)) : 0
                     }%`,
                   }}
                 />
               </span>
               <span
                 className="breakout-score-pace-bar"
-                data-hot={hud.seconds > 0 && hud.score / hud.seconds >= 40 || undefined}
-                data-slow={hud.seconds >= 20 && hud.score / Math.max(1, hud.seconds) < 8 || undefined}
+                data-hot={(hud.seconds > 0 && hud.score / hud.seconds >= 40) || undefined}
+                data-slow={(hud.seconds >= 20 && hud.score / Math.max(1, hud.seconds) < 8) || undefined}
                 title={
                   hud.seconds > 0
                     ? `得分配速 ${Math.round((hud.score / hud.seconds) * 10) / 10}/s（满刻度按 50/s）`
                     : "得分配速 —"
                 }
                 aria-label={
-                  hud.seconds > 0
-                    ? `每秒约 ${Math.round((hud.score / hud.seconds) * 10) / 10} 分`
-                    : "得分配速未知"
+                  hud.seconds > 0 ? `每秒约 ${Math.round((hud.score / hud.seconds) * 10) / 10} 分` : "得分配速未知"
                 }
               >
                 <i
                   style={{
-                    width: `${
-                      hud.seconds > 0
-                        ? Math.min(100, Math.round((hud.score / hud.seconds / 50) * 100))
-                        : 0
-                    }%`,
+                    width: `${hud.seconds > 0 ? Math.min(100, Math.round((hud.score / hud.seconds / 50) * 100)) : 0}%`,
                   }}
                 />
               </span>
               <span
                 className="breakout-clear-pace-bar"
-                data-hot={hud.seconds > 0 && hud.progress / hud.seconds >= 4 || undefined}
-                data-slow={hud.seconds >= 25 && hud.progress / Math.max(1, hud.seconds) < 1 || undefined}
+                data-hot={(hud.seconds > 0 && hud.progress / hud.seconds >= 4) || undefined}
+                data-slow={(hud.seconds >= 25 && hud.progress / Math.max(1, hud.seconds) < 1) || undefined}
                 title={
                   hud.seconds > 0
                     ? `清砖配速 ${Math.round((hud.progress / hud.seconds) * 10) / 10}%/s（满刻度按 5%/s）`
@@ -700,27 +734,17 @@ const [phase, setPhase] = useState<Phase>("select");
                 <i
                   style={{
                     width: `${
-                      hud.seconds > 0
-                        ? Math.min(100, Math.round((hud.progress / hud.seconds / 5) * 100))
-                        : 0
+                      hud.seconds > 0 ? Math.min(100, Math.round((hud.progress / hud.seconds / 5) * 100)) : 0
                     }%`,
                   }}
                 />
               </span>
               <span
                 className="breakout-combo-ratio-bar"
-                data-hot={hud.bestCombo > 0 && hud.combo >= hud.bestCombo && hud.combo >= 3 || undefined}
-                data-warm={hud.bestCombo > 0 && hud.combo / hud.bestCombo >= 0.6 || undefined}
-                title={
-                  hud.bestCombo > 0
-                    ? `连击相对峰值 ${hud.combo}/${hud.bestCombo}`
-                    : `连击 ${hud.combo}`
-                }
-                aria-label={
-                  hud.bestCombo > 0
-                    ? `连击 ${hud.combo} 相对峰 ${hud.bestCombo}`
-                    : `连击 ${hud.combo}`
-                }
+                data-hot={(hud.bestCombo > 0 && hud.combo >= hud.bestCombo && hud.combo >= 3) || undefined}
+                data-warm={(hud.bestCombo > 0 && hud.combo / hud.bestCombo >= 0.6) || undefined}
+                title={hud.bestCombo > 0 ? `连击相对峰值 ${hud.combo}/${hud.bestCombo}` : `连击 ${hud.combo}`}
+                aria-label={hud.bestCombo > 0 ? `连击 ${hud.combo} 相对峰 ${hud.bestCombo}` : `连击 ${hud.combo}`}
               >
                 <i
                   style={{
@@ -734,50 +758,30 @@ const [phase, setPhase] = useState<Phase>("select");
               </span>
               <span
                 className="breakout-left-ratio-bar"
-                data-low={hud.brickTotal > 0 && hud.brickLeft / hud.brickTotal <= 0.2 || undefined}
-                data-high={hud.brickTotal > 0 && hud.brickLeft / hud.brickTotal >= 0.7 || undefined}
-                title={
-                  hud.brickTotal > 0
-                    ? `剩余砖 ${hud.brickLeft}/${hud.brickTotal}`
-                    : "剩余砖 —"
-                }
-                aria-label={
-                  hud.brickTotal > 0
-                    ? `剩余砖 ${hud.brickLeft} 块，共 ${hud.brickTotal}`
-                    : "剩余砖未知"
-                }
+                data-low={(hud.brickTotal > 0 && hud.brickLeft / hud.brickTotal <= 0.2) || undefined}
+                data-high={(hud.brickTotal > 0 && hud.brickLeft / hud.brickTotal >= 0.7) || undefined}
+                title={hud.brickTotal > 0 ? `剩余砖 ${hud.brickLeft}/${hud.brickTotal}` : "剩余砖 —"}
+                aria-label={hud.brickTotal > 0 ? `剩余砖 ${hud.brickLeft} 块，共 ${hud.brickTotal}` : "剩余砖未知"}
               >
                 <i
                   style={{
                     width: `${
-                      hud.brickTotal > 0
-                        ? Math.min(100, Math.round((hud.brickLeft / hud.brickTotal) * 100))
-                        : 0
+                      hud.brickTotal > 0 ? Math.min(100, Math.round((hud.brickLeft / hud.brickTotal) * 100)) : 0
                     }%`,
                   }}
                 />
               </span>
               <span
                 className="breakout-metal-share-bar"
-                data-high={hud.brickLeft > 0 && hud.metalLeft / hud.brickLeft >= 0.45 || undefined}
-                data-clear={hud.brickLeft > 0 && hud.metalLeft === 0 || undefined}
-                title={
-                  hud.brickLeft > 0
-                    ? `金属占比 ${hud.metalLeft}/${hud.brickLeft}`
-                    : "金属占比 —"
-                }
-                aria-label={
-                  hud.brickLeft > 0
-                    ? `剩余砖中金属 ${hud.metalLeft} 块`
-                    : "金属占比未知"
-                }
+                data-high={(hud.brickLeft > 0 && hud.metalLeft / hud.brickLeft >= 0.45) || undefined}
+                data-clear={(hud.brickLeft > 0 && hud.metalLeft === 0) || undefined}
+                title={hud.brickLeft > 0 ? `金属占比 ${hud.metalLeft}/${hud.brickLeft}` : "金属占比 —"}
+                aria-label={hud.brickLeft > 0 ? `剩余砖中金属 ${hud.metalLeft} 块` : "金属占比未知"}
               >
                 <i
                   style={{
                     width: `${
-                      hud.brickLeft > 0
-                        ? Math.min(100, Math.round((hud.metalLeft / hud.brickLeft) * 100))
-                        : 0
+                      hud.brickLeft > 0 ? Math.min(100, Math.round((hud.metalLeft / hud.brickLeft) * 100)) : 0
                     }%`,
                   }}
                 />
@@ -795,8 +799,8 @@ const [phase, setPhase] = useState<Phase>("select");
                   }}
                 />
               </span>
-              <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
-              速<b className={hud.lives <= 1 || hud.slow ? "game-tip--alert" : undefined}>{hud.ballSpeed}</b>
+              <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>速
+              <b className={hud.lives <= 1 || hud.slow ? "game-tip--alert" : undefined}>{hud.ballSpeed}</b>
               <span
                 className="breakout-speed-bar"
                 data-slow={hud.slow || undefined}
@@ -815,30 +819,28 @@ const [phase, setPhase] = useState<Phase>("select");
               className="breakout-progress breakout-progress-items breakout-progress-combo breakout-metal-host breakout-combo-peak-host"
               data-low={(hud.brickLeft <= 3 && hud.brickLeft > 0) || undefined}
               data-done={hud.progress >= 100 || undefined}
-              data-items={(hud.wide || hud.slow || hud.dropsAir > 0 || hud.metalLeft > 0) || undefined}
+              data-items={hud.wide || hud.slow || hud.dropsAir > 0 || hud.metalLeft > 0 || undefined}
               data-metal={hud.metalLeft > 0 || undefined}
-              data-metal-air={(hud.metalLeft > 0 || hud.dropsAir > 0) || undefined}
+              data-metal-air={hud.metalLeft > 0 || hud.dropsAir > 0 || undefined}
               data-combo={hud.combo >= 5 || undefined}
-              title={
-                [
-                  `本关进度 ${hud.progress}% · 砖 ${hud.brickLeft}/${hud.brickTotal}`,
-                  `连击 ${hud.combo}${hud.bestCombo > 0 ? `（峰${hud.bestCombo}）` : ""}`,
-                  hud.dropsAir > 0 ? `空降道具 ${hud.dropsAir}` : "",
-                  hud.metalLeft > 0 ? `金属砖 ${hud.metalLeft}` : "",
-                  hud.wide ? `加宽 ${hud.wideLeft.toFixed(1)}s` : "",
-                  hud.slow ? `减速 ${hud.slowLeft.toFixed(1)}s` : "",
-                  `拍宽 ${hud.paddleW}`,
-                ]
-                  .filter(Boolean)
-                  .join(" · ")
-              }
+              title={[
+                `本关进度 ${hud.progress}% · 砖 ${hud.brickLeft}/${hud.brickTotal}`,
+                `连击 ${hud.combo}${hud.bestCombo > 0 ? `（峰${hud.bestCombo}）` : ""}`,
+                hud.dropsAir > 0 ? `空降道具 ${hud.dropsAir}` : "",
+                hud.metalLeft > 0 ? `金属砖 ${hud.metalLeft}` : "",
+                hud.wide ? `加宽 ${hud.wideLeft.toFixed(1)}s` : "",
+                hud.slow ? `减速 ${hud.slowLeft.toFixed(1)}s` : "",
+                `拍宽 ${hud.paddleW}`,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
             >
               连击<b className={hud.combo >= 5 ? "game-tip--alert" : undefined}>{hud.combo}</b>
               {hud.bestCombo > 0 ? <small style={{ marginLeft: 2, opacity: 0.7 }}>峰{hud.bestCombo}</small> : null}
               {hud.bestCombo > 0 ? (
                 <span
                   className="breakout-combo-peak-bar"
-                  data-combo-peak={hud.combo >= hud.bestCombo && hud.combo > 0 || undefined}
+                  data-combo-peak={(hud.combo >= hud.bestCombo && hud.combo > 0) || undefined}
                   data-hot={hud.combo >= 5 || undefined}
                   title={`连击峰条：当前 ${hud.combo} / 峰 ${hud.bestCombo}`}
                   aria-label={`连击相对峰值 ${hud.combo}/${hud.bestCombo}`}
@@ -854,8 +856,10 @@ const [phase, setPhase] = useState<Phase>("select");
               <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
               关卡
               <b>{hud.progress}%</b>
-              <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
-              砖<b className={hud.brickLeft <= 3 && hud.brickLeft > 0 ? "game-tip--alert" : undefined}>{hud.brickLeft}/{hud.brickTotal}</b>
+              <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>砖
+              <b className={hud.brickLeft <= 3 && hud.brickLeft > 0 ? "game-tip--alert" : undefined}>
+                {hud.brickLeft}/{hud.brickTotal}
+              </b>
               <span
                 className="breakout-brick-bar"
                 data-low={(hud.brickLeft <= 3 && hud.brickLeft > 0) || undefined}
@@ -978,40 +982,40 @@ const [phase, setPhase] = useState<Phase>("select");
           </>
         )}
         <span className="spacer" />
-                <button
-          type="button"
-          className="game-btn"
-          aria-pressed={buzzMuted}
-          onClick={() => setBuzzMuted(!buzzMuted)}
-        >
+        <button type="button" className="game-btn" aria-pressed={buzzMuted} onClick={() => setBuzzMuted(!buzzMuted)}>
           {buzzMuted ? "震动关" : "震动开"}
         </button>
-{(phase === "running" || phase === "aim" || phase === "paused") && (
+        {(phase === "running" || phase === "aim" || phase === "paused") && (
           <button type="button" className="game-btn" onClick={toggle}>
             {phase === "paused" ? "继续" : "暂停"}
           </button>
         )}
       </div>
       {(phase === "running" || phase === "aim" || phase === "paused") && (
-        <p className={hud.lives <= 1 || hud.balls > 1 || (hud.brickLeft <= 3 && hud.brickLeft > 0) ? "game-tip game-tip--alert" : "game-tip"} aria-live="polite">
+        <p
+          className={
+            hud.lives <= 1 || hud.balls > 1 || (hud.brickLeft <= 3 && hud.brickLeft > 0)
+              ? "game-tip game-tip--alert"
+              : "game-tip"
+          }
+          aria-live="polite"
+        >
           {hud.lives <= 1 && hud.balls > 1
             ? `多球/残命：多球×${hud.balls} · 残命 ${hud.lives} · 速 ${hud.ballSpeed} · 拍 ${hud.paddleW}`
             : hud.lives <= 1
-            ? `多球/残命：残命 ${hud.lives} · 球×${hud.balls} · 速 ${hud.ballSpeed} · 拍 ${hud.paddleW}`
-            : hud.balls > 1
-              ? `多球/残命：多球×${hud.balls} · ♥×${hud.lives} · 速 ${hud.ballSpeed} · 连击 ${hud.combo}`
-            : hud.brickLeft <= 3 && hud.brickLeft > 0
-              ? `多球/残命：♥×${hud.lives} · 球×${hud.balls} · 残局 ${hud.brickLeft} 块 · 拍 ${hud.paddleW}`
-              : `连击|进度|道具：连${hud.combo}${hud.bestCombo > 0 ? `/峰${hud.bestCombo}` : ""} · ${hud.progress}%（砖 ${hud.brickLeft}/${hud.brickTotal}）${hud.metalLeft > 0 || hud.dropsAir > 0 ? ` · 金属|空降 ${hud.metalLeft}/${hud.dropsAir}` : ""}${hud.wide ? ` · 宽${hud.wideLeft.toFixed(1)}s` : ""}${hud.slow ? ` · 慢${hud.slowLeft.toFixed(1)}s` : ""} · ♥×${hud.lives} · 球×${hud.balls} · 速 ${hud.ballSpeed} · 连击 ${hud.combo}`}
+              ? `多球/残命：残命 ${hud.lives} · 球×${hud.balls} · 速 ${hud.ballSpeed} · 拍 ${hud.paddleW}`
+              : hud.balls > 1
+                ? `多球/残命：多球×${hud.balls} · ♥×${hud.lives} · 速 ${hud.ballSpeed} · 连击 ${hud.combo}`
+                : hud.brickLeft <= 3 && hud.brickLeft > 0
+                  ? `多球/残命：♥×${hud.lives} · 球×${hud.balls} · 残局 ${hud.brickLeft} 块 · 拍 ${hud.paddleW}`
+                  : `连击|进度|道具：连${hud.combo}${hud.bestCombo > 0 ? `/峰${hud.bestCombo}` : ""} · ${hud.progress}%（砖 ${hud.brickLeft}/${hud.brickTotal}）${hud.metalLeft > 0 || hud.dropsAir > 0 ? ` · 金属|空降 ${hud.metalLeft}/${hud.dropsAir}` : ""}${hud.wide ? ` · 宽${hud.wideLeft.toFixed(1)}s` : ""}${hud.slow ? ` · 慢${hud.slowLeft.toFixed(1)}s` : ""} · ♥×${hud.lives} · 球×${hud.balls} · 速 ${hud.ballSpeed} · 连击 ${hud.combo}`}
         </p>
       )}
       {(phase === "running" || phase === "aim" || phase === "paused" || phase === "select") && (
         <p className="game-tip breakout-items" aria-label="道具说明">
           道具：
-          <b style={{ color: ITEM_LOOK.W.color }}>宽</b>加长挡板 ·
-          <b style={{ color: ITEM_LOOK.S.color }}>慢</b>减速 ·
-          <b style={{ color: ITEM_LOOK.L.color }}>命</b>多一命 ·
-          <b style={{ color: ITEM_LOOK.M.color }}>多</b>分裂多球
+          <b style={{ color: ITEM_LOOK.W.color }}>宽</b>加长挡板 ·<b style={{ color: ITEM_LOOK.S.color }}>慢</b>减速 ·
+          <b style={{ color: ITEM_LOOK.L.color }}>命</b>多一命 ·<b style={{ color: ITEM_LOOK.M.color }}>多</b>分裂多球
           {hud.wide || hud.slow || hud.balls > 1
             ? ` · 当前${hud.wide ? `加宽${hud.wideLeft.toFixed(1)}s` : ""}${hud.wide && hud.slow ? "/" : ""}${hud.slow ? `减速${hud.slowLeft.toFixed(1)}s` : ""}${hud.balls > 1 ? `${hud.wide || hud.slow ? "/" : ""}多球×${hud.balls}` : ""}`
             : " · 打碎带标记的砖后用挡板接住"}
@@ -1059,8 +1063,8 @@ const [phase, setPhase] = useState<Phase>("select");
                   <span style={{ color: ITEM_LOOK.W.color }}>宽</span>{" "}
                   <span style={{ color: ITEM_LOOK.S.color }}>慢</span>{" "}
                   <span style={{ color: ITEM_LOOK.L.color }}>命</span>{" "}
-                  <span style={{ color: ITEM_LOOK.M.color }}>多</span>{" "}
-                  是道具（多=多球），用球拍接住{best ? ` · 最高 ${best} 分` : ""}
+                  <span style={{ color: ITEM_LOOK.M.color }}>多</span> 是道具（多=多球），用球拍接住
+                  {best ? ` · 最高 ${best} 分` : ""}
                 </p>
               </LevelSelect>
             )}
@@ -1095,7 +1099,11 @@ const [phase, setPhase] = useState<Phase>("select");
                   {hud.score} 分 · 打到第 {hud.level + 1} 关{phase === "done" && record ? " · 新纪录" : ""}
                 </p>
                 <span style={{ display: "flex", gap: 8 }}>
-                  <button type="button" className="game-btn game-btn--primary" onClick={() => start(phase === "done" ? 0 : hud.level)}>
+                  <button
+                    type="button"
+                    className="game-btn game-btn--primary"
+                    onClick={() => start(phase === "done" ? 0 : hud.level)}
+                  >
                     {phase === "done" ? "再打一遍" : "重打这关"}
                   </button>
                   <button type="button" className="game-btn" onClick={() => setPhase("select")}>

@@ -32,8 +32,12 @@ function Suit({ s }: { s: number }) {
   const fill = s === 1 || s === 2 ? "#ff4d6d" : "#1b1530";
   return (
     <svg viewBox="0 0 16 16" width="1em" height="1em" aria-hidden="true">
-      {s === 0 && <path fill={fill} d="M8 1C6.5 4 2 6 2 9.4a3 3 0 0 0 5.2 2L6.3 15h3.4l-.9-3.6a3 3 0 0 0 5.2-2C14 6 9.5 4 8 1z" />}
-      {s === 1 && <path fill={fill} d="M8 14.5S1.5 10 1.5 5.6A3.4 3.4 0 0 1 8 4a3.4 3.4 0 0 1 6.5 1.6C14.5 10 8 14.5 8 14.5z" />}
+      {s === 0 && (
+        <path fill={fill} d="M8 1C6.5 4 2 6 2 9.4a3 3 0 0 0 5.2 2L6.3 15h3.4l-.9-3.6a3 3 0 0 0 5.2-2C14 6 9.5 4 8 1z" />
+      )}
+      {s === 1 && (
+        <path fill={fill} d="M8 14.5S1.5 10 1.5 5.6A3.4 3.4 0 0 1 8 4a3.4 3.4 0 0 1 6.5 1.6C14.5 10 8 14.5 8 14.5z" />
+      )}
       {s === 2 && <path fill={fill} d="M8 1l5.2 7L8 15 2.8 8z" />}
       {s === 3 && (
         <g fill={fill}>
@@ -157,11 +161,7 @@ export default function Poker() {
   const minTo = rules?.minTo ?? 0;
   const maxTo = rules?.maxTo ?? 0;
   // clamp raise display when last hand amount is out of this street range
-  const raiseValue = rules
-    ? raiseTo >= minTo && raiseTo <= maxTo
-      ? raiseTo
-      : minTo
-    : 0;
+  const raiseValue = rules ? (raiseTo >= minTo && raiseTo <= maxTo ? raiseTo : minTo) : 0;
   const presets = rules
     ? [
         { label: "½ 池", to: table.currentBet + Math.round(pot / 2) },
@@ -224,10 +224,10 @@ export default function Poker() {
           第<b>{table.hand}</b>手
           <span
             className="pk-hand-bar"
-            data-near={started && !gameOver && !victory && Math.max(0, nextBlindHand - table.hand) <= 2 || undefined}
+            data-near={(started && !gameOver && !victory && Math.max(0, nextBlindHand - table.hand) <= 2) || undefined}
             title={
               started && !gameOver && !victory
-                ? `手牌序号 ${table.hand} · 本段涨盲进度 ${Math.min(100, Math.round((((table.hand - 1) % BLIND_EVERY) + 1) / BLIND_EVERY * 100))}%（每 ${BLIND_EVERY} 手）`
+                ? `手牌序号 ${table.hand} · 本段涨盲进度 ${Math.min(100, Math.round(((((table.hand - 1) % BLIND_EVERY) + 1) / BLIND_EVERY) * 100))}%（每 ${BLIND_EVERY} 手）`
                 : `手牌序号 ${table.hand}`
             }
             aria-label={`第 ${table.hand} 手`}
@@ -236,7 +236,7 @@ export default function Poker() {
               style={{
                 width: `${
                   started && !gameOver && !victory
-                    ? Math.min(100, Math.round((((table.hand - 1) % BLIND_EVERY) + 1) / BLIND_EVERY * 100))
+                    ? Math.min(100, Math.round(((((table.hand - 1) % BLIND_EVERY) + 1) / BLIND_EVERY) * 100))
                     : Math.min(100, Math.round((table.hand / 40) * 100))
                 }%`,
               }}
@@ -293,9 +293,7 @@ export default function Poker() {
                   table.players.length
                     ? Math.min(
                         100,
-                        Math.round(
-                          (table.players.filter((p) => !p.folded).length / table.players.length) * 100,
-                        ),
+                        Math.round((table.players.filter((p) => !p.folded).length / table.players.length) * 100),
                       )
                     : 0
                 }%`,
@@ -304,7 +302,9 @@ export default function Poker() {
           </span>
           <span
             className="pk-fold-bar"
-            data-heavy={table.players.filter((p) => p.folded).length >= Math.ceil(table.players.length * 0.6) || undefined}
+            data-heavy={
+              table.players.filter((p) => p.folded).length >= Math.ceil(table.players.length * 0.6) || undefined
+            }
             data-none={table.players.filter((p) => p.folded).length === 0 || undefined}
             title={`已弃牌 ${table.players.filter((p) => p.folded).length}/${table.players.length}`}
             aria-label={`已弃牌 ${table.players.filter((p) => p.folded).length} 人`}
@@ -315,9 +315,7 @@ export default function Poker() {
                   table.players.length
                     ? Math.min(
                         100,
-                        Math.round(
-                          (table.players.filter((p) => p.folded).length / table.players.length) * 100,
-                        ),
+                        Math.round((table.players.filter((p) => p.folded).length / table.players.length) * 100),
                       )
                     : 0
                 }%`,
@@ -359,9 +357,7 @@ export default function Poker() {
                   table.players.length
                     ? Math.min(
                         100,
-                        Math.round(
-                          (table.players.filter((p) => p.out).length / table.players.length) * 100,
-                        ),
+                        Math.round((table.players.filter((p) => p.out).length / table.players.length) * 100),
                       )
                     : 0
                 }%`,
@@ -381,9 +377,7 @@ export default function Poker() {
                   table.players.length
                     ? Math.min(
                         100,
-                        Math.round(
-                          (table.players.filter((p) => !p.out).length / table.players.length) * 100,
-                        ),
+                        Math.round((table.players.filter((p) => !p.out).length / table.players.length) * 100),
                       )
                     : 0
                 }%`,
@@ -410,8 +404,9 @@ export default function Poker() {
                 Math.max(2, Math.ceil(table.players.filter((p) => !p.out).length * 0.7)) || undefined
             }
             data-cold={
-              table.players.filter((p) => !p.out).length > 0 &&
-              table.players.filter((p) => !p.out && p.bet > 0).length === 0 || undefined
+              (table.players.filter((p) => !p.out).length > 0 &&
+                table.players.filter((p) => !p.out && p.bet > 0).length === 0) ||
+              undefined
             }
             title={`本街已下注 ${table.players.filter((p) => !p.out && p.bet > 0).length}/${table.players.filter((p) => !p.out).length || 0}（仍在局）`}
             aria-label={`仍在局中已下注 ${table.players.filter((p) => !p.out && p.bet > 0).length} 人`}
@@ -436,14 +431,16 @@ export default function Poker() {
           <span
             className="pk-matched-bar"
             data-hot={
-              table.players.filter((p) => !p.out).length > 0 &&
-              table.players.filter((p) => !p.out && p.bet >= table.currentBet).length >=
-                Math.max(2, Math.ceil(table.players.filter((p) => !p.out).length * 0.75)) || undefined
+              (table.players.filter((p) => !p.out).length > 0 &&
+                table.players.filter((p) => !p.out && p.bet >= table.currentBet).length >=
+                  Math.max(2, Math.ceil(table.players.filter((p) => !p.out).length * 0.75))) ||
+              undefined
             }
             data-cold={
-              table.players.filter((p) => !p.out).length > 0 &&
-              table.currentBet > 0 &&
-              table.players.filter((p) => !p.out && p.bet >= table.currentBet).length <= 1 || undefined
+              (table.players.filter((p) => !p.out).length > 0 &&
+                table.currentBet > 0 &&
+                table.players.filter((p) => !p.out && p.bet >= table.currentBet).length <= 1) ||
+              undefined
             }
             title={`已跟上注额 ${table.players.filter((p) => !p.out && p.bet >= table.currentBet).length}/${table.players.filter((p) => !p.out).length || 0}（仍在局，当前注 ${table.currentBet}）`}
             aria-label={`仍在局中已跟上 ${table.players.filter((p) => !p.out && p.bet >= table.currentBet).length} 人`}
@@ -468,15 +465,11 @@ export default function Poker() {
           <span
             className="pk-folded-ratio-bar"
             data-hot={
-              table.players.length > 0 &&
-              table.players.filter((p) => p.folded).length /
-                table.players.length >=
-                0.6 || undefined
+              (table.players.length > 0 &&
+                table.players.filter((p) => p.folded).length / table.players.length >= 0.6) ||
+              undefined
             }
-            data-cold={
-              table.players.length > 0 &&
-              table.players.filter((p) => p.folded).length === 0 || undefined
-            }
+            data-cold={(table.players.length > 0 && table.players.filter((p) => p.folded).length === 0) || undefined}
             title={`已弃牌 ${table.players.filter((p) => p.folded).length}/${table.players.length || 0}`}
             aria-label={`已弃牌 ${table.players.filter((p) => p.folded).length} 人`}
           >
@@ -486,11 +479,7 @@ export default function Poker() {
                   table.players.length
                     ? Math.min(
                         100,
-                        Math.round(
-                          (table.players.filter((p) => p.folded).length /
-                            table.players.length) *
-                            100,
-                        ),
+                        Math.round((table.players.filter((p) => p.folded).length / table.players.length) * 100),
                       )
                     : 0
                 }%`,
@@ -515,7 +504,8 @@ export default function Poker() {
                 : `每 ${BLIND_EVERY} 手翻倍`
           }
         >
-          盲注<b>
+          盲注
+          <b>
             {table.sb}/{table.bb}
           </b>
           {blindFlash ? (
@@ -537,12 +527,8 @@ export default function Poker() {
                 }
               >
                 需胜率
-                <b>
-                  {Math.min(99, Math.round((rules.toCall / (pot + rules.toCall)) * 100))}%
-                </b>
-                <small style={{ marginLeft: 4, opacity: 0.75 }}>
-                  跟{rules.toCall}
-                </small>
+                <b>{Math.min(99, Math.round((rules.toCall / (pot + rules.toCall)) * 100))}%</b>
+                <small style={{ marginLeft: 4, opacity: 0.75 }}>跟{rules.toCall}</small>
                 <small className="pk-odds-hud__tier" style={{ marginLeft: 6 }}>
                   {Math.round((rules.toCall / (pot + rules.toCall)) * 100) <= 25
                     ? "偏便宜"
@@ -607,7 +593,7 @@ export default function Poker() {
                 className="pk-blind-progress pk-blind-eta"
                 data-near={Math.max(0, nextBlindHand - table.hand) <= 2 || undefined}
                 data-eta={Math.max(0, nextBlindHand - table.hand)}
-                title={`涨盲 ETA：距翻倍 ${Math.max(0, nextBlindHand - table.hand)} 手（目标第 ${nextBlindHand} 手）· 每 ${BLIND_EVERY} 手 · 本段 ${Math.min(100, Math.round((((table.hand - 1) % BLIND_EVERY) + 1) / BLIND_EVERY * 100))}%`}
+                title={`涨盲 ETA：距翻倍 ${Math.max(0, nextBlindHand - table.hand)} 手（目标第 ${nextBlindHand} 手）· 每 ${BLIND_EVERY} 手 · 本段 ${Math.min(100, Math.round(((((table.hand - 1) % BLIND_EVERY) + 1) / BLIND_EVERY) * 100))}%`}
               >
                 涨盲 ETA
                 <b className={Math.max(0, nextBlindHand - table.hand) <= 2 ? "game-tip--alert" : undefined}>
@@ -619,7 +605,7 @@ export default function Poker() {
                   aria-hidden="true"
                   style={
                     {
-                      ["--pk-blind-pct" as string]: `${Math.min(100, Math.round((((table.hand - 1) % BLIND_EVERY) + 1) / BLIND_EVERY * 100))}%`,
+                      ["--pk-blind-pct" as string]: `${Math.min(100, Math.round(((((table.hand - 1) % BLIND_EVERY) + 1) / BLIND_EVERY) * 100))}%`,
                     } as { [key: string]: string }
                   }
                 />
@@ -640,9 +626,16 @@ export default function Poker() {
           >
             底池<b>{pot}</b>
             {me && table.bb > 0 ? (
-              <small className="pk-pot-bb-together" title={`底池约 ${Math.max(0, Math.round((pot / table.bb) * 10) / 10)} BB · 你约 ${Math.max(0, Math.round((me.chips / table.bb) * 10) / 10)} BB`}>
-                {" "}· {Math.max(0, Math.round((pot / table.bb) * 10) / 10)}BB
-                <span className="pk-pot-bb-together__you"> / 你{Math.max(0, Math.round((me.chips / table.bb) * 10) / 10)}BB</span>
+              <small
+                className="pk-pot-bb-together"
+                title={`底池约 ${Math.max(0, Math.round((pot / table.bb) * 10) / 10)} BB · 你约 ${Math.max(0, Math.round((me.chips / table.bb) * 10) / 10)} BB`}
+              >
+                {" "}
+                · {Math.max(0, Math.round((pot / table.bb) * 10) / 10)}BB
+                <span className="pk-pot-bb-together__you">
+                  {" "}
+                  / 你{Math.max(0, Math.round((me.chips / table.bb) * 10) / 10)}BB
+                </span>
                 <span
                   className="pk-pot-bb-bar"
                   data-big={pot / table.bb >= 20 || undefined}
@@ -664,14 +657,15 @@ export default function Poker() {
                 data-commit={me.chips / pot < 1 || undefined}
                 title={`SPR 筹码/底池 ≈ ${Math.max(0, Math.round((me.chips / pot) * 10) / 10)}（低于3偏深码压力，低于1近似投入）`}
               >
-                {" "}· SPR
+                {" "}
+                · SPR
                 <b className={me.chips / pot < 1 ? "game-tip--alert" : undefined}>
                   {Math.max(0, Math.round((me.chips / pot) * 10) / 10)}
                 </b>
                 <span
                   className="pk-spr-bar"
                   data-commit={me.chips / pot < 1 || undefined}
-                  data-low={me.chips / pot < 3 && me.chips / pot >= 1 || undefined}
+                  data-low={(me.chips / pot < 3 && me.chips / pot >= 1) || undefined}
                   data-deep={me.chips / pot >= 3 || undefined}
                   title={`SPR 条：${Math.max(0, Math.round((me.chips / pot) * 10) / 10)}（满刻度按 10）`}
                   aria-label={`SPR ${Math.max(0, Math.round((me.chips / pot) * 10) / 10)}`}
@@ -689,7 +683,8 @@ export default function Poker() {
                 className="pk-pot-tocall-bb"
                 title={`跟注 ${rules.toCall} ≈ ${Math.max(0, Math.round((rules.toCall / table.bb) * 10) / 10)} BB`}
               >
-                {" "}· 跟{Math.max(0, Math.round((rules.toCall / table.bb) * 10) / 10)}BB
+                {" "}
+                · 跟{Math.max(0, Math.round((rules.toCall / table.bb) * 10) / 10)}BB
                 <span
                   className="pk-call-bb-bar"
                   data-big={rules.toCall / table.bb >= 5 || undefined}
@@ -710,8 +705,9 @@ export default function Poker() {
                 className="pk-pot-odds-bar"
                 data-cheap={Math.round((rules.toCall / (pot + rules.toCall)) * 100) <= 25 || undefined}
                 data-mid={
-                  Math.round((rules.toCall / (pot + rules.toCall)) * 100) > 25 &&
-                  Math.round((rules.toCall / (pot + rules.toCall)) * 100) <= 40 || undefined
+                  (Math.round((rules.toCall / (pot + rules.toCall)) * 100) > 25 &&
+                    Math.round((rules.toCall / (pot + rules.toCall)) * 100) <= 40) ||
+                  undefined
                 }
                 data-rich={Math.round((rules.toCall / (pot + rules.toCall)) * 100) > 40 || undefined}
                 title={`需胜率 ${Math.min(99, Math.round((rules.toCall / (pot + rules.toCall)) * 100))}%`}
@@ -728,9 +724,7 @@ export default function Poker() {
               <>
                 <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
                 边池
-                <b className="game-tip--alert">
-                  {result.pots.slice(1).reduce((s, x) => s + x.amount, 0)}
-                </b>
+                <b className="game-tip--alert">{result.pots.slice(1).reduce((s, x) => s + x.amount, 0)}</b>
                 <small style={{ marginLeft: 4, opacity: 0.75 }}>×{result.pots.length - 1}</small>
               </>
             ) : table.players.some((pl) => pl.allIn && !pl.out) ? (
@@ -748,24 +742,25 @@ export default function Poker() {
       </div>
 
       {blindFlash && (
-        <p className="game-tip game-tip--alert pk-blind-flash-tip" data-blind-flash="" aria-live="assertive" role="status">
+        <p
+          className="game-tip game-tip--alert pk-blind-flash-tip"
+          data-blind-flash=""
+          aria-live="assertive"
+          role="status"
+        >
           {blindFlash}
-          {" · "}
-          每 {BLIND_EVERY} 手翻倍 · 顶栏盲注同步闪烁
+          {" · "}每 {BLIND_EVERY} 手翻倍 · 顶栏盲注同步闪烁
         </p>
       )}
       {started && !gameOver && !victory && !blindFlash && (
         <p className="game-tip pk-blind-tip" aria-live="polite">
           盲注 {table.sb}/{table.bb}
-          {" · "}
-          第 {table.hand} 手
-          {" · "}
-          涨盲 ETA {Math.max(0, nextBlindHand - table.hand)} 手
-          （目标第 {nextBlindHand} 手 · 每 {BLIND_EVERY} 手）
+          {" · "}第 {table.hand} 手{" · "}
+          涨盲 ETA {Math.max(0, nextBlindHand - table.hand)} 手 （目标第 {nextBlindHand} 手 · 每 {BLIND_EVERY} 手）
           {me && !me.out && table.bb > 0
             ? ` · 你约 ${Math.max(0, Math.round((me.chips / table.bb) * 10) / 10)} BB`
             : ""}
-          {` · 涨盲进度 ${Math.min(100, Math.round((((table.hand - 1) % BLIND_EVERY) + 1) / BLIND_EVERY * 100))}%`}
+          {` · 涨盲进度 ${Math.min(100, Math.round(((((table.hand - 1) % BLIND_EVERY) + 1) / BLIND_EVERY) * 100))}%`}
           {table.players.some((pl) => pl.allIn && !pl.out)
             ? " · 有人全下：主池/边池分拆，摊牌按资格分结"
             : " · 全下后主池+边池分结"}
@@ -794,7 +789,9 @@ export default function Poker() {
               </div>
               <div className="pk-hand">
                 {started && !p.out
-                  ? p.hand.map((c, k) => <PlayingCard key={k} card={c} hidden={!reveal} glow={isGlow(c)} dim={p.folded} />)
+                  ? p.hand.map((c, k) => (
+                      <PlayingCard key={k} card={c} hidden={!reveal} glow={isGlow(c)} dim={p.folded} />
+                    ))
                   : null}
               </div>
               <div className="pk-seat__status">
@@ -830,8 +827,7 @@ export default function Poker() {
             <p className="game-tip game-tip--alert pk-odds" aria-live="polite">
               胜率 HUD：跟 {rules.toCall} / 池 {pot}
               {" · "}
-              打平需{" "}
-              <b>{Math.min(99, Math.round((rules.toCall / (pot + rules.toCall)) * 100))}%</b>
+              打平需 <b>{Math.min(99, Math.round((rules.toCall / (pot + rules.toCall)) * 100))}%</b>
               {" 胜率"}
               {Math.round((rules.toCall / (pot + rules.toCall)) * 100) <= 25
                 ? " · 色阶偏低（偏便宜）"
@@ -839,21 +835,33 @@ export default function Poker() {
                   ? " · 色阶中性"
                   : " · 色阶偏高（偏贵）"}
               {` · 盲注|需胜率同条 ${table.sb}/${table.bb}`}
-              {table.players.some((pl) => pl.allIn && !pl.out)
-                ? " · 全下中：只进你可参与的主池/边池"
-                : ""}
+              {table.players.some((pl) => pl.allIn && !pl.out) ? " · 全下中：只进你可参与的主池/边池" : ""}
             </p>
           )}
-          {started && !gameOver && !victory && !result && table.players.some((pl) => pl.allIn && !pl.out) && !(myTurn && rules && !rules.canCheck && rules.toCall > 0 && pot > 0) && (
-            <p className="game-tip pk-sidepot game-tip--alert" aria-live="polite">
-              边池触发：未跟满→<strong>主池</strong>，超额→<strong>边池</strong>；与盲注 tip 同屏
-            </p>
-          )}
-          {started && !gameOver && !victory && !result && table.players.some((pl) => pl.allIn && !pl.out) && myTurn && rules && !rules.canCheck && rules.toCall > 0 && pot > 0 && (
-            <p className="game-tip pk-sidepot" aria-live="polite">
-              跟注胜率（上）+边池规则同屏：只能赢你有资格的那些池
-            </p>
-          )}
+          {started &&
+            !gameOver &&
+            !victory &&
+            !result &&
+            table.players.some((pl) => pl.allIn && !pl.out) &&
+            !(myTurn && rules && !rules.canCheck && rules.toCall > 0 && pot > 0) && (
+              <p className="game-tip pk-sidepot game-tip--alert" aria-live="polite">
+                边池触发：未跟满→<strong>主池</strong>，超额→<strong>边池</strong>；与盲注 tip 同屏
+              </p>
+            )}
+          {started &&
+            !gameOver &&
+            !victory &&
+            !result &&
+            table.players.some((pl) => pl.allIn && !pl.out) &&
+            myTurn &&
+            rules &&
+            !rules.canCheck &&
+            rules.toCall > 0 &&
+            pot > 0 && (
+              <p className="game-tip pk-sidepot" aria-live="polite">
+                跟注胜率（上）+边池规则同屏：只能赢你有资格的那些池
+              </p>
+            )}
           <p className="pk-msg" aria-live="polite">
             {message}
           </p>
@@ -908,9 +916,7 @@ export default function Poker() {
             </button>
           )}
           {!done && myHand && <p className="game-hint">你现在是：{myHand}</p>}
-          {!done && !myHand && myTurn && (
-            <p className="game-hint">F 弃牌，C / 空格过牌或跟注，R 加注，A 全下</p>
-          )}
+          {!done && !myHand && myTurn && <p className="game-hint">F 弃牌，C / 空格过牌或跟注，R 加注，A 全下</p>}
         </div>
       )}
     </div>

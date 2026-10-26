@@ -58,9 +58,7 @@ export default function SceneCanvas({ posts }: { posts: PostMeta[] }) {
         frameloop={still ? "demand" : "always"}
         /* /games/* : leave events on the WebGL canvas (under main) so body-level R3F
            hit-testing does not swallow Breakout paddle / Tetris swipe pointers */
-        {...(pathname.startsWith("/games/")
-          ? {}
-          : { eventSource: document.body, eventPrefix: "client" as const })}
+        {...(pathname.startsWith("/games/") ? {} : { eventSource: document.body, eventPrefix: "client" as const })}
         fallback={null}
       >
         {/* 帧率持续偏低时把像素比降到 1 */}

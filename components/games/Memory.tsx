@@ -120,14 +120,8 @@ export default function Memory() {
         return n;
       });
       buzz(nextStreak >= 3 ? [18, 40, 18] : 18);
-      setAnnounce(
-        nextStreak >= 2
-          ? `配对成功，${SYMBOLS[pairA]}，连击 ×${nextStreak}`
-          : "配对成功，" + SYMBOLS[pairA],
-      );
-      setCards((prev) =>
-        prev.map((x) => (x.id === a || x.id === i ? { ...x, flipped: true, matched: true } : x)),
-      );
+      setAnnounce(nextStreak >= 2 ? `配对成功，${SYMBOLS[pairA]}，连击 ×${nextStreak}` : "配对成功，" + SYMBOLS[pairA]);
+      setCards((prev) => prev.map((x) => (x.id === a || x.id === i ? { ...x, flipped: true, matched: true } : x)));
       return;
     }
 
@@ -135,9 +129,7 @@ export default function Memory() {
     setAnnounce("不同，已翻回");
     setLock(true);
     window.setTimeout(() => {
-      setCards((prev) =>
-        prev.map((x) => (x.id === a || x.id === i ? { ...x, flipped: false } : x)),
-      );
+      setCards((prev) => prev.map((x) => (x.id === a || x.id === i ? { ...x, flipped: false } : x)));
       setLock(false);
     }, FLIP_BACK_MS);
   };
@@ -249,13 +241,14 @@ export default function Memory() {
                   : `已配 ${matchedCount}/${pairs} · 连击 ${streak} · 最少 ${shownBest ?? "—"}（翻错清零）`
           }
         >
-          配对<b>
+          配对
+          <b>
             {matchedCount}/{pairs}
           </b>
           <span
             className="memory-matched-bar"
-            data-done={matchedCount >= pairs && pairs > 0 || undefined}
-            data-high={pairs > 0 && matchedCount / pairs >= 0.7 || undefined}
+            data-done={(matchedCount >= pairs && pairs > 0) || undefined}
+            data-high={(pairs > 0 && matchedCount / pairs >= 0.7) || undefined}
             title={`已配 ${matchedCount} / ${pairs}`}
             aria-label={`已配 ${matchedCount} 对`}
           >
@@ -270,7 +263,7 @@ export default function Memory() {
           <span
             className="memory-left-bar"
             data-end={endgame || undefined}
-            data-urgent={leftPairs > 0 && leftPairs <= 2 || undefined}
+            data-urgent={(leftPairs > 0 && leftPairs <= 2) || undefined}
             title={`剩余 ${leftPairs} 对 / ${pairs}`}
             aria-label={`剩余 ${leftPairs} 对`}
           >
@@ -284,13 +277,15 @@ export default function Memory() {
           <span
             className="memory-endgame__bar"
             aria-hidden="true"
-            style={{ ["--end-pct" as string]: `${pairs ? Math.round((matchedCount / pairs) * 100) : 0}%` } as CSSProperties}
+            style={
+              { ["--end-pct" as string]: `${pairs ? Math.round((matchedCount / pairs) * 100) : 0}%` } as CSSProperties
+            }
           />
           {moves > 0 ? (
             <span
               className="memory-eff-bar"
               data-good={matchedCount / moves >= 0.7 || undefined}
-              data-ok={matchedCount / moves >= 0.45 && matchedCount / moves < 0.7 || undefined}
+              data-ok={(matchedCount / moves >= 0.45 && matchedCount / moves < 0.7) || undefined}
               data-low={matchedCount / moves < 0.45 || undefined}
               title={`配对效率 ${Math.min(100, Math.round((matchedCount / moves) * 100))}%（已配 ${matchedCount} / 步 ${moves}）`}
               aria-label={`配对效率 ${Math.min(100, Math.round((matchedCount / moves) * 100))} percent`}
@@ -310,7 +305,7 @@ export default function Memory() {
           {bestStreak > 1 ? (
             <span
               className="memory-streak-peak-bar"
-              data-peak={streak >= bestStreak && streak > 0 || undefined}
+              data-peak={(streak >= bestStreak && streak > 0) || undefined}
               data-hot={streak >= 5 || undefined}
               title={`连击相对峰值 ${streak}/${bestStreak}`}
               aria-label={`连击相对峰值 ${streak}/${bestStreak}`}
@@ -321,22 +316,27 @@ export default function Memory() {
               />
             </span>
           ) : null}
-          {endgame && streak >= 2 ? <small className="memory-end-combo__both" style={{ marginLeft: 6 }}>双高</small> : null}
+          {endgame && streak >= 2 ? (
+            <small className="memory-end-combo__both" style={{ marginLeft: 6 }}>
+              双高
+            </small>
+          ) : null}
           <span
             className="memory-combo__bar"
             aria-hidden="true"
             style={{ ["--combo-pct" as string]: `${Math.min(100, streak * 20)}%` } as CSSProperties}
           />
           <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
-          最少<b className={shownBest != null && moves > 0 && moves <= shownBest ? "game-tip--alert" : undefined}>{shownBest ?? "—"}</b>
+          最少
+          <b className={shownBest != null && moves > 0 && moves <= shownBest ? "game-tip--alert" : undefined}>
+            {shownBest ?? "—"}
+          </b>
           <span
             className="memory-pb-bar"
-            data-lead={shownBest != null && moves > 0 && moves <= shownBest || undefined}
-            data-over={shownBest != null && moves > shownBest || undefined}
+            data-lead={(shownBest != null && moves > 0 && moves <= shownBest) || undefined}
+            data-over={(shownBest != null && moves > shownBest) || undefined}
             title={
-              shownBest != null && moves > 0
-                ? `相对最少 ${moves}/${shownBest}（满格=追平或更好）`
-                : "尚无本档最少纪录"
+              shownBest != null && moves > 0 ? `相对最少 ${moves}/${shownBest}（满格=追平或更好）` : "尚无本档最少纪录"
             }
             aria-label={
               shownBest != null && moves > 0
@@ -380,8 +380,8 @@ export default function Memory() {
             步数<b>{moves}</b>
             <span
               className="memory-moves-budget-bar"
-              data-over={pairs > 0 && moves > pairs * 3 || undefined}
-              data-tight={pairs > 0 && moves > pairs * 2 && moves <= pairs * 3 || undefined}
+              data-over={(pairs > 0 && moves > pairs * 3) || undefined}
+              data-tight={(pairs > 0 && moves > pairs * 2 && moves <= pairs * 3) || undefined}
               title={`步数预算 ${moves}/${Math.max(1, pairs * 3)}（软上限 3×对数）`}
               aria-label={`步数预算 ${moves} / ${Math.max(1, pairs * 3)}`}
             >
@@ -461,34 +461,26 @@ export default function Memory() {
           </span>
           <span
             className="memory-pace-bar"
-            data-slow={matchedCount > 0 && seconds / matchedCount >= 8 || undefined}
-            data-fast={matchedCount > 0 && seconds / matchedCount <= 3 || undefined}
+            data-slow={(matchedCount > 0 && seconds / matchedCount >= 8) || undefined}
+            data-fast={(matchedCount > 0 && seconds / matchedCount <= 3) || undefined}
             title={
               matchedCount > 0
                 ? `配速 ${Math.round((seconds / matchedCount) * 10) / 10}s/对（满刻度按 12s/对）`
                 : "配速 —（尚未配对）"
             }
-            aria-label={
-              matchedCount > 0
-                ? `配速每对 ${Math.round((seconds / matchedCount) * 10) / 10} 秒`
-                : "配速未知"
-            }
+            aria-label={matchedCount > 0 ? `配速每对 ${Math.round((seconds / matchedCount) * 10) / 10} 秒` : "配速未知"}
           >
             <i
               className="memory-pace-bar__fill"
               style={{
-                width: `${
-                  matchedCount > 0
-                    ? Math.min(100, Math.round((seconds / matchedCount / 12) * 100))
-                    : 0
-                }%`,
+                width: `${matchedCount > 0 ? Math.min(100, Math.round((seconds / matchedCount / 12) * 100)) : 0}%`,
               }}
             />
           </span>
           <span
             className="memory-streak-now-bar"
             data-hot={streak >= 5 || undefined}
-            data-warm={streak >= 2 && streak < 5 || undefined}
+            data-warm={(streak >= 2 && streak < 5) || undefined}
             title={`当前连击 ×${streak}（满刻度按 5）`}
             aria-label={`当前连击 ${streak}`}
           >
@@ -500,7 +492,9 @@ export default function Memory() {
           <span
             className="memory-waste-bar"
             data-hot={Math.max(0, moves - matchedCount * 2) >= 8 || undefined}
-            data-warm={Math.max(0, moves - matchedCount * 2) >= 4 && Math.max(0, moves - matchedCount * 2) < 8 || undefined}
+            data-warm={
+              (Math.max(0, moves - matchedCount * 2) >= 4 && Math.max(0, moves - matchedCount * 2) < 8) || undefined
+            }
             title={`多余翻步 ${Math.max(0, moves - matchedCount * 2)}（满刻度按 12；理想每对 2 步）`}
             aria-label={`多余翻步 ${Math.max(0, moves - matchedCount * 2)}`}
           >
@@ -513,70 +507,44 @@ export default function Memory() {
           </span>
           <span
             className="memory-flip-rate-bar"
-            data-hot={seconds > 0 && moves / seconds >= 0.7 || undefined}
-            data-slow={seconds >= 20 && moves / Math.max(1, seconds) < 0.25 || undefined}
-            title={
-              seconds > 0
-                ? `翻步速率 ${Math.round((moves / seconds) * 60)}/min（满刻度按 40/min）`
-                : "翻步速率 —"
-            }
-            aria-label={
-              seconds > 0
-                ? `每分钟约 ${Math.round((moves / seconds) * 60)} 步`
-                : "翻步速率未知"
-            }
+            data-hot={(seconds > 0 && moves / seconds >= 0.7) || undefined}
+            data-slow={(seconds >= 20 && moves / Math.max(1, seconds) < 0.25) || undefined}
+            title={seconds > 0 ? `翻步速率 ${Math.round((moves / seconds) * 60)}/min（满刻度按 40/min）` : "翻步速率 —"}
+            aria-label={seconds > 0 ? `每分钟约 ${Math.round((moves / seconds) * 60)} 步` : "翻步速率未知"}
           >
             <i
               className="memory-flip-rate-bar__fill"
               style={{
-                width: `${
-                  seconds > 0
-                    ? Math.min(100, Math.round(((moves / seconds) * 60 / 40) * 100))
-                    : 0
-                }%`,
+                width: `${seconds > 0 ? Math.min(100, Math.round((((moves / seconds) * 60) / 40) * 100)) : 0}%`,
               }}
             />
           </span>
           <span
             className="memory-match-rate-bar"
-            data-hot={seconds > 0 && matchedCount / seconds >= 0.25 || undefined}
-            data-slow={seconds >= 30 && matchedCount / Math.max(1, seconds) < 0.06 || undefined}
+            data-hot={(seconds > 0 && matchedCount / seconds >= 0.25) || undefined}
+            data-slow={(seconds >= 30 && matchedCount / Math.max(1, seconds) < 0.06) || undefined}
             title={
               seconds > 0
                 ? `配对速率 ${Math.round((matchedCount / seconds) * 60 * 10) / 10}/min（满刻度按 15/min）`
                 : "配对速率 —"
             }
             aria-label={
-              seconds > 0
-                ? `每分钟约配对 ${Math.round((matchedCount / seconds) * 60 * 10) / 10} 对`
-                : "配对速率未知"
+              seconds > 0 ? `每分钟约配对 ${Math.round((matchedCount / seconds) * 60 * 10) / 10} 对` : "配对速率未知"
             }
           >
             <i
               className="memory-match-rate-bar__fill"
               style={{
-                width: `${
-                  seconds > 0
-                    ? Math.min(100, Math.round(((matchedCount / seconds) * 60 / 15) * 100))
-                    : 0
-                }%`,
+                width: `${seconds > 0 ? Math.min(100, Math.round((((matchedCount / seconds) * 60) / 15) * 100)) : 0}%`,
               }}
             />
           </span>
           <span
             className="memory-streak-ratio-bar"
-            data-hot={streak >= 3 && bestStreak > 0 && streak >= bestStreak || undefined}
-            data-warm={streak >= 2 && bestStreak > 0 && streak / bestStreak >= 0.6 || undefined}
-            title={
-              bestStreak > 0
-                ? `连对相对峰值 ${streak}/${bestStreak}`
-                : `连对 ${streak}`
-            }
-            aria-label={
-              bestStreak > 0
-                ? `连对 ${streak} 相对峰 ${bestStreak}`
-                : `连对 ${streak}`
-            }
+            data-hot={(streak >= 3 && bestStreak > 0 && streak >= bestStreak) || undefined}
+            data-warm={(streak >= 2 && bestStreak > 0 && streak / bestStreak >= 0.6) || undefined}
+            title={bestStreak > 0 ? `连对相对峰值 ${streak}/${bestStreak}` : `连对 ${streak}`}
+            aria-label={bestStreak > 0 ? `连对 ${streak} 相对峰 ${bestStreak}` : `连对 ${streak}`}
           >
             <i
               className="memory-streak-ratio-bar__fill"
@@ -591,123 +559,81 @@ export default function Memory() {
           </span>
           <span
             className="memory-accuracy-bar"
-            data-hot={moves > 0 && (matchedCount * 2) / moves >= 0.85 || undefined}
-            data-cold={moves >= 8 && (matchedCount * 2) / Math.max(1, moves) < 0.45 || undefined}
+            data-hot={(moves > 0 && (matchedCount * 2) / moves >= 0.85) || undefined}
+            data-cold={(moves >= 8 && (matchedCount * 2) / Math.max(1, moves) < 0.45) || undefined}
             title={
-              moves > 0
-                ? `翻牌命中率 ${Math.round(((matchedCount * 2) / moves) * 100)}%（理想 100%）`
-                : "翻牌命中率 —"
+              moves > 0 ? `翻牌命中率 ${Math.round(((matchedCount * 2) / moves) * 100)}%（理想 100%）` : "翻牌命中率 —"
             }
-            aria-label={
-              moves > 0
-                ? `翻牌命中率 ${Math.round(((matchedCount * 2) / moves) * 100)}%`
-                : "翻牌命中率未知"
-            }
+            aria-label={moves > 0 ? `翻牌命中率 ${Math.round(((matchedCount * 2) / moves) * 100)}%` : "翻牌命中率未知"}
           >
             <i
               className="memory-accuracy-bar__fill"
               style={{
-                width: `${
-                  moves > 0
-                    ? Math.min(100, Math.round(((matchedCount * 2) / moves) * 100))
-                    : 0
-                }%`,
+                width: `${moves > 0 ? Math.min(100, Math.round(((matchedCount * 2) / moves) * 100)) : 0}%`,
               }}
             />
           </span>
           <span
             className="memory-remain-ratio-bar"
-            data-hot={pairs - matchedCount <= 2 && pairs - matchedCount > 0 || undefined}
-            data-cold={pairs > 0 && (pairs - matchedCount) / pairs >= 0.75 && seconds >= 25 || undefined}
-            title={
-              pairs > 0
-                ? `剩余配对 ${pairs - matchedCount}/${pairs}`
-                : "剩余配对 —"
-            }
+            data-hot={(pairs - matchedCount <= 2 && pairs - matchedCount > 0) || undefined}
+            data-cold={(pairs > 0 && (pairs - matchedCount) / pairs >= 0.75 && seconds >= 25) || undefined}
+            title={pairs > 0 ? `剩余配对 ${pairs - matchedCount}/${pairs}` : "剩余配对 —"}
             aria-label={`剩余配对 ${pairs - matchedCount}`}
           >
             <i
               className="memory-remain-ratio-bar__fill"
               style={{
-                width: `${
-                  pairs > 0
-                    ? Math.min(100, Math.round(((pairs - matchedCount) / pairs) * 100))
-                    : 0
-                }%`,
+                width: `${pairs > 0 ? Math.min(100, Math.round(((pairs - matchedCount) / pairs) * 100)) : 0}%`,
               }}
             />
           </span>
           <span
             className="memory-done-ratio-bar"
-            data-hot={pairs > 0 && matchedCount / pairs >= 0.85 || undefined}
-            data-low={pairs > 0 && matchedCount / pairs <= 0.2 && seconds >= 20 || undefined}
-            title={
-              pairs > 0
-                ? `已配对 ${matchedCount}/${pairs}`
-                : "已配对 —"
-            }
+            data-hot={(pairs > 0 && matchedCount / pairs >= 0.85) || undefined}
+            data-low={(pairs > 0 && matchedCount / pairs <= 0.2 && seconds >= 20) || undefined}
+            title={pairs > 0 ? `已配对 ${matchedCount}/${pairs}` : "已配对 —"}
             aria-label={`已配对 ${matchedCount} 对，共 ${pairs}`}
           >
             <i
               className="memory-done-ratio-bar__fill"
               style={{
-                width: `${
-                  pairs > 0
-                    ? Math.min(100, Math.round((matchedCount / pairs) * 100))
-                    : 0
-                }%`,
+                width: `${pairs > 0 ? Math.min(100, Math.round((matchedCount / pairs) * 100)) : 0}%`,
               }}
             />
           </span>
           <span
             className="memory-match-pace-bar"
-            data-hot={seconds > 0 && matchedCount / seconds >= 0.25 || undefined}
-            data-slow={seconds >= 25 && matchedCount / Math.max(1, seconds) < 0.06 || undefined}
+            data-hot={(seconds > 0 && matchedCount / seconds >= 0.25) || undefined}
+            data-slow={(seconds >= 25 && matchedCount / Math.max(1, seconds) < 0.06) || undefined}
             title={
               seconds > 0
                 ? `配对配速 ${Math.round((matchedCount / seconds) * 100) / 100}/s（满刻度按 0.3/s）`
                 : "配对配速 —"
             }
             aria-label={
-              seconds > 0
-                ? `每秒约配对 ${Math.round((matchedCount / seconds) * 100) / 100} 对`
-                : "配对配速未知"
+              seconds > 0 ? `每秒约配对 ${Math.round((matchedCount / seconds) * 100) / 100} 对` : "配对配速未知"
             }
           >
             <i
               className="memory-match-pace-bar__fill"
               style={{
-                width: `${
-                  seconds > 0
-                    ? Math.min(100, Math.round((matchedCount / seconds / 0.3) * 100))
-                    : 0
-                }%`,
+                width: `${seconds > 0 ? Math.min(100, Math.round((matchedCount / seconds / 0.3) * 100)) : 0}%`,
               }}
             />
           </span>
           <span
             className="memory-moves-eff-bar"
-            data-hot={moves > 0 && matchedCount / moves >= 0.45 || undefined}
-            data-low={moves >= 8 && matchedCount / Math.max(1, moves) < 0.2 || undefined}
+            data-hot={(moves > 0 && matchedCount / moves >= 0.45) || undefined}
+            data-low={(moves >= 8 && matchedCount / Math.max(1, moves) < 0.2) || undefined}
             title={
-              moves > 0
-                ? `步效 ${Math.round((matchedCount / moves) * 100) / 100} 对/步（满刻度按 0.5）`
-                : "步效 —"
+              moves > 0 ? `步效 ${Math.round((matchedCount / moves) * 100) / 100} 对/步（满刻度按 0.5）` : "步效 —"
             }
-            aria-label={
-              moves > 0
-                ? `每步约配对 ${Math.round((matchedCount / moves) * 100) / 100}`
-                : "步效未知"
-            }
+            aria-label={moves > 0 ? `每步约配对 ${Math.round((matchedCount / moves) * 100) / 100}` : "步效未知"}
           >
             <i
               className="memory-moves-eff-bar__fill"
               style={{
-                width: `${
-                  moves > 0
-                    ? Math.min(100, Math.round((matchedCount / moves / 0.5) * 100))
-                    : 0
-                }%`,
+                width: `${moves > 0 ? Math.min(100, Math.round((matchedCount / moves / 0.5) * 100)) : 0}%`,
               }}
             />
           </span>
@@ -717,12 +643,12 @@ export default function Memory() {
         {endgame && streak >= 2
           ? `双高+最少步：${matchedCount}/${pairs}（${pairs ? Math.round((matchedCount / pairs) * 100) : 0}%）· 剩 ${leftPairs} · ×${streak}${bestStreak > 1 ? `（峰 ${bestStreak}）` : ""} · 最少 ${shownBest ?? "—"} · 焦点 第${focusRow}行${focusCol}列`
           : endgame
-          ? `残局进度：${matchedCount}/${pairs}（${pairs ? Math.round((matchedCount / pairs) * 100) : 0}%）· 剩 ${leftPairs} 对 · 焦点 第${focusRow}行${focusCol}列 · 连击 ${streak}${bestStreak > 1 ? `（峰 ${bestStreak}）` : ""}`
-          : streak >= 5
-            ? `连击热：×${streak} · 条格 ${Math.min(100, streak * 20)}%（×5 满格）· 峰 ${bestStreak > 1 ? bestStreak : streak}`
-            : streak >= 2
-              ? `连击条：×${streak} · 条格 ${Math.min(100, streak * 20)}%${bestStreak > 1 ? ` · 峰 ${bestStreak}` : ""} · 翻错清零`
-              : `本局连击 ${streak}${bestStreak > 1 ? `（本档峰 ${bestStreak}）` : ""}`}
+            ? `残局进度：${matchedCount}/${pairs}（${pairs ? Math.round((matchedCount / pairs) * 100) : 0}%）· 剩 ${leftPairs} 对 · 焦点 第${focusRow}行${focusCol}列 · 连击 ${streak}${bestStreak > 1 ? `（峰 ${bestStreak}）` : ""}`
+            : streak >= 5
+              ? `连击热：×${streak} · 条格 ${Math.min(100, streak * 20)}%（×5 满格）· 峰 ${bestStreak > 1 ? bestStreak : streak}`
+              : streak >= 2
+                ? `连击条：×${streak} · 条格 ${Math.min(100, streak * 20)}%${bestStreak > 1 ? ` · 峰 ${bestStreak}` : ""} · 翻错清零`
+                : `本局连击 ${streak}${bestStreak > 1 ? `（本档峰 ${bestStreak}）` : ""}`}
         {" · "}
         最少 <b>{shownBest ?? "—"}</b> 步
         {shownBest != null && moves > 0
@@ -735,8 +661,7 @@ export default function Memory() {
         {allDiffBests.map((x, i) => (
           <span key={DIFFS[i].key}>
             {i > 0 ? " · " : ""}
-            {x.label}{" "}
-            <b className={DIFFS[i].key === diff.key ? "game-tip--alert" : undefined}>{x.best ?? "—"}</b>
+            {x.label} <b className={DIFFS[i].key === diff.key ? "game-tip--alert" : undefined}>{x.best ?? "—"}</b>
           </span>
         ))}
         {endgame ? " · 方向键移焦后回车翻，少翻错" : " · 切换难度保留连击峰"}

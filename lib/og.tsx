@@ -33,46 +33,52 @@ export async function ogImage({ title, subtitle, tag }: { title: string; subtitl
   ].filter((f) => !!f);
 
   return new ImageResponse(
-    (
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        padding: "64px 72px",
+        color: "#ffd6f0",
+        fontFamily: "Noto Sans SC",
+        background: "radial-gradient(circle at 78% 110%, #ff3ea5 0%, #5a0b5e 32%, #14021f 70%)",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 18, fontSize: 30, fontWeight: 700 }}>
+        <div style={{ width: 18, height: 18, borderRadius: 9, background: "#ff3ea5" }} />
+        {SITE.name}
+        {tag && (
+          <div
+            style={{
+              marginLeft: 12,
+              padding: "4px 16px",
+              fontSize: 24,
+              borderRadius: 999,
+              border: "2px solid rgba(255, 62, 165, 0.6)",
+              color: "#ff9ed2",
+            }}
+          >
+            {tag}
+          </div>
+        )}
+      </div>
       <div
         style={{
-          width: "100%",
-          height: "100%",
           display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
-          padding: "64px 72px",
-          color: "#ffd6f0",
-          fontFamily: "Noto Sans SC",
-          background: "radial-gradient(circle at 78% 110%, #ff3ea5 0%, #5a0b5e 32%, #14021f 70%)",
+          fontSize: title.length > 18 ? 62 : 76,
+          fontWeight: 700,
+          lineHeight: 1.2,
+          color: "#fff",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 18, fontSize: 30, fontWeight: 700 }}>
-          <div style={{ width: 18, height: 18, borderRadius: 9, background: "#ff3ea5" }} />
-          {SITE.name}
-          {tag && (
-            <div
-              style={{
-                marginLeft: 12,
-                padding: "4px 16px",
-                fontSize: 24,
-                borderRadius: 999,
-                border: "2px solid rgba(255, 62, 165, 0.6)",
-                color: "#ff9ed2",
-              }}
-            >
-              {tag}
-            </div>
-          )}
-        </div>
-        <div style={{ display: "flex", fontSize: title.length > 18 ? 62 : 76, fontWeight: 700, lineHeight: 1.2, color: "#fff" }}>
-          {title}
-        </div>
-        <div style={{ display: "flex", fontSize: 28, fontWeight: 400, color: "#d9a8c8", lineHeight: 1.5 }}>
-          {subtitle ?? ""}
-        </div>
+        {title}
       </div>
-    ),
+      <div style={{ display: "flex", fontSize: 28, fontWeight: 400, color: "#d9a8c8", lineHeight: 1.5 }}>
+        {subtitle ?? ""}
+      </div>
+    </div>,
     { ...OG_SIZE, fonts },
   );
 }

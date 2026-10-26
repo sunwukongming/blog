@@ -28,9 +28,7 @@ export default function robots(): MetadataRoute.Robots {
   }
   return {
     rules: { userAgent: "*", allow: "/" },
-    sitemap: SITE_URL
-      ? [`${SITE_URL}/sitemap.xml`, `${SITE_URL}/feed.xml`]
-      : undefined,
+    sitemap: SITE_URL ? [`${SITE_URL}/sitemap.xml`, `${SITE_URL}/feed.xml`] : undefined,
     host,
   };
 }

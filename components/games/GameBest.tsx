@@ -18,22 +18,13 @@ function MinesBest() {
 }
 
 function MemoryBest() {
-  const [easy, normal, hard, legacy] = useRecordList([
-    "memory-easy",
-    "memory-normal",
-    "memory-hard",
-    "memory",
-  ]);
+  const [easy, normal, hard, legacy] = useRecordList(["memory-easy", "memory-normal", "memory-hard", "memory"]);
   const norm = normal ?? legacy;
   const parts: string[] = [];
   if (easy !== null) parts.push(`简单 ${easy}`);
   if (norm !== null) parts.push(`普通 ${norm}`);
   if (hard !== null) parts.push(`困难 ${hard}`);
-  return (
-    <span className="game-card__best">
-      {parts.length ? `最少 ${parts.join(" / ")} 步` : "还没玩过"}
-    </span>
-  );
+  return <span className="game-card__best">{parts.length ? `最少 ${parts.join(" / ")} 步` : "还没玩过"}</span>;
 }
 
 function ScoreBest({ slug }: { slug: string }) {

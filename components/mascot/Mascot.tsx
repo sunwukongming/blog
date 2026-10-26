@@ -60,7 +60,13 @@ function Girl({ mood, irisL, irisR }: { mood: Mood; irisL: React.Ref<SVGGElement
         <circle cx={cx - 1.8} cy="70.4" r="1.7" fill="#fff" />
         <circle cx={cx + 2} cy="76.8" r="0.9" fill="#fff" opacity="0.8" />
       </g>
-      <path d={`M${cx - 8.4} 67.2 Q${cx} 61.6 ${cx + 8.4} 67.2`} stroke="#120c10" strokeWidth="2.6" fill="none" strokeLinecap="round" />
+      <path
+        d={`M${cx - 8.4} 67.2 Q${cx} 61.6 ${cx + 8.4} 67.2`}
+        stroke="#120c10"
+        strokeWidth="2.6"
+        fill="none"
+        strokeLinecap="round"
+      />
     </g>
   );
   return (
@@ -110,7 +116,14 @@ function Girl({ mood, irisL, irisR }: { mood: Mood; irisL: React.Ref<SVGGElement
       <path d="M27 70 C24 38 40 25 60 25 C80 25 96 38 93 70 L92 56 L28 56 Z" fill="url(#mascot-hair)" />
       <path d="M28 54 L92 54 L92 60 L28 60 Z" fill="url(#mascot-hair)" />
       <path d="M26 56 L33 56 L34 98 L25 98 Z M94 56 L87 56 L86 98 L95 98 Z" fill="url(#mascot-hair)" />
-      <path d="M40 33 Q50 28 62 29" stroke="#5a4a66" strokeWidth="1.6" fill="none" opacity="0.7" strokeLinecap="round" />
+      <path
+        d="M40 33 Q50 28 62 29"
+        stroke="#5a4a66"
+        strokeWidth="1.6"
+        fill="none"
+        opacity="0.7"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
@@ -239,7 +252,13 @@ export default function Mascot() {
 
   if (hidden) {
     return (
-      <button type="button" className="mascot-summon" data-ui onClick={() => toggle(false)} aria-label={`叫${MASCOT_NAME}出来`}>
+      <button
+        type="button"
+        className="mascot-summon"
+        data-ui
+        onClick={() => toggle(false)}
+        aria-label={`叫${MASCOT_NAME}出来`}
+      >
         <Girl mood="smug" irisL={irisL} irisR={irisR} />
       </button>
     );

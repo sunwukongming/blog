@@ -382,7 +382,9 @@ function showdown(t: Table) {
   if (extra > 0) pots[pots.length - 1].amount += extra;
   for (const pot of pots) {
     const share = Math.floor(pot.amount / pot.winners.length);
-    pot.winners.forEach((w, k) => (t.players[w].chips += share + (k === 0 ? pot.amount - share * pot.winners.length : 0)));
+    pot.winners.forEach(
+      (w, k) => (t.players[w].chips += share + (k === 0 ? pot.amount - share * pot.winners.length : 0)),
+    );
   }
   t.result = { pots, showdown: true, best };
   finish(t);

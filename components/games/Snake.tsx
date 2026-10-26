@@ -1,7 +1,18 @@
 "use client";
 
 import { useEffect, useEffectEvent, useRef, useState } from "react";
-import { buzz, higher, KEY_DIR, lower, saveRecord, useKeys, useRecord, useRecordList, useSwipe, type Dir } from "./input";
+import {
+  buzz,
+  higher,
+  KEY_DIR,
+  lower,
+  saveRecord,
+  useKeys,
+  useRecord,
+  useRecordList,
+  useSwipe,
+  type Dir,
+} from "./input";
 import LevelSelect from "./LevelSelect";
 import { SNAKE_LEVELS } from "./snakeLevels";
 
@@ -34,7 +45,19 @@ type Game = {
   /** 吃到东西时的光环特效 */
   fx: { x: number; y: number; at: number; color: string }[];
 };
-type Hud = { eaten: number; score: number; seconds: number; len: number; wrap: boolean; edgeHint: string | null; speedMs: number; speedTier: string; nextSpeed: string | null; goldLeft: number | null; goldEta: number | null };
+type Hud = {
+  eaten: number;
+  score: number;
+  seconds: number;
+  len: number;
+  wrap: boolean;
+  edgeHint: string | null;
+  speedMs: number;
+  speedTier: string;
+  nextSpeed: string | null;
+  goldLeft: number | null;
+  goldEta: number | null;
+};
 
 const VEC: Record<Dir, P> = { up: { x: 0, y: -1 }, down: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } };
 const OPPOSITE: Record<Dir, Dir> = { up: "down", down: "up", left: "right", right: "left" };
@@ -90,7 +113,6 @@ function freeCell(g: Game): P | null {
   return { x: i % N, y: Math.floor(i / N) };
 }
 
-
 const EXIT_HINT: Record<Dir, string> = {
   left: "← 穿墙 · 将从右侧出现",
   right: "→ 穿墙 · 将从左侧出现",
@@ -109,10 +131,20 @@ function wrapHint(g: Game): string | null {
   if (!g.wrap) return null;
   const h = g.snake[0];
   const d = g.queue[0] ?? g.dir;
-  if ((d === "left" && h.x === 0) || (d === "right" && h.x === N - 1) || (d === "up" && h.y === 0) || (d === "down" && h.y === N - 1)) {
+  if (
+    (d === "left" && h.x === 0) ||
+    (d === "right" && h.x === N - 1) ||
+    (d === "up" && h.y === 0) ||
+    (d === "down" && h.y === N - 1)
+  ) {
     return EXIT_HINT[d];
   }
-  if ((d === "left" && h.x <= 2) || (d === "right" && h.x >= N - 3) || (d === "up" && h.y <= 2) || (d === "down" && h.y >= N - 3)) {
+  if (
+    (d === "left" && h.x <= 2) ||
+    (d === "right" && h.x >= N - 3) ||
+    (d === "up" && h.y <= 2) ||
+    (d === "down" && h.y >= N - 3)
+  ) {
     return NEAR_HINT[d];
   }
   return "穿墙关 · 边缘可出入，头从对面出";
@@ -125,7 +157,6 @@ const interval = (g: Game) =>
   g.mode.kind === "level"
     ? Math.max(60, SNAKE_LEVELS[g.mode.index].speed - g.eaten * 2)
     : Math.max(65, 150 - g.score * 3);
-
 
 function speedTier(ms: number) {
   if (ms >= 140) return "慢";
@@ -354,7 +385,19 @@ export default function Snake() {
   const game = useRef<Game>(initial);
   const [mode, setMode] = useState<Mode>(initial.mode);
   const [phase, setPhase] = useState<Phase>("select");
-  const [hud, setHud] = useState<Hud>({ eaten: 0, score: 0, seconds: 0, len: 3, wrap: false, edgeHint: null, speedMs: 150, speedTier: "中", nextSpeed: nextSpeedHint(150), goldLeft: null, goldEta: null });
+  const [hud, setHud] = useState<Hud>({
+    eaten: 0,
+    score: 0,
+    seconds: 0,
+    len: 3,
+    wrap: false,
+    edgeHint: null,
+    speedMs: 150,
+    speedTier: "中",
+    nextSpeed: nextSpeedHint(150),
+    goldLeft: null,
+    goldEta: null,
+  });
   const [record, setRecord] = useState(false);
   const [unlocked] = useRecord("snake-unlocked", higher);
   const [best] = useRecord("snake", higher);
@@ -495,14 +538,21 @@ export default function Snake() {
       <div className="game-bar">
         {phase === "select" ? (
           <span>
-            选择关卡<b>{unlocked ?? 1}/{SNAKE_LEVELS.length}</b>
+            选择关卡
+            <b>
+              {unlocked ?? 1}/{SNAKE_LEVELS.length}
+            </b>
             <span
               className="snake-unlock-bar"
               data-full={(unlocked ?? 1) >= SNAKE_LEVELS.length || undefined}
               title={`已解锁 ${unlocked ?? 1} / ${SNAKE_LEVELS.length}`}
               aria-label={`已解锁 ${unlocked ?? 1} 关`}
             >
-              <i style={{ width: `${Math.min(100, Math.round(((unlocked ?? 1) / Math.max(1, SNAKE_LEVELS.length)) * 100))}%` }} />
+              <i
+                style={{
+                  width: `${Math.min(100, Math.round(((unlocked ?? 1) / Math.max(1, SNAKE_LEVELS.length)) * 100))}%`,
+                }}
+              />
             </span>
           </span>
         ) : level ? (
@@ -523,7 +573,10 @@ export default function Snake() {
               </span>
             </span>
             <span>
-              进度<b>{Math.min(hud.eaten, level.goal)}/{level.goal}</b>
+              进度
+              <b>
+                {Math.min(hud.eaten, level.goal)}/{level.goal}
+              </b>
               <span
                 className="snake-eaten-bar"
                 data-near={hud.eaten / level.goal >= 0.8 || undefined}
@@ -551,26 +604,20 @@ export default function Snake() {
               </span>
               <span
                 className="snake-pace-bar"
-                data-fast={hud.seconds > 0 && hud.eaten / hud.seconds >= 0.35 || undefined}
-                data-slow={hud.seconds >= 20 && hud.eaten / Math.max(1, hud.seconds) < 0.12 || undefined}
+                data-fast={(hud.seconds > 0 && hud.eaten / hud.seconds >= 0.35) || undefined}
+                data-slow={(hud.seconds >= 20 && hud.eaten / Math.max(1, hud.seconds) < 0.12) || undefined}
                 title={
                   hud.seconds > 0
                     ? `吞食配速 ${Math.round((hud.eaten / hud.seconds) * 100) / 100} /s（满刻度按 0.5/s）`
                     : "吞食配速 —"
                 }
                 aria-label={
-                  hud.seconds > 0
-                    ? `每秒约吞 ${Math.round((hud.eaten / hud.seconds) * 100) / 100}`
-                    : "吞食配速未知"
+                  hud.seconds > 0 ? `每秒约吞 ${Math.round((hud.eaten / hud.seconds) * 100) / 100}` : "吞食配速未知"
                 }
               >
                 <i
                   style={{
-                    width: `${
-                      hud.seconds > 0
-                        ? Math.min(100, Math.round((hud.eaten / hud.seconds / 0.5) * 100))
-                        : 0
-                    }%`,
+                    width: `${hud.seconds > 0 ? Math.min(100, Math.round((hud.eaten / hud.seconds / 0.5) * 100)) : 0}%`,
                   }}
                 />
               </span>
@@ -583,60 +630,45 @@ export default function Snake() {
               >
                 <i
                   style={{
-                    width: `${Math.min(
-                      100,
-                      Math.max(0, Math.round(((280 - hud.speedMs) / 200) * 100)),
-                    )}%`,
+                    width: `${Math.min(100, Math.max(0, Math.round(((280 - hud.speedMs) / 200) * 100)))}%`,
                   }}
                 />
               </span>
               <span
                 className="snake-score-pace-bar"
-                data-hot={hud.seconds > 0 && hud.score / hud.seconds >= 40 || undefined}
-                data-slow={hud.seconds >= 15 && hud.score / Math.max(1, hud.seconds) < 8 || undefined}
+                data-hot={(hud.seconds > 0 && hud.score / hud.seconds >= 40) || undefined}
+                data-slow={(hud.seconds >= 15 && hud.score / Math.max(1, hud.seconds) < 8) || undefined}
                 title={
                   hud.seconds > 0
                     ? `得分配速 ${Math.round((hud.score / hud.seconds) * 10) / 10}/s（满刻度按 50/s）`
                     : "得分配速 —"
                 }
                 aria-label={
-                  hud.seconds > 0
-                    ? `每秒约 ${Math.round((hud.score / hud.seconds) * 10) / 10} 分`
-                    : "得分配速未知"
+                  hud.seconds > 0 ? `每秒约 ${Math.round((hud.score / hud.seconds) * 10) / 10} 分` : "得分配速未知"
                 }
               >
                 <i
                   style={{
-                    width: `${
-                      hud.seconds > 0
-                        ? Math.min(100, Math.round((hud.score / hud.seconds / 50) * 100))
-                        : 0
-                    }%`,
+                    width: `${hud.seconds > 0 ? Math.min(100, Math.round((hud.score / hud.seconds / 50) * 100)) : 0}%`,
                   }}
                 />
               </span>
               <span
                 className="snake-len-pace-bar"
-                data-hot={hud.seconds > 0 && hud.len / hud.seconds >= 0.35 || undefined}
-                data-slow={hud.seconds >= 20 && hud.len / Math.max(1, hud.seconds) < 0.08 || undefined}
+                data-hot={(hud.seconds > 0 && hud.len / hud.seconds >= 0.35) || undefined}
+                data-slow={(hud.seconds >= 20 && hud.len / Math.max(1, hud.seconds) < 0.08) || undefined}
                 title={
                   hud.seconds > 0
                     ? `身长增速 ${Math.round((hud.len / hud.seconds) * 100) / 100}/s（满刻度按 0.5/s）`
                     : "身长增速 —"
                 }
                 aria-label={
-                  hud.seconds > 0
-                    ? `每秒约增长 ${Math.round((hud.len / hud.seconds) * 100) / 100} 格`
-                    : "身长增速未知"
+                  hud.seconds > 0 ? `每秒约增长 ${Math.round((hud.len / hud.seconds) * 100) / 100} 格` : "身长增速未知"
                 }
               >
                 <i
                   style={{
-                    width: `${
-                      hud.seconds > 0
-                        ? Math.min(100, Math.round((hud.len / hud.seconds / 0.5) * 100))
-                        : 0
-                    }%`,
+                    width: `${hud.seconds > 0 ? Math.min(100, Math.round((hud.len / hud.seconds / 0.5) * 100)) : 0}%`,
                   }}
                 />
               </span>
@@ -652,180 +684,140 @@ export default function Snake() {
               >
                 <i style={{ width: `${Math.min(100, Math.round((hud.len / 40) * 100))}%` }} />
               </span>
-            <span
-              title={
-                hud.eaten > 0
-                  ? `得分效率 ${Math.round((hud.score / hud.eaten) * 10) / 10} 分/食（满刻度按 20）`
-                  : "得分效率 —"
-              }
-            >
-              效率
-              <b>
-                {hud.eaten > 0 ? Math.round((hud.score / hud.eaten) * 10) / 10 : "—"}
-              </b>
               <span
-                className="snake-eff-bar"
-                data-hot={hud.eaten > 0 && hud.score / hud.eaten >= 15 || undefined}
-                data-low={hud.eaten >= 3 && hud.score / hud.eaten < 8 || undefined}
                 title={
                   hud.eaten > 0
                     ? `得分效率 ${Math.round((hud.score / hud.eaten) * 10) / 10} 分/食（满刻度按 20）`
                     : "得分效率 —"
                 }
-                aria-label={
-                  hud.eaten > 0
-                    ? `每食约 ${Math.round((hud.score / hud.eaten) * 10) / 10} 分`
-                    : "得分效率未知"
-                }
               >
-                <i
-                  style={{
-                    width: `${
-                      hud.eaten > 0
-                        ? Math.min(100, Math.round((hud.score / hud.eaten / 20) * 100))
-                        : 0
-                    }%`,
-                  }}
-                />
+                效率
+                <b>{hud.eaten > 0 ? Math.round((hud.score / hud.eaten) * 10) / 10 : "—"}</b>
+                <span
+                  className="snake-eff-bar"
+                  data-hot={(hud.eaten > 0 && hud.score / hud.eaten >= 15) || undefined}
+                  data-low={(hud.eaten >= 3 && hud.score / hud.eaten < 8) || undefined}
+                  title={
+                    hud.eaten > 0
+                      ? `得分效率 ${Math.round((hud.score / hud.eaten) * 10) / 10} 分/食（满刻度按 20）`
+                      : "得分效率 —"
+                  }
+                  aria-label={
+                    hud.eaten > 0 ? `每食约 ${Math.round((hud.score / hud.eaten) * 10) / 10} 分` : "得分效率未知"
+                  }
+                >
+                  <i
+                    style={{
+                      width: `${hud.eaten > 0 ? Math.min(100, Math.round((hud.score / hud.eaten / 20) * 100)) : 0}%`,
+                    }}
+                  />
+                </span>
               </span>
-            </span>
-            <span
-              title={
-                hud.len > 0
-                  ? `身长密度 ${Math.round((hud.score / hud.len) * 10) / 10} 分/格（满刻度按 40）`
-                  : "身长密度 —"
-              }
-            >
-              密度
-              <b>
-                {hud.len > 0 ? Math.round((hud.score / hud.len) * 10) / 10 : "—"}
-              </b>
               <span
-                className="snake-density-bar"
-                data-hot={hud.len > 0 && hud.score / hud.len >= 30 || undefined}
-                data-low={hud.len >= 8 && hud.score / hud.len < 10 || undefined}
                 title={
                   hud.len > 0
                     ? `身长密度 ${Math.round((hud.score / hud.len) * 10) / 10} 分/格（满刻度按 40）`
                     : "身长密度 —"
                 }
-                aria-label={
-                  hud.len > 0
-                    ? `每格约 ${Math.round((hud.score / hud.len) * 10) / 10} 分`
-                    : "身长密度未知"
-                }
               >
-                <i
-                  style={{
-                    width: `${
-                      hud.len > 0
-                        ? Math.min(100, Math.round((hud.score / hud.len / 40) * 100))
-                        : 0
-                    }%`,
-                  }}
-                />
+                密度
+                <b>{hud.len > 0 ? Math.round((hud.score / hud.len) * 10) / 10 : "—"}</b>
+                <span
+                  className="snake-density-bar"
+                  data-hot={(hud.len > 0 && hud.score / hud.len >= 30) || undefined}
+                  data-low={(hud.len >= 8 && hud.score / hud.len < 10) || undefined}
+                  title={
+                    hud.len > 0
+                      ? `身长密度 ${Math.round((hud.score / hud.len) * 10) / 10} 分/格（满刻度按 40）`
+                      : "身长密度 —"
+                  }
+                  aria-label={hud.len > 0 ? `每格约 ${Math.round((hud.score / hud.len) * 10) / 10} 分` : "身长密度未知"}
+                >
+                  <i
+                    style={{
+                      width: `${hud.len > 0 ? Math.min(100, Math.round((hud.score / hud.len / 40) * 100)) : 0}%`,
+                    }}
+                  />
+                </span>
+                <span
+                  className="snake-food-eff-bar"
+                  data-hot={(hud.eaten > 0 && hud.score / hud.eaten >= 35) || undefined}
+                  data-low={(hud.eaten >= 5 && hud.score / hud.eaten < 12) || undefined}
+                  title={
+                    hud.eaten > 0
+                      ? `食物效率 ${Math.round((hud.score / hud.eaten) * 10) / 10} 分/个（满刻度按 50）`
+                      : "食物效率 —"
+                  }
+                  aria-label={
+                    hud.eaten > 0 ? `每个食物约 ${Math.round((hud.score / hud.eaten) * 10) / 10} 分` : "食物效率未知"
+                  }
+                >
+                  <i
+                    style={{
+                      width: `${hud.eaten > 0 ? Math.min(100, Math.round((hud.score / hud.eaten / 50) * 100)) : 0}%`,
+                    }}
+                  />
+                </span>
+                <span
+                  className="snake-eat-pace-bar"
+                  data-hot={(hud.seconds > 0 && hud.eaten / hud.seconds >= 0.35) || undefined}
+                  data-slow={(hud.seconds >= 20 && hud.eaten / Math.max(1, hud.seconds) < 0.08) || undefined}
+                  title={
+                    hud.seconds > 0
+                      ? `吞食配速 ${Math.round((hud.eaten / hud.seconds) * 100) / 100}/s（满刻度按 0.5/s）`
+                      : "吞食配速 —"
+                  }
+                  aria-label={
+                    hud.seconds > 0
+                      ? `每秒约吞 ${Math.round((hud.eaten / hud.seconds) * 100) / 100} 个`
+                      : "吞食配速未知"
+                  }
+                >
+                  <i
+                    style={{
+                      width: `${
+                        hud.seconds > 0 ? Math.min(100, Math.round((hud.eaten / hud.seconds / 0.5) * 100)) : 0
+                      }%`,
+                    }}
+                  />
+                </span>
+                <span
+                  className="snake-score-len-bar"
+                  data-hot={(hud.len > 0 && hud.score / hud.len >= 8) || undefined}
+                  data-low={(hud.len >= 5 && hud.score / Math.max(1, hud.len) < 2) || undefined}
+                  title={
+                    hud.len > 0 ? `分/节 ${Math.round((hud.score / hud.len) * 10) / 10}（满刻度按 10）` : "分/节 —"
+                  }
+                  aria-label={hud.len > 0 ? `每节约 ${Math.round((hud.score / hud.len) * 10) / 10} 分` : "分节效率未知"}
+                >
+                  <i
+                    style={{
+                      width: `${hud.len > 0 ? Math.min(100, Math.round((hud.score / hud.len / 10) * 100)) : 0}%`,
+                    }}
+                  />
+                </span>
+                <span
+                  className="snake-grow-pace-bar"
+                  data-hot={(hud.seconds > 0 && hud.len / hud.seconds >= 0.35) || undefined}
+                  data-slow={(hud.seconds >= 20 && hud.len / Math.max(1, hud.seconds) < 0.08) || undefined}
+                  title={
+                    hud.seconds > 0
+                      ? `体长配速 ${Math.round((hud.len / hud.seconds) * 100) / 100}/s（满刻度按 0.5/s）`
+                      : "体长配速 —"
+                  }
+                  aria-label={
+                    hud.seconds > 0
+                      ? `每秒约增长 ${Math.round((hud.len / hud.seconds) * 100) / 100} 节`
+                      : "体长配速未知"
+                  }
+                >
+                  <i
+                    style={{
+                      width: `${hud.seconds > 0 ? Math.min(100, Math.round((hud.len / hud.seconds / 0.5) * 100)) : 0}%`,
+                    }}
+                  />
+                </span>
               </span>
-              <span
-                className="snake-food-eff-bar"
-                data-hot={hud.eaten > 0 && hud.score / hud.eaten >= 35 || undefined}
-                data-low={hud.eaten >= 5 && hud.score / hud.eaten < 12 || undefined}
-                title={
-                  hud.eaten > 0
-                    ? `食物效率 ${Math.round((hud.score / hud.eaten) * 10) / 10} 分/个（满刻度按 50）`
-                    : "食物效率 —"
-                }
-                aria-label={
-                  hud.eaten > 0
-                    ? `每个食物约 ${Math.round((hud.score / hud.eaten) * 10) / 10} 分`
-                    : "食物效率未知"
-                }
-              >
-                <i
-                  style={{
-                    width: `${
-                      hud.eaten > 0
-                        ? Math.min(100, Math.round((hud.score / hud.eaten / 50) * 100))
-                        : 0
-                    }%`,
-                  }}
-                />
-              </span>
-              <span
-                className="snake-eat-pace-bar"
-                data-hot={hud.seconds > 0 && hud.eaten / hud.seconds >= 0.35 || undefined}
-                data-slow={hud.seconds >= 20 && hud.eaten / Math.max(1, hud.seconds) < 0.08 || undefined}
-                title={
-                  hud.seconds > 0
-                    ? `吞食配速 ${Math.round((hud.eaten / hud.seconds) * 100) / 100}/s（满刻度按 0.5/s）`
-                    : "吞食配速 —"
-                }
-                aria-label={
-                  hud.seconds > 0
-                    ? `每秒约吞 ${Math.round((hud.eaten / hud.seconds) * 100) / 100} 个`
-                    : "吞食配速未知"
-                }
-              >
-                <i
-                  style={{
-                    width: `${
-                      hud.seconds > 0
-                        ? Math.min(100, Math.round((hud.eaten / hud.seconds / 0.5) * 100))
-                        : 0
-                    }%`,
-                  }}
-                />
-              </span>
-              <span
-                className="snake-score-len-bar"
-                data-hot={hud.len > 0 && hud.score / hud.len >= 8 || undefined}
-                data-low={hud.len >= 5 && hud.score / Math.max(1, hud.len) < 2 || undefined}
-                title={
-                  hud.len > 0
-                    ? `分/节 ${Math.round((hud.score / hud.len) * 10) / 10}（满刻度按 10）`
-                    : "分/节 —"
-                }
-                aria-label={
-                  hud.len > 0
-                    ? `每节约 ${Math.round((hud.score / hud.len) * 10) / 10} 分`
-                    : "分节效率未知"
-                }
-              >
-                <i
-                  style={{
-                    width: `${
-                      hud.len > 0
-                        ? Math.min(100, Math.round((hud.score / hud.len / 10) * 100))
-                        : 0
-                    }%`,
-                  }}
-                />
-              </span>
-              <span
-                className="snake-grow-pace-bar"
-                data-hot={hud.seconds > 0 && hud.len / hud.seconds >= 0.35 || undefined}
-                data-slow={hud.seconds >= 20 && hud.len / Math.max(1, hud.seconds) < 0.08 || undefined}
-                title={
-                  hud.seconds > 0
-                    ? `体长配速 ${Math.round((hud.len / hud.seconds) * 100) / 100}/s（满刻度按 0.5/s）`
-                    : "体长配速 —"
-                }
-                aria-label={
-                  hud.seconds > 0
-                    ? `每秒约增长 ${Math.round((hud.len / hud.seconds) * 100) / 100} 节`
-                    : "体长配速未知"
-                }
-              >
-                <i
-                  style={{
-                    width: `${
-                      hud.seconds > 0
-                        ? Math.min(100, Math.round((hud.len / hud.seconds / 0.5) * 100))
-                        : 0
-                    }%`,
-                  }}
-                />
-              </span>
-            </span>
             </span>
             <span
               className={
@@ -835,10 +827,16 @@ export default function Snake() {
               }
               data-gold={hud.goldLeft != null || undefined}
               data-eta={hud.goldEta != null || undefined}
-              data-gold-tier={hud.goldLeft == null ? undefined : hud.goldLeft <= 2 ? "hot" : hud.goldLeft <= 5 ? "warm" : "cool"}
-              data-eta-tier={hud.goldEta == null ? undefined : hud.goldEta <= 2 ? "hot" : hud.goldEta <= 5 ? "warm" : "cool"}
+              data-gold-tier={
+                hud.goldLeft == null ? undefined : hud.goldLeft <= 2 ? "hot" : hud.goldLeft <= 5 ? "warm" : "cool"
+              }
+              data-eta-tier={
+                hud.goldEta == null ? undefined : hud.goldEta <= 2 ? "hot" : hud.goldEta <= 5 ? "warm" : "cool"
+              }
               data-wrap={hud.wrap || undefined}
-              data-urgent={(hud.goldLeft != null && hud.goldLeft <= 2) || (hud.goldEta != null && hud.goldEta <= 2) || undefined}
+              data-urgent={
+                (hud.goldLeft != null && hud.goldLeft <= 2) || (hud.goldEta != null && hud.goldEta <= 2) || undefined
+              }
               data-edge={(hud.wrap && !!hud.edgeHint?.includes("将从")) || undefined}
               data-near={(hud.wrap && !!hud.edgeHint?.includes("靠")) || undefined}
               data-edge-tier={
@@ -863,7 +861,10 @@ export default function Snake() {
                         : `步进 ${hud.speedMs}ms · 已达极速`
               }
             >
-              速度<b className={hud.speedTier === "极速" || hud.speedTier === "很快" ? "game-tip--alert" : undefined}>{hud.speedTier}</b>
+              速度
+              <b className={hud.speedTier === "极速" || hud.speedTier === "很快" ? "game-tip--alert" : undefined}>
+                {hud.speedTier}
+              </b>
               <span
                 className="snake-speed-gauge"
                 data-fast={hud.speedTier === "极速" || hud.speedTier === "很快" || undefined}
@@ -881,7 +882,11 @@ export default function Snake() {
                 <>
                   <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
                   金食<b className={hud.goldLeft <= 2 ? "game-tip--alert" : undefined}>{hud.goldLeft.toFixed(1)}s</b>
-                  <small className="snake-gold-tier" data-tier={hud.goldLeft <= 2 ? "hot" : hud.goldLeft <= 5 ? "warm" : "cool"} style={{ marginLeft: 4 }}>
+                  <small
+                    className="snake-gold-tier"
+                    data-tier={hud.goldLeft <= 2 ? "hot" : hud.goldLeft <= 5 ? "warm" : "cool"}
+                    style={{ marginLeft: 4 }}
+                  >
                     {hud.goldLeft <= 2 ? "hot" : hud.goldLeft <= 5 ? "warm" : "cool"}
                   </small>
                   <span
@@ -892,14 +897,22 @@ export default function Snake() {
                   >
                     <i style={{ width: `${Math.min(100, Math.round((hud.goldLeft / 6) * 100))}%` }} />
                   </span>
-                  {hud.nextSpeed ? <small style={{ marginLeft: 4, opacity: 0.7 }}>{hud.nextSpeed}</small> : <small style={{ marginLeft: 4, opacity: 0.55 }}>极速</small>}
+                  {hud.nextSpeed ? (
+                    <small style={{ marginLeft: 4, opacity: 0.7 }}>{hud.nextSpeed}</small>
+                  ) : (
+                    <small style={{ marginLeft: 4, opacity: 0.55 }}>极速</small>
+                  )}
                 </>
               )}
               {hud.goldLeft == null && hud.goldEta != null && (
                 <>
                   <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
                   距金<b className={hud.goldEta <= 2 ? "game-tip--alert" : undefined}>{hud.goldEta.toFixed(1)}s</b>
-                  <small className="snake-gold-tier" data-tier={hud.goldEta <= 2 ? "hot" : hud.goldEta <= 5 ? "warm" : "cool"} style={{ marginLeft: 4 }}>
+                  <small
+                    className="snake-gold-tier"
+                    data-tier={hud.goldEta <= 2 ? "hot" : hud.goldEta <= 5 ? "warm" : "cool"}
+                    style={{ marginLeft: 4 }}
+                  >
                     {hud.goldEta <= 2 ? "hot" : hud.goldEta <= 5 ? "warm" : "cool"}
                   </small>
                   <span
@@ -920,11 +933,7 @@ export default function Snake() {
                     data-edge={hud.edgeHint?.includes("将从") || undefined}
                     data-near={hud.edgeHint?.includes("靠") || undefined}
                     data-edge-tier={
-                      hud.edgeHint?.includes("将从")
-                        ? "edge"
-                        : hud.edgeHint?.includes("靠")
-                          ? "near"
-                          : "safe"
+                      hud.edgeHint?.includes("将从") ? "edge" : hud.edgeHint?.includes("靠") ? "near" : "safe"
                     }
                     title={
                       hud.edgeHint?.includes("将从")
@@ -964,13 +973,7 @@ export default function Snake() {
                   >
                     <i
                       style={{
-                        width: `${
-                          hud.edgeHint?.includes("将从")
-                            ? 100
-                            : hud.edgeHint?.includes("靠")
-                              ? 60
-                              : 20
-                        }%`,
+                        width: `${hud.edgeHint?.includes("将从") ? 100 : hud.edgeHint?.includes("靠") ? 60 : 20}%`,
                       }}
                     />
                   </span>
@@ -984,8 +987,8 @@ export default function Snake() {
               无尽模式 分数<b>{hud.score}</b>
               <span
                 className="snake-score-bar"
-                data-record={best != null && hud.score >= best && hud.score > 0 || undefined}
-                data-near={best != null && best > 0 && hud.score / best >= 0.8 || undefined}
+                data-record={(best != null && hud.score >= best && hud.score > 0) || undefined}
+                data-near={(best != null && best > 0 && hud.score / best >= 0.8) || undefined}
                 title={`分数 ${hud.score}${best != null ? ` / 最高 ${best}` : ""}`}
                 aria-label={`分数 ${hud.score}`}
               >
@@ -1000,8 +1003,8 @@ export default function Snake() {
               最高<b>{best ?? 0}</b>
               <span
                 className="snake-best-gap-bar"
-                data-record={best != null && hud.score >= best && hud.score > 0 || undefined}
-                data-near={best != null && best > 0 && hud.score / best >= 0.8 || undefined}
+                data-record={(best != null && hud.score >= best && hud.score > 0) || undefined}
+                data-near={(best != null && best > 0 && hud.score / best >= 0.8) || undefined}
                 title={
                   best != null && best > 0
                     ? `距纪录 ${Math.max(0, best - hud.score)}（当前 ${hud.score} / 最高 ${best}）`
@@ -1015,11 +1018,7 @@ export default function Snake() {
               >
                 <i
                   style={{
-                    width: `${
-                      best != null && best > 0
-                        ? Math.min(100, Math.round((hud.score / best) * 100))
-                        : 0
-                    }%`,
+                    width: `${best != null && best > 0 ? Math.min(100, Math.round((hud.score / best) * 100)) : 0}%`,
                   }}
                 />
               </span>
@@ -1044,12 +1043,14 @@ export default function Snake() {
               }
               data-gold={hud.goldLeft != null || undefined}
               data-eta={hud.goldEta != null || undefined}
-              data-gold-tier={hud.goldLeft == null ? undefined : hud.goldLeft <= 2 ? "hot" : hud.goldLeft <= 5 ? "warm" : "cool"}
-              data-eta-tier={hud.goldEta == null ? undefined : hud.goldEta <= 2 ? "hot" : hud.goldEta <= 5 ? "warm" : "cool"}
+              data-gold-tier={
+                hud.goldLeft == null ? undefined : hud.goldLeft <= 2 ? "hot" : hud.goldLeft <= 5 ? "warm" : "cool"
+              }
+              data-eta-tier={
+                hud.goldEta == null ? undefined : hud.goldEta <= 2 ? "hot" : hud.goldEta <= 5 ? "warm" : "cool"
+              }
               data-urgent={
-                (hud.goldLeft != null && hud.goldLeft <= 2) ||
-                (hud.goldEta != null && hud.goldEta <= 2) ||
-                undefined
+                (hud.goldLeft != null && hud.goldLeft <= 2) || (hud.goldEta != null && hud.goldEta <= 2) || undefined
               }
               data-fast={hud.speedTier === "极速" || hud.speedTier === "很快" || undefined}
               title={
@@ -1062,7 +1063,10 @@ export default function Snake() {
                       : `步进 ${hud.speedMs}ms · 已达极速`
               }
             >
-              速度<b className={hud.speedTier === "极速" || hud.speedTier === "很快" ? "game-tip--alert" : undefined}>{hud.speedTier}</b>
+              速度
+              <b className={hud.speedTier === "极速" || hud.speedTier === "很快" ? "game-tip--alert" : undefined}>
+                {hud.speedTier}
+              </b>
               <span
                 className="snake-speed-gauge"
                 data-fast={hud.speedTier === "极速" || hud.speedTier === "很快" || undefined}
@@ -1080,7 +1084,11 @@ export default function Snake() {
                 <>
                   <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
                   金食<b className={hud.goldLeft <= 2 ? "game-tip--alert" : undefined}>{hud.goldLeft.toFixed(1)}s</b>
-                  <small className="snake-gold-tier" data-tier={hud.goldLeft <= 2 ? "hot" : hud.goldLeft <= 5 ? "warm" : "cool"} style={{ marginLeft: 4 }}>
+                  <small
+                    className="snake-gold-tier"
+                    data-tier={hud.goldLeft <= 2 ? "hot" : hud.goldLeft <= 5 ? "warm" : "cool"}
+                    style={{ marginLeft: 4 }}
+                  >
                     {hud.goldLeft <= 2 ? "hot" : hud.goldLeft <= 5 ? "warm" : "cool"}
                   </small>
                   <span
@@ -1091,15 +1099,25 @@ export default function Snake() {
                   >
                     <i style={{ width: `${Math.min(100, Math.round((hud.goldLeft / 6) * 100))}%` }} />
                   </span>
-                  <small className="snake-endless-gold__tag" style={{ marginLeft: 4, opacity: 0.8 }}>无尽</small>
-                  {hud.nextSpeed ? <small style={{ marginLeft: 4, opacity: 0.7 }}>{hud.nextSpeed}</small> : <small style={{ marginLeft: 4, opacity: 0.55 }}>极速</small>}
+                  <small className="snake-endless-gold__tag" style={{ marginLeft: 4, opacity: 0.8 }}>
+                    无尽
+                  </small>
+                  {hud.nextSpeed ? (
+                    <small style={{ marginLeft: 4, opacity: 0.7 }}>{hud.nextSpeed}</small>
+                  ) : (
+                    <small style={{ marginLeft: 4, opacity: 0.55 }}>极速</small>
+                  )}
                 </>
               )}
               {hud.goldLeft == null && hud.goldEta != null && (
                 <>
                   <small style={{ margin: "0 6px", opacity: 0.45 }}>|</small>
                   距金<b className={hud.goldEta <= 2 ? "game-tip--alert" : undefined}>{hud.goldEta.toFixed(1)}s</b>
-                  <small className="snake-gold-tier" data-tier={hud.goldEta <= 2 ? "hot" : hud.goldEta <= 5 ? "warm" : "cool"} style={{ marginLeft: 4 }}>
+                  <small
+                    className="snake-gold-tier"
+                    data-tier={hud.goldEta <= 2 ? "hot" : hud.goldEta <= 5 ? "warm" : "cool"}
+                    style={{ marginLeft: 4 }}
+                  >
                     {hud.goldEta <= 2 ? "hot" : hud.goldEta <= 5 ? "warm" : "cool"}
                   </small>
                   <span
@@ -1110,7 +1128,9 @@ export default function Snake() {
                   >
                     <i style={{ width: `${Math.min(100, Math.round((hud.goldEta / 14) * 100))}%` }} />
                   </span>
-                  <small className="snake-endless-gold__tag" style={{ marginLeft: 4, opacity: 0.8 }}>无尽</small>
+                  <small className="snake-endless-gold__tag" style={{ marginLeft: 4, opacity: 0.8 }}>
+                    无尽
+                  </small>
                 </>
               )}
             </span>
@@ -1126,7 +1146,11 @@ export default function Snake() {
       {(phase === "running" || phase === "paused") && (
         <p
           className={
-            hud.wrap || hud.speedTier === "极速" || hud.speedTier === "很快" || hud.goldLeft != null || (hud.goldEta != null && hud.goldEta <= 2)
+            hud.wrap ||
+            hud.speedTier === "极速" ||
+            hud.speedTier === "很快" ||
+            hud.goldLeft != null ||
+            (hud.goldEta != null && hud.goldEta <= 2)
               ? "game-tip game-tip--alert"
               : "game-tip"
           }
@@ -1136,28 +1160,35 @@ export default function Snake() {
             hud.wrap && hud.goldLeft != null
               ? `穿墙预警+金食：${hud.edgeHint ?? "穿墙开"} · 金色 ${hud.goldLeft.toFixed(1)}s（×3）${hud.goldLeft <= 2 ? " · 金食将尽" : ""} · 档 ${hud.speedTier}`
               : hud.wrap && hud.goldEta != null
-              ? `穿墙+距金食：${hud.edgeHint ?? "穿墙开"} · 距金 ${hud.goldEta.toFixed(1)}s · 档 ${hud.speedTier}`
-              : hud.wrap && hud.edgeHint?.includes("将从")
-              ? `穿墙预警色阶：下一格将穿出 · ${hud.edgeHint} · tier edge · 档 ${hud.speedTier}`
-              : hud.wrap && hud.edgeHint?.includes("靠")
-              ? `穿墙近缘色阶：${hud.edgeHint} · tier near · 档 ${hud.speedTier}（${hud.speedMs}ms）`
-              : hud.wrap && hud.edgeHint
-              ? `穿墙+加速：${hud.edgeHint} · 档位 ${hud.speedTier}（${hud.speedMs}ms）`
-              : hud.wrap
-                ? `穿墙模式 · 加速档 ${hud.speedTier}（${hud.speedMs}ms）${level ? ` · 目标 ${Math.min(hud.eaten, level.goal)}/${level.goal}` : " · 无尽"}`
-                : hud.goldLeft != null
-                  ? level
-                    ? `金色食物 ${hud.goldLeft.toFixed(1)}s（一个顶三个） · 档 ${hud.speedTier}（${hud.speedMs}ms）`
-                    : `无尽+金食：金色 ${hud.goldLeft.toFixed(1)}s（×3）${hud.goldLeft <= 2 ? " · 将尽" : ""} · 档 ${hud.speedTier}（${hud.speedMs}ms）· 越高分越快`
-                : level
-                  ? `第 ${levelNo} 关·${level.name}：目标 ${Math.min(hud.eaten, level.goal)}/${level.goal}${level.bonus ? " · 有金色食物" : ""} · 加速档 ${hud.speedTier}（${hud.speedMs}ms）`
-                  : hud.goldEta != null
-                    ? `无尽+距金：距金食 ${hud.goldEta.toFixed(1)}s · 档 ${hud.speedTier}（${hud.speedMs}ms）· 越高分越快`
-                    : `无尽模式 · 加速档 ${hud.speedTier}（${hud.speedMs}ms）· 越高分越快`
+                ? `穿墙+距金食：${hud.edgeHint ?? "穿墙开"} · 距金 ${hud.goldEta.toFixed(1)}s · 档 ${hud.speedTier}`
+                : hud.wrap && hud.edgeHint?.includes("将从")
+                  ? `穿墙预警色阶：下一格将穿出 · ${hud.edgeHint} · tier edge · 档 ${hud.speedTier}`
+                  : hud.wrap && hud.edgeHint?.includes("靠")
+                    ? `穿墙近缘色阶：${hud.edgeHint} · tier near · 档 ${hud.speedTier}（${hud.speedMs}ms）`
+                    : hud.wrap && hud.edgeHint
+                      ? `穿墙+加速：${hud.edgeHint} · 档位 ${hud.speedTier}（${hud.speedMs}ms）`
+                      : hud.wrap
+                        ? `穿墙模式 · 加速档 ${hud.speedTier}（${hud.speedMs}ms）${level ? ` · 目标 ${Math.min(hud.eaten, level.goal)}/${level.goal}` : " · 无尽"}`
+                        : hud.goldLeft != null
+                          ? level
+                            ? `金色食物 ${hud.goldLeft.toFixed(1)}s（一个顶三个） · 档 ${hud.speedTier}（${hud.speedMs}ms）`
+                            : `无尽+金食：金色 ${hud.goldLeft.toFixed(1)}s（×3）${hud.goldLeft <= 2 ? " · 将尽" : ""} · 档 ${hud.speedTier}（${hud.speedMs}ms）· 越高分越快`
+                          : level
+                            ? `第 ${levelNo} 关·${level.name}：目标 ${Math.min(hud.eaten, level.goal)}/${level.goal}${level.bonus ? " · 有金色食物" : ""} · 加速档 ${hud.speedTier}（${hud.speedMs}ms）`
+                            : hud.goldEta != null
+                              ? `无尽+距金：距金食 ${hud.goldEta.toFixed(1)}s · 档 ${hud.speedTier}（${hud.speedMs}ms）· 越高分越快`
+                              : `无尽模式 · 加速档 ${hud.speedTier}（${hud.speedMs}ms）· 越高分越快`
           }${
             hud.wrap && hud.goldLeft != null
-              ? (hud.nextSpeed ? ` · ${hud.nextSpeed}` : "")
-              : (hud.nextSpeed ? ` · ${hud.nextSpeed}` : " · 已达极速") + (hud.goldLeft != null && !hud.wrap ? "" : hud.goldLeft != null ? ` · 金色食物 ${hud.goldLeft.toFixed(1)}s` : "")
+              ? hud.nextSpeed
+                ? ` · ${hud.nextSpeed}`
+                : ""
+              : (hud.nextSpeed ? ` · ${hud.nextSpeed}` : " · 已达极速") +
+                (hud.goldLeft != null && !hud.wrap
+                  ? ""
+                  : hud.goldLeft != null
+                    ? ` · 金色食物 ${hud.goldLeft.toFixed(1)}s`
+                    : "")
           }`}
         </p>
       )}
@@ -1166,7 +1197,12 @@ export default function Snake() {
         {phase !== "running" && (
           <div className="game-overlay">
             {phase === "select" && (
-              <LevelSelect title="选择关卡" levels={levelCards} unlocked={unlocked ?? 1} onPick={(i) => start({ kind: "level", index: i })}>
+              <LevelSelect
+                title="选择关卡"
+                levels={levelCards}
+                unlocked={unlocked ?? 1}
+                onPick={(i) => start({ kind: "level", index: i })}
+              >
                 <button type="button" className="game-btn" onClick={() => start({ kind: "endless" })}>
                   无尽模式{best ? ` · 最高 ${best}` : ""}
                 </button>
@@ -1224,7 +1260,11 @@ export default function Snake() {
                       下一关
                     </button>
                   )}
-                  <button type="button" className={hasNext ? "game-btn" : "game-btn game-btn--primary"} onClick={() => setPhase("select")}>
+                  <button
+                    type="button"
+                    className={hasNext ? "game-btn" : "game-btn game-btn--primary"}
+                    onClick={() => setPhase("select")}
+                  >
                     选关
                   </button>
                 </span>

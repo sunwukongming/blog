@@ -133,7 +133,6 @@ function tileStyle(t: Tile): CSSProperties {
   } as CSSProperties;
 }
 
-
 function boardHint(tiles: Tile[]) {
   const live = tiles.filter((x) => !x.gone);
   const max = live.reduce((m, x) => Math.max(m, x.v), 0);
@@ -219,10 +218,7 @@ export default function Game2048() {
         </button>
       </div>
       {!state.over && !(state.won && !state.keepGoing) && mergeHint.max > 0 && (
-        <p
-          className={mergeHint.mergeable > 0 ? "game-tip" : "game-tip game-tip--alert"}
-          aria-live="polite"
-        >
+        <p className={mergeHint.mergeable > 0 ? "game-tip" : "game-tip game-tip--alert"} aria-live="polite">
           {mergeHint.mergeable > 0
             ? `下一档目标 ${mergeHint.nextTier}：盘面最大 ${mergeHint.max}，有 ${mergeHint.mergeable} 处可合并`
             : `下一档目标 ${mergeHint.nextTier}：最大已是 ${mergeHint.max}，暂无相邻同号，先调整再拼`}
@@ -278,7 +274,9 @@ export default function Game2048() {
           </div>
         )}
       </div>
-      <p className="game-hint">滑动或方向键移动。顶栏「最大 / 下一档」与可合并提示帮助盯目标；撤销仍用按钮或 U / Backspace。</p>
+      <p className="game-hint">
+        滑动或方向键移动。顶栏「最大 / 下一档」与可合并提示帮助盯目标；撤销仍用按钮或 U / Backspace。
+      </p>
     </div>
   );
 }

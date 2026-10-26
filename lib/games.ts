@@ -98,16 +98,14 @@ export const GAMES: GameItem[] = [
     slug: "idle-card-backends",
     title: "挂机卡牌：区服与性能",
     status: "archive",
-    summary:
-      "多区服进程模型、写时复制共享内存、端口与 TIME_WAIT 调优；把建库开服收敛成后台一键操作。",
+    summary: "多区服进程模型、写时复制共享内存、端口与 TIME_WAIT 调优；把建库开服收敛成后台一键操作。",
     stack: ["Python", "Linux", "多进程", "cProfile"],
   },
   {
     slug: "online-judge-sandbox",
     title: "在线判题沙箱",
     status: "archive",
-    summary:
-      "seccomp 白名单 + RLIMIT + 容器配额三层加固，挡住恶意代码逃逸和资源耗尽。",
+    summary: "seccomp 白名单 + RLIMIT + 容器配额三层加固，挡住恶意代码逃逸和资源耗尽。",
     stack: ["Go", "libseccomp", "Docker"],
     href: "/blog/oj-sandbox-with-seccomp",
   },
@@ -115,8 +113,7 @@ export const GAMES: GameItem[] = [
     slug: "collab-editor-ot",
     title: "协同编辑与视频面试",
     status: "archive",
-    summary:
-      "OT 算法后端、WebSocket 多端同步，以及 RTC 音视频与 IM 心跳断线重连。",
+    summary: "OT 算法后端、WebSocket 多端同步，以及 RTC 音视频与 IM 心跳断线重连。",
     stack: ["Go", "WebSocket", "OT", "RTC"],
   },
 ];

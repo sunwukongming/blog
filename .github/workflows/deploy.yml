@@ -43,6 +43,6 @@ jobs:
       - name: Deploy
         id: deploy
         run: |
-          url=$(pnpm dlx vercel@65.2.0 deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }})
+          url=$(pnpm dlx vercel@65.2.0 deploy --prebuilt --prod --archive=tgz --token=${{ secrets.VERCEL_TOKEN }})
           echo "url=$url" >> "$GITHUB_OUTPUT"
           echo "Deployed $GITHUB_REF_NAME to $url" >> "$GITHUB_STEP_SUMMARY"
